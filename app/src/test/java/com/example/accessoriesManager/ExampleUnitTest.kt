@@ -1,4 +1,4 @@
-package com.example.accesorymanager
+package com.example.accessoriesManager
 
 import org.junit.Test
 
