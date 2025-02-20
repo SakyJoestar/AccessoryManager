@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object Module{
+object FirebaseModule{
 
     @Provides
     @Singleton
