@@ -1,4 +1,4 @@
-package com.example.accesorymanager
+package com.example.accessoriesManager
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
