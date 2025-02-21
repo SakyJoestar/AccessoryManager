@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AccessoryDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAccessory(accessory: Accessory)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -25,4 +25,8 @@ interface AccessoryDao {
 
     @Query("UPDATE accessories SET isPendingSync = 0 WHERE isPendingSync = 1")
     suspend fun markAsSynced()
+
+    @Query("UPDATE accessories SET name = :name, price = :price, isPendingSync = :isPendingSync WHERE id = :id")
+    suspend fun updateAccessory(id: Int, name: String, price: Double, isPendingSync: Boolean)
+
 }

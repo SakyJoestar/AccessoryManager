@@ -3,7 +3,6 @@ package com.example.accessoriesManager.repository
 import com.example.accessoriesManager.data.AccessoryDao
 import com.example.accessoriesManager.model.Accessory
 import com.example.accessoriesManager.util.NetworkHelper
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.snapshots
 import kotlinx.coroutines.flow.Flow
@@ -17,18 +16,20 @@ class AccessoryRepository @Inject constructor(
     private val networkHelper: NetworkHelper
 ) {
 
-    suspend fun addAccessory(accessory: Accessory) {
-        try {
+    suspend fun addAccessory(accessory: Accessory): Boolean {
+        return try {
             if (networkHelper.isOnline()) {
                 firestore.collection("accessories").document(accessory.id.toString()).set(accessory)
             } else {
                 accessory.isPendingSync = true
             }
+            accessoryDao.insertAccessory(accessory)
+            true // Indicar que la inserción fue exitosa
         } catch (e: Exception) {
-            accessory.isPendingSync = true
+            false // Indicar que hubo un error (por ejemplo, nombre duplicado)
         }
-        accessoryDao.insertAccessory(accessory) // Siempre guardarlo en Room
     }
+
 
     fun getAccessories(): Flow<List<Accessory>> {
         return if (networkHelper.isOnline()) {
@@ -44,6 +45,35 @@ class AccessoryRepository @Inject constructor(
         } else {
             accessoryDao.getAllAccessories()
         }
+    }
+
+    suspend fun updateAccessory(accessory: Accessory): Boolean {
+        return try {
+            if (networkHelper.isOnline()) {
+                // Actualizar en Firebase
+                firestore.collection("accessories").document(accessory.id.toString()).set(accessory)
+                accessoryDao.updateAccessory(accessory.id, accessory.name, accessory.price, false)
+            } else {
+                // Marcar como pendiente si está offline
+                accessoryDao.updateAccessory(accessory.id, accessory.name, accessory.price, true)
+            }
+            true
+        } catch (e: Exception) {
+            false // Indica que hubo un error
+        }
+    }
+
+//  En la Ui se llama asi
+//    val success = repository.updateAccessory(updatedAccessory)
+//if (!success) {
+//    Toast.makeText(context, "Error al actualizar el accesorio", Toast.LENGTH_SHORT).show()
+//}
+
+    suspend fun deleteAccessory(accessory: Accessory) {
+        if (networkHelper.isOnline()) {
+            firestore.collection("accessories").document(accessory.id.toString()).delete()
+        }
+        accessoryDao.deleteAccessory(accessory.id)
     }
 
     suspend fun syncPendingAccessories() {
