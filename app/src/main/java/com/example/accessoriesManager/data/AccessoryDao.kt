@@ -10,6 +10,11 @@ interface AccessoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAccessory(accessory: Accessory)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccessories(accessories: List<Accessory>) {
+        accessories.forEach { insertAccessory(it) }
+    }
+
     @Query("SELECT * FROM accessories")
     suspend fun getAllAccessories(): List<Accessory>
 
