@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class Accessory(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
-    val price: Double
+    val price: Double,
+    var isPendingSync: Boolean = false
 )
