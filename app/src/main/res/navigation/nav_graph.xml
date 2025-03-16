@@ -5,9 +5,9 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/registersFragment">
 
+
     <fragment
-        android:id="@+id/registersFragment"
-        android:name="com.example.accessoriesManager.view.fragment.RecordsFragment"
-        android:label="RegistersFragment"
-        tools:layout="@layout/fragment_records" />
+        android:id="@+id/loginFragment"
+        android:name=
+        android:label="LoginFragment" />
 </navigation>
