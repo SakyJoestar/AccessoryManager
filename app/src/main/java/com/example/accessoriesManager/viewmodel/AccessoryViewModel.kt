@@ -1,62 +1,80 @@
 package com.example.accessoriesManager.viewmodel
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.accessoriesManager.model.Accessory
 import com.example.accessoriesManager.repository.AccessoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.google.firebase.firestore.FieldValue
 
 @HiltViewModel
 class AccessoryViewModel @Inject constructor(
-    private val accessoryRepository: AccessoryRepository
+    private val repository: AccessoryRepository
 ) : ViewModel() {
 
-    private val _accessoriesList = MutableStateFlow<List<Accessory>>(emptyList())
-    val accessoriesList: StateFlow<List<Accessory>> get() = _accessoriesList
+    private val _accessoriesList = MutableLiveData<MutableList<Accessory>>()
+    val accessoriesList: LiveData<MutableList<Accessory>> get() = _accessoriesList
 
-    private val _progressState = MutableStateFlow(false)
-    val progressState: StateFlow<Boolean> get() = _progressState
+    private val _progressState = MutableLiveData(false)
+    val progressState: LiveData<Boolean> get() = _progressState
 
-    // ✅ Obtener la lista de accesorios
-    fun getAccessoriesList() {
+    private fun getAccessoriesList() {
         viewModelScope.launch {
             _progressState.value = true
             try {
-                accessoryRepository.getAccessories()
-                    .collect { accessories ->
-                        _accessoriesList.value = accessories
-                    }
-            } finally {
+                val result = repository.getAccessoriesList()
+               if(result.isSuccess) {
+                   _accessoriesList.value = result.getOrElse { mutableListOf() }
+               } else {
+                   _accessoriesList.value = mutableListOf()
+               }
+                _progressState.value = false
+            } catch (e: Exception) {
                 _progressState.value = false
             }
         }
     }
 
-    // ✅ Agregar accesorio
     fun saveAccessory(accessory: Accessory) {
         viewModelScope.launch {
             _progressState.value = true
             try {
-                accessoryRepository.addAccessory(accessory)
-                getAccessoriesList() // Recargar lista
-            } finally {
+                accessory.createdAt = FieldValue.serverTimestamp()
+                repository.saveAccessory(accessory)
+                getAccessoriesList()
+                _progressState.value = false
+            } catch (e: Exception) {
+                _progressState.value = false
+            }
+            _progressState.value = false
+        }
+    }
+
+    fun deleteAccessory(accessory: Accessory) {
+        viewModelScope.launch {
+            _progressState.value = true
+            try {
+                repository.deleteAccessory(accessory)
+                getAccessoriesList()
+                _progressState.value = false
+            } catch (e: Exception) {
                 _progressState.value = false
             }
         }
     }
 
-    // ✅ Eliminar accesorio
-    fun deleteAccessory(accessory: Accessory) {
+    fun updateAccessory(accessory: Accessory) {
         viewModelScope.launch {
             _progressState.value = true
             try {
-                accessoryRepository.deleteAccessory(accessory)
-                getAccessoriesList() // Recargar lista
-            } finally {
+                repository.updateAccessory(accessory)
+                getAccessoriesList()
+                _progressState.value = false
+            } catch (e: Exception) {
                 _progressState.value = false
             }
         }

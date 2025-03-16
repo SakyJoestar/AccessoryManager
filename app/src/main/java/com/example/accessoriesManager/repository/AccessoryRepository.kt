@@ -2,127 +2,95 @@ package com.example.accessoriesManager.repository
 
 import com.example.accessoriesManager.data.AccessoryDao
 import com.example.accessoriesManager.model.Accessory
-import com.example.accessoriesManager.util.NetworkHelper
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.flow.*
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class AccessoryRepository @Inject constructor(
-    private val accessoryDao: AccessoryDao,
     private val firestore: FirebaseFirestore,
-    private val networkHelper: NetworkHelper
 ) {
-
-    /** 📌 Agrega un accesorio a Firebase y Room */
-    suspend fun addAccessory(accessory: Accessory): Boolean {
-        return try {
-            val accessoryToSave = if (networkHelper.isOnline()) {
-                val docRef = firestore.collection("accessories").document()
-                val newAccessory = accessory.copy(firebaseId = docRef.id) // ✅ Guarda el ID de Firebase
-                docRef.set(newAccessory).await()
-                newAccessory
-            } else {
-                accessory.copy(isPendingSync = true)
-            }
-
-            accessoryDao.insertAccessory(accessoryToSave) // ✅ Guarda en Room después
-            true
-        } catch (e: Exception) {
-            false
-        }
+    private fun getCurrentUserId(): String? {
+        return FirebaseAuth.getInstance().currentUser?.uid
     }
 
-    /** 📌 Sincroniza accesorios desde Firebase a Room */
-    suspend fun syncAccessoriesFromFirebase() {
-        if (networkHelper.isOnline()) {
+    suspend fun saveAccessory(accessory: Accessory): Result<Unit> {
+        val userId = getCurrentUserId()
+        return userId?.let {
             try {
-                val snapshot = firestore.collection("accessories").get().await()
-                val firebaseList = snapshot.toObjects(Accessory::class.java)
+                firestore
+                    .collection("users")
+                    .document(it)
+                    .collection("accessories")
+                    .add(accessory)
+                    .await()
 
-                val localList = accessoryDao.getAllAccessoriesOnce()
-
-                val newOrUpdatedAccessories = firebaseList.filter { firebaseItem ->
-                    val localItem = localList.find { it.firebaseId == firebaseItem.firebaseId }
-                    localItem == null || localItem != firebaseItem // ✅ Nuevo o diferente
-                }
-
-                if (newOrUpdatedAccessories.isNotEmpty()) {
-                    accessoryDao.insertAccessories(newOrUpdatedAccessories)
-                }
+                Result.success(Unit)
             } catch (e: Exception) {
-                // Log error
+                Result.failure(Exception("Error saving accessory: ${e.message}"))
             }
-        }
+        } ?: Result.failure(Exception("User not authenticated"))
     }
 
-    /** 📌 Devuelve accesorios desde Room */
-    fun getAccessories(): Flow<List<Accessory>> = accessoryDao.getAllAccessories()
+    suspend fun updateAccessory(accessory: Accessory): Result<Unit> {
+        val userId = getCurrentUserId()
+        return userId?.let {
+            accessory.id?.let { id ->
+                try {
+                    firestore.collection("users")
+                        .document(it)
+                        .collection("accessories")
+                        .document(id)
+                        .set(accessory)
+                        .await()
 
-    /** 📌 Actualiza un accesorio en Firebase y Room */
-    suspend fun updateAccessory(accessory: Accessory): Boolean {
-        return try {
-            if (networkHelper.isOnline()) {
-                accessory.firebaseId?.let { id ->
-                    firestore.collection("accessories").document(id).set(accessory).await()
-                    accessoryDao.updateAccessory(accessory.id, accessory.name, accessory.price, false)
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(Exception("Error updating accessory: ${e.message}"))
                 }
-            } else {
-                accessoryDao.updateAccessory(accessory.id, accessory.name, accessory.price, true)
-            }
-            true
-        } catch (e: Exception) {
-            false
-        }
+            } ?: Result.failure(Exception("Accessory ID is null"))
+        } ?: Result.failure(Exception("User not authenticated"))
     }
 
-    /** 📌 Elimina un accesorio en Firebase y Room */
-    suspend fun deleteAccessory(accessory: Accessory) {
-        try {
-            if (networkHelper.isOnline()) {
-                accessory.firebaseId?.let { id ->
-                    firestore.collection("accessories").document(id).delete().await()
-                    accessoryDao.deleteAccessory(accessory.id)
+    suspend fun deleteAccessory(accessory: Accessory): Result<Unit> {
+        val userId = getCurrentUserId()
+        return userId?.let {
+            accessory.id?.let { id ->
+                try {
+                    firestore
+                        .collection("users")
+                        .document(it)
+                        .collection("accessories")
+                        .document(id)
+                        .delete()
+                        .await()
+
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(Exception("Error deleting accessory: ${e.message}"))
                 }
-            } else {
-                accessoryDao.markAccessoryAsDeleted(accessory.id)
-            }
-        } catch (e: Exception) {
-            // Log.e("Delete", "Error al eliminar accesorio", e)
-        }
+            } ?: Result.failure(Exception("Accessory ID is null"))
+        } ?: Result.failure(Exception("User not authenticated"))
     }
 
-    /** 📌 Sincroniza accesorios pendientes (subidas y eliminaciones) */
-    suspend fun syncPendingAccessories() {
-        if (networkHelper.isOnline()) {
+    suspend fun getAccessoriesList(): Result<MutableList<Accessory>> {
+        val userId = getCurrentUserId()
+        return userId?.let {
             try {
-                // 🔹 Sincroniza eliminaciones
-                accessoryDao.getDeletedAccessories()
-                    .flatMapMerge { it.asFlow() }
-                    .collect { accessory ->
-                        try {
-                            accessory.firebaseId?.let { id ->
-                                firestore.collection("accessories").document(id).delete().await()
-                                accessoryDao.deleteAccessory(accessory.id) // ✅ Eliminar solo si se sincroniza
-                            }
-                        } catch (e: Exception) { /* Log error */ }
-                    }
-                accessoryDao.clearDeletedAccessories()
+                val snapshot = firestore
+                    .collection("users")
+                    .document(it)
+                    .collection("accessories")
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .get()
+                    .await()
 
-                // 🔹 Sincroniza accesorios pendientes
-                accessoryDao.getPendingAccessories()
-                    .flatMapMerge { it.asFlow() }
-                    .collect { accessory ->
-                        try {
-                            val docRef = firestore.collection("accessories").document()
-                            val newAccessory = accessory.copy(firebaseId = docRef.id)
-                            docRef.set(newAccessory).await()
-
-                            // ✅ Guarda el `firebaseId` en Room después de subir
-                            accessoryDao.updateAccessoryFirebaseId(accessory.id, docRef.id)
-                        } catch (e: Exception) { /* Log error */ }
-                    }
-            } catch (e: Exception) { /* Log error */ }
-        }
+                val accessories = snapshot.toObjects(Accessory::class.java)
+                Result.success(accessories)
+            } catch (e: Exception) {
+                Result.failure(Exception("Error getting accessories: ${e.message}"))
+            }
+        } ?: Result.failure(Exception("User not authenticated"))
     }
 }
