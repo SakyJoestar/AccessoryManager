@@ -24,17 +24,17 @@ class AuthViewModel @Inject constructor(
         _user.value = authRepository.getCurrentUser()
     }
 
-    fun signInWithGoogle(credential: AuthCredential) {
-        viewModelScope.launch {
-            val result = authRepository.signInWithGoogle(credential)
-            if (result is Resource.Success) {
-                _user.value = result.data
-            }
-        }
-    }
-
-    fun signOut() {
-        authRepository.signOut()
-        _user.value = null
-    }
+//    fun signInWithGoogle(credential: AuthCredential) {
+//        viewModelScope.launch {
+//            val result = authRepository.signInWithGoogle(credential)
+//            if (result is Resource.Success) {
+//                _user.value = result.data
+//            }
+//        }
+//    }
+//
+//    fun signOut() {
+//        authRepository.signOut()
+//        _user.value = null
+//    }
 }
