@@ -2,92 +2,95 @@ package com.example.accessoriesManager.repository
 
 import com.example.accessoriesManager.data.AccessoryDao
 import com.example.accessoriesManager.model.Accessory
-import com.example.accessoriesManager.util.NetworkHelper
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.snapshots
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class AccessoryRepository @Inject constructor(
-    private val accessoryDao: AccessoryDao,
     private val firestore: FirebaseFirestore,
-    private val networkHelper: NetworkHelper
 ) {
-
-    suspend fun addAccessory(accessory: Accessory): Boolean {
-        return try {
-            if (networkHelper.isOnline()) {
-                firestore.collection("accessories").document(accessory.id.toString()).set(accessory)
-            } else {
-                accessory.isPendingSync = true
-            }
-            accessoryDao.insertAccessory(accessory)
-            true // Indicar que la inserción fue exitosa
-        } catch (e: Exception) {
-            false // Indicar que hubo un error (por ejemplo, nombre duplicado)
-        }
+    private fun getCurrentUserId(): String? {
+        return FirebaseAuth.getInstance().currentUser?.uid
     }
 
+    suspend fun saveAccessory(accessory: Accessory): Result<Unit> {
+        val userId = getCurrentUserId()
+        return userId?.let {
+            try {
+                firestore
+                    .collection("users")
+                    .document(it)
+                    .collection("accessories")
+                    .add(accessory)
+                    .await()
 
-    fun getAccessories(): Flow<List<Accessory>> {
-        return if (networkHelper.isOnline()) {
-            firestore.collection("accessories").snapshots().map { snapshot ->
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(Exception("Error saving accessory: ${e.message}"))
+            }
+        } ?: Result.failure(Exception("User not authenticated"))
+    }
+
+    suspend fun updateAccessory(accessory: Accessory): Result<Unit> {
+        val userId = getCurrentUserId()
+        return userId?.let {
+            accessory.id?.let { id ->
                 try {
-                    val list = snapshot.toObjects(Accessory::class.java)
-                    accessoryDao.insertAccessories(list) // Guardar en Room
-                    list
+                    firestore.collection("users")
+                        .document(it)
+                        .collection("accessories")
+                        .document(id)
+                        .set(accessory)
+                        .await()
+
+                    Result.success(Unit)
                 } catch (e: Exception) {
-                    emptyList() // Evitar fallos si hay un error en los datos
+                    Result.failure(Exception("Error updating accessory: ${e.message}"))
                 }
-            }
-        } else {
-            accessoryDao.getAllAccessories()
-        }
+            } ?: Result.failure(Exception("Accessory ID is null"))
+        } ?: Result.failure(Exception("User not authenticated"))
     }
 
-    suspend fun updateAccessory(accessory: Accessory): Boolean {
-        return try {
-            if (networkHelper.isOnline()) {
-                // Actualizar en Firebase
-                firestore.collection("accessories").document(accessory.id.toString()).set(accessory)
-                accessoryDao.updateAccessory(accessory.id, accessory.name, accessory.price, false)
-            } else {
-                // Marcar como pendiente si está offline
-                accessoryDao.updateAccessory(accessory.id, accessory.name, accessory.price, true)
-            }
-            true
-        } catch (e: Exception) {
-            false // Indica que hubo un error
-        }
-    }
+    suspend fun deleteAccessory(accessory: Accessory): Result<Unit> {
+        val userId = getCurrentUserId()
+        return userId?.let {
+            accessory.id?.let { id ->
+                try {
+                    firestore
+                        .collection("users")
+                        .document(it)
+                        .collection("accessories")
+                        .document(id)
+                        .delete()
+                        .await()
 
-//  En la Ui se llama asi
-//    val success = repository.updateAccessory(updatedAccessory)
-//if (!success) {
-//    Toast.makeText(context, "Error al actualizar el accesorio", Toast.LENGTH_SHORT).show()
-//}
-
-    suspend fun deleteAccessory(accessory: Accessory) {
-        if (networkHelper.isOnline()) {
-            firestore.collection("accessories").document(accessory.id.toString()).delete()
-        }
-        accessoryDao.deleteAccessory(accessory.id)
-    }
-
-    suspend fun syncPendingAccessories() {
-        if (networkHelper.isOnline()) {
-            val pendingAccessories = accessoryDao.getPendingAccessories()
-            if (pendingAccessories.isNotEmpty()) {
-                val batch = firestore.batch()
-                pendingAccessories.forEach { accessory ->
-                    val docRef = firestore.collection("accessories").document(accessory.id.toString())
-                    batch.set(docRef, accessory)
+                    Result.success(Unit)
+                } catch (e: Exception) {
+                    Result.failure(Exception("Error deleting accessory: ${e.message}"))
                 }
-                batch.commit().await() // Esperar a que termine la subida
-                accessoryDao.markAsSynced() // Actualizar en Room en una sola llamada
+            } ?: Result.failure(Exception("Accessory ID is null"))
+        } ?: Result.failure(Exception("User not authenticated"))
+    }
+
+    suspend fun getAccessoriesList(): Result<MutableList<Accessory>> {
+        val userId = getCurrentUserId()
+        return userId?.let {
+            try {
+                val snapshot = firestore
+                    .collection("users")
+                    .document(it)
+                    .collection("accessories")
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+
+                val accessories = snapshot.toObjects(Accessory::class.java)
+                Result.success(accessories)
+            } catch (e: Exception) {
+                Result.failure(Exception("Error getting accessories: ${e.message}"))
             }
-        }
+        } ?: Result.failure(Exception("User not authenticated"))
     }
 }
