@@ -35,3 +35,7 @@ output.json
 #NDK
 obj/
 .externalNativeBuild
+
+# Firebase & claves
+google-services.json
+.env
