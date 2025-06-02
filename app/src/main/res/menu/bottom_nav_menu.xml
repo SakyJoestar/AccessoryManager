@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/accessoriesFragment"
+        android:title="Accesorios" />
+    <item
+        android:id="@+id/headquartersFragment"
+        android:title="Sedes" />
+    <item
+        android:id="@+id/recordsFragment"
+        android:title="Registros" />
+    <item
+        android:id="@+id/vehiclesFragment"
+        android:title="Vehiculos" />
+</menu>

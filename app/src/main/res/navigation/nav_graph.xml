@@ -3,12 +3,35 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/loginFragment">
+    app:startDestination="@id/accessoriesFragment">
 
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.example.accessoriesManager.view.fragment.LoginFragment"
         android:label="LoginFragment"
-        tools:layout="@layout/fragment_login"/>
-
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_loginFragment_to_accessoriesFragment"
+            app:destination="@id/accessoriesFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/accessoriesFragment"
+        android:name="com.example.accessoriesManager.view.fragment.AccessoriesFragment"
+        android:label="AccessoriesFragment"
+        tools:layout="@layout/fragment_accessories"/>
+    <fragment
+        android:id="@+id/headquartersFragment"
+        android:name="com.example.accessoriesManager.view.fragment.HeadquartersFragment"
+        android:label="HeadquartersFragment"
+        tools:layout="@layout/fragment_headquarters"/>
+    <fragment
+        android:id="@+id/recordsFragment"
+        android:name="com.example.accessoriesManager.view.fragment.RecordsFragment"
+        android:label="RecordsFragment"
+        tools:layout="@layout/fragment_records"/>
+    <fragment
+        android:id="@+id/vehiclesFragment"
+        android:name="com.example.accessoriesManager.view.fragment.VehiclesFragment"
+        android:label="VehiclesFragment"
+        tools:layout="@layout/fragment_vehicles"/>
 </navigation>
