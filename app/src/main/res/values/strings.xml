@@ -12,4 +12,21 @@
     <string name="menu_slideshow">Slideshow</string>
 <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="email">Email</string>
+    <string name="accesory_n_manager">Accesory \n Manager</string>
+    <string name="password">Password</string>
+    <string name="tema">Tema</string>
+    <string name="iniciar_sesion">Iniciar Sesion</string>
+    <string name="registrar">Registrar</string>
+    <string name="image">image</string>
+    <string name="inicia_con_google">O inicia sesión con Google</string>
+    <string name="bienvenido_a_tu_gestor_de_instalaciones">Bienvenido a tu gestor de instalaciones.</string>
+    <string name="registrarse">Registrarse</string>
+    <string name="o_continua_con_email">o registrate con Email</string>
+    <string name="nombre">Nombre</string>
+    <string name="confirma_tu_contrase_a">Confirma tu contraseña</string>
+    <string name="google_login">Inicia sesión con Google</string>
+    <string name="google_signup">Regístrate con Google</string>
+    <string name="or_login_email">o inicia sesión con Email</string>
+    <string name="or_signup_email">o regístrate con Email</string>
 </resources>
