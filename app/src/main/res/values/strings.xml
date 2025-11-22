@@ -20,7 +20,7 @@
     <string name="registrar">Registrar</string>
     <string name="image">image</string>
     <string name="inicia_con_google">O inicia sesión con Google</string>
-    <string name="bienvenido_a_tu_gestor_de_instalaciones">Bienvenido a tu gestor de instalaciones.</string>
+    <string name="instrucciones_login">Inicia sesión o registrate abajo para manejar tus instalaciones</string>
     <string name="registrarse">Registrarse</string>
     <string name="o_continua_con_email">o registrate con Email</string>
     <string name="nombre">Nombre</string>
@@ -29,4 +29,5 @@
     <string name="google_signup">Regístrate con Google</string>
     <string name="or_login_email">o inicia sesión con Email</string>
     <string name="or_signup_email">o regístrate con Email</string>
+    <string name="contrase_a_olvidada">contraseña olvidada</string>
 </resources>
