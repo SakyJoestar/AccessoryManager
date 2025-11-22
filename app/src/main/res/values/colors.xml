@@ -1,13 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="rich_black">#01161E</color>
-    <color name="Myrtle_green">#387780</color>
-    <color name="xanthous">#FFBC42</color>
+    <!-- Paleta 1 -->
+
+<!--    &lt;!&ndash; PRIMARIO &ndash;&gt;-->
+<!--    <color name="primary">#0D6EFD</color>-->
+<!--    <color name="primary_light">#4793FF</color>-->
+<!--    <color name="primary_dark">#0A58CA</color>-->
+
+<!--    &lt;!&ndash; FONDOS &ndash;&gt;-->
+<!--    <color name="background">#F8FAFC</color>-->
+<!--    <color name="surface">#FFFFFF</color>-->
+<!--    <color name="border_soft">#E2E8F0</color>-->
+
+<!--    &lt;!&ndash; TEXTO &ndash;&gt;-->
+<!--    <color name="text_primary">#1E293B</color>-->
+<!--    <color name="text_secondary">#64748B</color>-->
+<!--    <color name="on_primary">#FFFFFF</color>-->
+
+<!--    &lt;!&ndash; ESTADOS &ndash;&gt;-->
+<!--    <color name="success">#22C55E</color>-->
+<!--    <color name="warning">#F59E0B</color>-->
+<!--    <color name="error">#EF4444</color>-->
+<!--    <color name="info">#3B82F6</color>-->
+
+    <!-- Paleta 2 -->
+    <!-- PRIMARIO (botones, acciones) -->
+    <color name="primary">#F59E0B</color>          <!-- Anaranjado cálido -->
+    <color name="primary_light">#FDBA74</color>    <!-- Hover / estados suaves -->
+    <color name="primary_dark">#D97706</color>     <!-- Variante más fuerte -->
+
+    <!-- COMPLEMENTARIO SUAVE (resaltados suaves, chips, badges) -->
+    <color name="accent_soft">#FDE68A</color>      <!-- Amarillo suave -->
+
+    <!-- FONDOS -->
+    <color name="background">#FFFFFF</color>       <!-- Fondo principal -->
+    <color name="surface">#F9FAFB</color>          <!-- Tarjetas / componentes -->
+    <color name="border_soft">#E5E7EB</color>      <!-- Bordes / divisores -->
+
+    <!-- TEXTO -->
+    <color name="text_primary">#1F2937</color>     <!-- Texto principal -->
+    <color name="text_secondary">#6B7280</color>   <!-- Texto secundario -->
+    <color name="on_primary">#FFFFFF</color>       <!-- Texto sobre botones -->
+
+    <!-- ESTADOS -->
+    <color name="success">#22C55E</color>
+    <color name="warning">#F59E0B</color>          <!-- Reutiliza el primario -->
+    <color name="error">#EF4444</color>
+    <color name="info">#0284C7</color>
+
+    <!-- Container -->
+    <color name="edit_text">#FFFFFF</color>
 </resources>
