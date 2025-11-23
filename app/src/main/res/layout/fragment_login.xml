@@ -7,6 +7,11 @@
         <!-- Aquí luego puedes meter tu ViewModel si usas DataBinding -->
     </data>
 
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background">
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -43,8 +48,8 @@
 
         <TextView
             android:id="@+id/subtitleTextView"
-            android:layout_width="307dp"
-            android:layout_height="38dp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:gravity="center"
             android:text="@string/instrucciones_login"
@@ -60,7 +65,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="6dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
             app:cardUseCompatPadding="true"
@@ -111,7 +116,8 @@
                 <com.google.android.gms.common.SignInButton
                     android:id="@+id/google_sign_in_button_id"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp" />
+                    android:layout_height="48dp"
+                    />
 
                 <!-- Texto divisor -->
 
@@ -214,7 +220,7 @@
                     android:id="@+id/signupForm"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="4dp"
                     android:orientation="vertical"
                     android:visibility="gone">
 
@@ -312,4 +318,5 @@
             android:backgroundTint="@color/primary"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
 </layout>

@@ -1,5 +1,6 @@
     package com.example.accessoriesManager.view.fragment
 
+    import android.app.Activity
     import android.os.Bundle
     import android.util.Log
     import android.view.LayoutInflater
@@ -16,6 +17,13 @@
     import com.google.firebase.firestore.FieldValue
     import androidx.navigation.fragment.findNavController
     import android.content.Context
+    import androidx.activity.result.contract.ActivityResultContracts
+    import com.google.android.gms.auth.api.signin.GoogleSignIn
+    import com.google.android.gms.auth.api.signin.GoogleSignInClient
+    import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+    import com.google.android.gms.common.api.ApiException
+    import com.google.firebase.auth.GoogleAuthProvider
+    import com.google.firebase.firestore.SetOptions
 
     @AndroidEntryPoint
     class LoginFragment : Fragment() {
@@ -24,6 +32,36 @@
         private val binding get() = _binding!!
         private lateinit var firebaseAuth: FirebaseAuth
         private lateinit var firestore: FirebaseFirestore
+
+        // 🔹 Google Sign-In
+        private lateinit var googleSignInClient: GoogleSignInClient
+
+        companion object {
+            private const val TAG = "LoginFragment"
+        }
+
+        private val googleSignInLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    try {
+                        val account = task.getResult(ApiException::class.java)
+                        val idToken = account.idToken
+
+                        if (idToken != null) {
+                            firebaseAuthWithGoogle(idToken)
+                        } else {
+                            Toast.makeText(requireContext(), "Token de Google inválido", Toast.LENGTH_SHORT).show()
+                        }
+
+                    } catch (e: ApiException) {
+                        Log.w(TAG, "Google sign in failed", e)
+                        Toast.makeText(requireContext(), "Error al iniciar con Google", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Inicio con Google cancelado", Toast.LENGTH_SHORT).show()
+                }
+            }
 
         override fun onCreateView(
             inflater: LayoutInflater,
@@ -52,6 +90,13 @@
             super.onViewCreated(view, savedInstanceState)
             firebaseAuth = FirebaseAuth.getInstance()
             firestore = FirebaseFirestore.getInstance()
+
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id)) // viene de google-services
+                .requestEmail()
+                .build()
+
+            googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso)
 
             switchDarkMode()
             setupAuthTabs()
@@ -261,8 +306,19 @@
 
         /* ------------ LISTENERS LOGIN / REGISTER ------------ */
 
+        private fun signInWithGoogle() {
+            val signInIntent = googleSignInClient.signInIntent
+            googleSignInLauncher.launch(signInIntent)
+        }
+
         private fun setupListeners() {
             // LOGIN
+
+            // GOOGLE SIGN-IN
+            binding.googleSignInButtonId.setOnClickListener {
+                signInWithGoogle()
+            }
+
             binding.loginButton.setOnClickListener {
                 val email = binding.emailEditText.text?.toString()?.trim().orEmpty()
                 val password = binding.passwordEditText.text?.toString()?.trim().orEmpty()
@@ -315,5 +371,63 @@
                 // 👇 ahora pasamos también el nombre
                 register(name, email, password)
             }
+        }
+
+        private fun firebaseAuthWithGoogle(idToken: String) {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+
+            firebaseAuth.signInWithCredential(credential)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val user = firebaseAuth.currentUser
+
+                        if (user != null) {
+                            val uid = user.uid
+                            val userData = hashMapOf(
+                                "name" to (user.displayName ?: ""),
+                                "email" to (user.email ?: ""),
+                                "photoUrl" to (user.photoUrl?.toString()),
+                                "lastLogin" to FieldValue.serverTimestamp()
+                            )
+
+                            // merge: si ya existe el doc, solo actualiza campos
+                            firestore.collection("users")
+                                .document(uid)
+                                .set(userData, SetOptions.merge())
+                                .addOnSuccessListener {
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "Inicio de sesión con Google exitoso",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    findNavController().navigate(
+                                        R.id.action_loginFragment_to_accessoriesFragment
+                                    )
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.e(TAG, "Error guardando datos de Google", e)
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "Iniciaste con Google, pero hubo error guardando datos",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+
+                                    // Igual lo dejamos pasar a la app
+                                    findNavController().navigate(
+                                        R.id.action_loginFragment_to_accessoriesFragment
+                                    )
+                                }
+                        } else {
+                            Toast.makeText(requireContext(), "Usuario de Firebase nulo", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(
+                            requireContext(),
+                            "Error autenticando con Firebase: ${task.exception?.localizedMessage}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
         }
     }
