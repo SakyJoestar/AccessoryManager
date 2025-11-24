@@ -304,8 +304,12 @@
         /* ------------ LISTENERS LOGIN / REGISTER ------------ */
 
         private fun signInWithGoogle() {
-            val signInIntent = googleSignInClient.signInIntent
-            googleSignInLauncher.launch(signInIntent)
+            // Primero limpiamos la sesión de Google para que NO recuerde la cuenta anterior
+            googleSignInClient.signOut().addOnCompleteListener {
+                // Cuando termine el signOut, lanzamos el chooser de cuentas
+                val signInIntent = googleSignInClient.signInIntent
+                googleSignInLauncher.launch(signInIntent)
+            }
         }
 
         private fun setupListeners() {
