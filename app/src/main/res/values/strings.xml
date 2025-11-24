@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AccessoryManager</string>
+    <string name="app_name">Car Facility Tracker</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_title">Android Studio</string>
@@ -20,7 +20,7 @@
     <string name="registrar">Registrar</string>
     <string name="image">image</string>
     <string name="inicia_con_google">O inicia sesión con Google</string>
-    <string name="instrucciones_login">Inicia sesión o registrate abajo para manejar tus instalaciones</string>
+    <string name="instrucciones_login">Inicia sesión o registrate abajo para tener el control de tus instalaciones</string>
     <string name="registrarse">Registrarse</string>
     <string name="o_continua_con_email">o registrate con Email</string>
     <string name="nombre">Nombre</string>

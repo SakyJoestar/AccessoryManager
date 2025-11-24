@@ -18,6 +18,7 @@
     import androidx.navigation.fragment.findNavController
     import android.content.Context
     import androidx.activity.result.contract.ActivityResultContracts
+    import androidx.navigation.NavOptions
     import com.google.android.gms.auth.api.signin.GoogleSignIn
     import com.google.android.gms.auth.api.signin.GoogleSignInClient
     import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -98,9 +99,9 @@
 
             googleSignInClient = GoogleSignIn.getClient(requireActivity(), gso)
 
+            customizeGoogleButton()
             switchDarkMode()
             setupAuthTabs()
-            customizeGoogleButton()
             setupListeners()
         }
 
@@ -211,12 +212,12 @@
         }
 
         private fun customizeGoogleButton() {
-            // Cambiar el texto interno del SignInButton
             for (i in 0 until binding.googleSignInButtonId.childCount) {
                 val child = binding.googleSignInButtonId.getChildAt(i)
                 if (child is android.widget.TextView) {
-                    child.text = "Regístrate con Google"
+                    // SOLO estilo, NO texto
                     child.textSize = 14f
+                    child.isAllCaps = false
                 }
             }
         }
@@ -233,9 +234,7 @@
                             Toast.LENGTH_SHORT
                         ).show()
 
-                        findNavController().navigate(
-                            R.id.action_loginFragment_to_accessoriesFragment
-                        )
+                        navigateToHome()
 
                     } else {
                         Toast.makeText(
@@ -273,9 +272,7 @@
                                         Toast.LENGTH_SHORT
                                     ).show()
 
-                                    findNavController().navigate(
-                                        R.id.action_loginFragment_to_accessoriesFragment
-                                    )
+                                    navigateToHome()
 
                                 }
                                 .addOnFailureListener { e ->
@@ -307,8 +304,12 @@
         /* ------------ LISTENERS LOGIN / REGISTER ------------ */
 
         private fun signInWithGoogle() {
-            val signInIntent = googleSignInClient.signInIntent
-            googleSignInLauncher.launch(signInIntent)
+            // Primero limpiamos la sesión de Google para que NO recuerde la cuenta anterior
+            googleSignInClient.signOut().addOnCompleteListener {
+                // Cuando termine el signOut, lanzamos el chooser de cuentas
+                val signInIntent = googleSignInClient.signInIntent
+                googleSignInLauncher.launch(signInIntent)
+            }
         }
 
         private fun setupListeners() {
@@ -429,5 +430,17 @@
                         ).show()
                     }
                 }
+        }
+
+        private fun navigateToHome() {
+            val navOptions = NavOptions.Builder()
+                .setPopUpTo(R.id.loginFragment, true) // true = lo elimina del back stack
+                .build()
+
+            findNavController().navigate(
+                R.id.action_loginFragment_to_accessoriesFragment,
+                null,
+                navOptions
+            )
         }
     }
