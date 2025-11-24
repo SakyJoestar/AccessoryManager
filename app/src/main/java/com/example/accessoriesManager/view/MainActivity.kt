@@ -86,6 +86,8 @@ class MainActivity : AppCompatActivity() {
                 toolbar.visibility = View.VISIBLE
                 showLogoutMenu = true
 
+                supportActionBar?.title = "CFT"
+
                 // Si es un destino raíz (tabs): NO flecha
                 if (destination.id in rootDestinations) {
                     supportActionBar?.setDisplayHomeAsUpEnabled(false)
