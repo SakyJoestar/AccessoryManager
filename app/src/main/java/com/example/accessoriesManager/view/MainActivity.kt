@@ -8,11 +8,15 @@ import androidx.activity.addCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.WindowCompat
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.accesorymanager.R
+import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -20,6 +24,8 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var bottomNav: BottomNavigationView
+    private lateinit var fab: FloatingActionButton
+    private lateinit var bottomAppBar: BottomAppBar
     private lateinit var toolbar: Toolbar
     private lateinit var auth: FirebaseAuth   // 👈 auth global
 
@@ -69,6 +75,9 @@ class MainActivity : AppCompatActivity() {
         bottomNav = findViewById(R.id.bottom_nav)
         bottomNav.setupWithNavController(navController)
 
+        fab = findViewById(R.id.fab_add)
+        bottomAppBar = findViewById(R.id.bottom_app_bar)
+
         // Mostrar / ocultar Toolbar, BottomNav, menú y flecha según destino
         navController.addOnDestinationChangedListener { _, destination, _ ->
 
@@ -78,12 +87,16 @@ class MainActivity : AppCompatActivity() {
                 // Login: sin toolbar, sin bottomNav, sin menú, sin flecha
                 bottomNav.visibility = View.GONE
                 toolbar.visibility = View.GONE
+                fab.visibility = View.GONE
+                bottomAppBar.visibility = View.GONE
                 showLogoutMenu = false
                 supportActionBar?.setDisplayHomeAsUpEnabled(false)
             } else {
                 // Resto de pantallas: toolbar y bottomNav visibles
                 bottomNav.visibility = View.VISIBLE
                 toolbar.visibility = View.VISIBLE
+                fab.visibility = View.VISIBLE
+                bottomAppBar.visibility = View.VISIBLE
                 showLogoutMenu = true
 
                 supportActionBar?.title = "CFT"
