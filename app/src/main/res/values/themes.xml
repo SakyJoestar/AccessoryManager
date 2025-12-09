@@ -15,9 +15,12 @@
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/text_primary</item>
 
-        <!-- Texto -->
-        <item name="android:textColorPrimary">@color/text_primary</item>
-        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <!-- Color de la barra de navegación (zona de gestos) en tema CLARO -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+
+        <!-- Como el fondo es CLARO, iconos/píldora oscuros -->
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
     <style name="Theme.AccesoryManager.NoActionBar">
@@ -42,6 +45,10 @@
     <style name="images" >
         <item name="android:tint">@color/text_primary</item>
     </style>
+
+
+
+
 
 
 

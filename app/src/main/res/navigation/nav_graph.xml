@@ -12,7 +12,7 @@
         tools:layout="@layout/fragment_login">
         <action
             android:id="@+id/action_loginFragment_to_accessoriesFragment"
-            app:destination="@id/accessoriesFragment" />
+            app:destination="@id/recordsFragment" />
     </fragment>
     <fragment
         android:id="@+id/accessoriesFragment"

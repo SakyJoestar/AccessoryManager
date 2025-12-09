@@ -19,19 +19,6 @@
         android:background="@color/background"
         tools:context=".ui.LoginFragment">
 
-        <!-- Logo -->
-
-        <!-- Título -->
-
-        <!-- Subtítulo -->
-
-        <!-- Tabs Login / Sign Up -->
-
-
-        <!-- CARD de autenticación -->
-
-        <!-- Switch de tema abajo -->
-
         <TextView
             android:id="@+id/titleTextView"
             android:layout_width="wrap_content"
