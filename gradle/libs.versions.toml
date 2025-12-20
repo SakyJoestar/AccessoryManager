@@ -23,6 +23,7 @@ androidGradlePlugin = "8.7.3"
 playServicesAuth = "21.3.0"
 roomCommon = "2.6.1"
 roomKtx = "2.6.1"
+gridlayout = "1.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -50,6 +51,7 @@ firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx",
 androidx-room-common = { group = "androidx.room", name = "room-common", version.ref = "roomCommon" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+androidx-gridlayout = { module = "androidx.gridlayout:gridlayout",  version.ref = "gridlayout"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

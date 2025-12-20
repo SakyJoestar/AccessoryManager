@@ -8,12 +8,12 @@ import androidx.activity.addCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.core.view.WindowCompat
+import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.accesorymanager.R
+import com.example.accessoriesManager.ui.common.showQuickMenu
 import com.google.android.material.bottomappbar.BottomAppBar
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
 
     // Flag para saber si mostramos el menú (logout) o no
     private var showLogoutMenu: Boolean = true
+    private var quickMenuDialog: AlertDialog? = null
 
     // Destinos raíz (los de la bottom bar, donde NO queremos flecha)
     private val rootDestinations = setOf(
@@ -75,7 +76,35 @@ class MainActivity : AppCompatActivity() {
         bottomNav = findViewById(R.id.bottom_nav)
         bottomNav.setupWithNavController(navController)
 
-        fab = findViewById(R.id.fab_add)
+        val fab = findViewById<FloatingActionButton>(R.id.fab_add)
+
+        fab.setOnClickListener {
+
+            // si ya está abierto, ciérralo
+            if (quickMenuDialog?.isShowing == true) {
+                quickMenuDialog?.dismiss()
+                return@setOnClickListener
+            }
+
+            val navController = findNavController(R.id.nav_host_fragment)
+
+            val bottomBar = findViewById<View>(R.id.bottom_app_bar) // o tu BottomNavigationView id
+            val bottomBarHeight = bottomBar.height
+
+            toggleFabToClose(true)
+
+            quickMenuDialog = showQuickMenu(
+                activity = this,
+                bottomBarHeightPx = bottomBarHeight,
+                onSedeClick = { navController.navigate(R.id.headquarterFormFragment) }
+            ).apply {
+                setOnDismissListener {
+                    toggleFabToClose(false)
+                    quickMenuDialog = null
+                }
+            }
+        }
+
         bottomAppBar = findViewById(R.id.bottom_app_bar)
 
         // Mostrar / ocultar Toolbar, BottomNav, menú y flecha según destino
@@ -177,4 +206,10 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancelar", null)
             .show()
     }
+
+    private fun toggleFabToClose(isOpen: Boolean) {
+        val fab = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fab_add)
+        fab.setImageResource(if (isOpen) R.drawable.ic_close else R.drawable.ic_add_24)
+    }
+
 }
