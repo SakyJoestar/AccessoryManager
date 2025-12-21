@@ -52,36 +52,27 @@ fun showQuickMenu(
         }
     }
 
+    val content = LayoutInflater.from(activity).inflate(R.layout.dialog_actions, null, false)
+    val list = content.findViewById<android.widget.ListView>(R.id.actionsList)
+    list.adapter = adapter
+
     val dialog = MaterialAlertDialogBuilder(activity)
-        .setAdapter(adapter) { d, which ->
-            d.dismiss()
-            when (which) {
-                3 -> onSedeClick()
-            }
-        }
+        .setView(content)
         .create()
 
+    list.setOnItemClickListener { _, _, which, _ ->
+        dialog.dismiss()
+        when (which) {
+            3 -> onSedeClick()
+        }
+    }
+
     dialog.setOnShowListener {
-        // Wrap content real
         dialog.window?.setLayout(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT
         )
-
-        // Posición abajo-centro
-        dialog.window?.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
-
-        // margen inferior (bottom bar + un airecito)
-        val extraMarginDp = 10f
-        val extraMarginPx = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            extraMarginDp,
-            activity.resources.displayMetrics
-        ).toInt()
-
-        dialog.window?.attributes = dialog.window?.attributes?.apply {
-            y = bottomBarHeightPx + extraMarginPx
-        }
+        dialog.window?.setGravity(Gravity.CENTER)
     }
 
     dialog.show()

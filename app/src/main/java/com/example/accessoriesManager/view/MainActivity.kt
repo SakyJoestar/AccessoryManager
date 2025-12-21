@@ -128,7 +128,56 @@ class MainActivity : AppCompatActivity() {
                 bottomAppBar.visibility = View.VISIBLE
                 showLogoutMenu = true
 
-                supportActionBar?.title = "CFT"
+                navController.addOnDestinationChangedListener { _, destination, _ ->
+
+                    val isAuthScreen = destination.id == R.id.loginFragment
+                    val isHeadquarterForm = destination.id == R.id.headquarterFormFragment
+
+                    // Si cambias de pantalla, cierra el quick menu si está abierto
+                    quickMenuDialog?.dismiss()
+
+                    if (isAuthScreen) {
+                        bottomNav.visibility = View.GONE
+                        toolbar.visibility = View.GONE
+                        fab.visibility = View.GONE
+                        bottomAppBar.visibility = View.GONE
+                        showLogoutMenu = false
+                        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+
+                    } else {
+                        toolbar.visibility = View.VISIBLE
+                        showLogoutMenu = true
+
+                        when {
+                            isHeadquarterForm -> {
+                                // ✅ FORM SEDE
+                                bottomNav.visibility = View.GONE
+                                bottomAppBar.visibility = View.GONE
+                                fab.visibility = View.GONE
+
+                                supportActionBar?.title = "Nueva Sede"
+                                supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                            }
+
+                            else -> {
+                                // ✅ Pantallas normales (tabs y otras)
+                                bottomNav.visibility = View.VISIBLE
+                                bottomAppBar.visibility = View.VISIBLE
+                                fab.visibility = View.VISIBLE
+
+                                supportActionBar?.title = "CFT"
+
+                                if (destination.id in rootDestinations) {
+                                    supportActionBar?.setDisplayHomeAsUpEnabled(false)
+                                } else {
+                                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                                }
+                            }
+                        }
+                    }
+
+                    invalidateOptionsMenu()
+                }
 
                 // Si es un destino raíz (tabs): NO flecha
                 if (destination.id in rootDestinations) {

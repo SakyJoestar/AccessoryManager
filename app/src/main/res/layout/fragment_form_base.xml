@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/formScroll"
     android:layout_width="match_parent"
@@ -12,46 +13,33 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Título reutilizable -->
+        <!-- Título del formulario -->
         <TextView
             android:id="@+id/tvFormTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Formulario"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:paddingBottom="12dp" />
 
-        <!-- Card contenedor del form -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Contenedor de campos -->
+        <LinearLayout
+            android:id="@+id/formFieldsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardUseCompatPadding="true">
+            android:orientation="vertical"
+            android:layout_marginTop="24dp"/>
 
-            <LinearLayout
-                android:id="@+id/formFieldsContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- 👇 AQUÍ vas a incluir los campos específicos -->
-                <!-- EJEMPLO:
-                <include layout="@layout/form_headquarter_fields"/>
-                -->
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Botón guardar reutilizable -->
+        <!-- Botón Guardar -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
             android:text="Guardar"
-            android:layout_marginTop="16dp" />
+            android:layout_marginTop="24dp"
+            app:cornerRadius="12dp" />
 
     </LinearLayout>
 
