@@ -29,6 +29,9 @@
         android:name="com.example.accessoriesManager.view.fragment.RecordsFragment"
         android:label="RecordsFragment"
         tools:layout="@layout/fragment_records"/>
+        <action
+            android:id="@+id/action_recordsFragment_to_recordFormFragment"
+            app:destination="@id/recordsFragment"/>
     <fragment
         android:id="@+id/vehiclesFragment"
         android:name="com.example.accessoriesManager.view.fragment.VehiclesFragment"
