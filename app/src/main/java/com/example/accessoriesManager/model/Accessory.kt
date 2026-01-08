@@ -8,8 +8,6 @@ import java.util.Date
 
 @IgnoreExtraProperties
 data class Accessory(
-    @DocumentId
-    var id: String? = null,
     var name: String = "",
     var price: Double = 0.0,
     var createdAt: Any? = null
