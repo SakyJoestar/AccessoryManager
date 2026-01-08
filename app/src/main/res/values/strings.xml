@@ -31,4 +31,8 @@
     <string name="or_signup_email">o regístrate con Email</string>
     <string name="contrase_a_olvidada">contraseña olvidada</string>
     <string name="fab_add">boton para crear\n</string>
+    <string name="instalaciones">Instalaciones</string>
+    <string name="sede">Sede</string>
+    <string name="vehiculos">Vehículos</string>
+    <string name="accesorios">Accesorios</string>
 </resources>

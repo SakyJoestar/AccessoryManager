@@ -34,4 +34,9 @@
         android:name="com.example.accessoriesManager.view.fragment.VehiclesFragment"
         android:label="VehiclesFragment"
         tools:layout="@layout/fragment_vehicles"/>
+    <fragment
+        android:id="@+id/headquarterFormFragment"
+        android:name="com.example.accessoriesManager.form.HeadquarterFormFragment"
+        android:label="HeadquarterFormFragment"
+        tools:layout="@layout/fragment_form_base"/>
 </navigation>
