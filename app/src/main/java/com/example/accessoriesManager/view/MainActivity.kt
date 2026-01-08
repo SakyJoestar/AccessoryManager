@@ -7,6 +7,7 @@ import android.view.View
 import androidx.activity.addCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -90,23 +91,16 @@ class MainActivity : AppCompatActivity() {
             quickMenuDialog?.dismiss()
 
             when {
-                isAuthScreen -> {
-                    content.bottomNav.visibility = View.GONE
-                    binding.toolbar.visibility = View.GONE
-                    content.fabAdd.visibility = View.GONE
-                    content.bottomAppBar.visibility = View.GONE
 
-                    showLogoutMenu = false
+                isAuthScreen -> {
+                    hideMainUi(content)
+                    binding.toolbar.visibility = View.GONE
                     supportActionBar?.setDisplayHomeAsUpEnabled(false)
                 }
 
                 isHeadquarterForm -> {
+                    hideMainUi(content)
                     binding.toolbar.visibility = View.VISIBLE
-                    content.bottomNav.visibility = View.GONE
-                    content.bottomAppBar.visibility = View.GONE
-                    content.fabAdd.visibility = View.GONE
-
-                    showLogoutMenu = true
                     supportActionBar?.title = "Nueva Sede"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
                 }
@@ -141,12 +135,23 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         if (!showLogoutMenu) return false
+
+        menuInflater.inflate(R.menu.theme_toggle, menu)
         menuInflater.inflate(R.menu.logout, menu)
+
+
+        updateThemeIcon(menu.findItem(R.id.action_toggle_theme))
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+
+            R.id.action_toggle_theme -> {
+                toggleTheme()
+                true
+            }
+
             R.id.action_logout -> {
                 auth.signOut()
                 val navController = (supportFragmentManager
@@ -154,6 +159,7 @@ class MainActivity : AppCompatActivity() {
                 navController.navigate(R.id.loginFragment)
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -162,6 +168,28 @@ class MainActivity : AppCompatActivity() {
         val navController = (supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
         return navController.navigateUp() || super.onSupportNavigateUp()
+    }
+
+    private fun toggleTheme() {
+        val current = AppCompatDelegate.getDefaultNightMode()
+
+        if (current == AppCompatDelegate.MODE_NIGHT_YES) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        }
+
+        // Para que el icono se actualice de una
+        invalidateOptionsMenu()
+    }
+
+    private fun updateThemeIcon(item: MenuItem?) {
+        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+
+        item?.setIcon(
+            if (isDark) R.drawable.ic_dark_mode
+            else R.drawable.ic_light_mode
+        )
     }
 
     private fun showExitDialog() {
@@ -173,7 +201,17 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun toggleFabToClose(content: com.example.accesorymanager.databinding.ActivityMainBinding, isOpen: Boolean) {
+    private fun toggleFabToClose(
+        content: com.example.accesorymanager.databinding.ActivityMainBinding,
+        isOpen: Boolean
+    ) {
         content.fabAdd.setImageResource(if (isOpen) R.drawable.ic_close else R.drawable.ic_add_24)
+    }
+
+    private fun hideMainUi(content: com.example.accesorymanager.databinding.ActivityMainBinding) {
+        content.bottomNav.visibility = View.GONE
+        content.bottomAppBar.visibility = View.GONE
+        content.fabAdd.visibility = View.GONE
+        showLogoutMenu = false
     }
 }
