@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base night application theme. -->
     <style name="Theme.AccesoryManager" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_dark</item>
@@ -15,5 +15,12 @@
 
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- Color de la barra de navegación (zona de gestos) en tema OSCURO -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+
+        <!-- Como el fondo es OSCURO, iconos/píldora claros -->
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>

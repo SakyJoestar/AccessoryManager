@@ -1,3 +1,5 @@
+
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -68,6 +70,7 @@ dependencies {
     implementation(libs.google.firebase.auth.ktx)
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
+    implementation(libs.androidx.gridlayout)
 }
 
 kapt {

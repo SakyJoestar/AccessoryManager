@@ -33,8 +33,8 @@
     <color name="accent_soft">#FDE047</color>      <!-- Algo suave pero visible en dark -->
 
     <!-- FONDOS -->
-    <color name="background">#1F2937</color>       <!-- Fondo principal -->
-    <color name="surface">#111827</color>          <!-- Tarjetas -->
+    <color name="background">#111827</color>       <!-- Fondo principal -->
+    <color name="surface">#1F2937</color>          <!-- Tarjetas -->
     <color name="border_soft">#374151</color>      <!-- Bordes / divisores -->
 
     <!-- TEXTO -->

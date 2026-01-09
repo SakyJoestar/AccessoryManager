@@ -1,15 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/accessoriesFragment"
-        android:title="Accesorios" />
-    <item
-        android:id="@+id/headquartersFragment"
-        android:title="Sedes" />
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <item
         android:id="@+id/recordsFragment"
-        android:title="Registros" />
+        android:icon="@drawable/instalacion"
+        android:title="@string/instalaciones" />
+
+    <item
+        android:id="@+id/accessoriesFragment"
+        android:icon="@drawable/accesorio"
+        android:title="Accesorios" />
+
     <item
         android:id="@+id/vehiclesFragment"
+        android:icon="@drawable/car"
         android:title="Vehiculos" />
+
+    <item
+        android:id="@+id/headquartersFragment"
+        android:icon="@drawable/sede"
+        android:title="Sedes" />
+
 </menu>

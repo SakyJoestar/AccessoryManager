@@ -12,7 +12,7 @@
         tools:layout="@layout/fragment_login">
         <action
             android:id="@+id/action_loginFragment_to_accessoriesFragment"
-            app:destination="@id/accessoriesFragment" />
+            app:destination="@id/recordsFragment" />
     </fragment>
     <fragment
         android:id="@+id/accessoriesFragment"
@@ -29,9 +29,17 @@
         android:name="com.example.accessoriesManager.view.fragment.RecordsFragment"
         android:label="RecordsFragment"
         tools:layout="@layout/fragment_records"/>
+        <action
+            android:id="@+id/action_recordsFragment_to_recordFormFragment"
+            app:destination="@id/recordsFragment"/>
     <fragment
         android:id="@+id/vehiclesFragment"
         android:name="com.example.accessoriesManager.view.fragment.VehiclesFragment"
         android:label="VehiclesFragment"
         tools:layout="@layout/fragment_vehicles"/>
+    <fragment
+        android:id="@+id/headquarterFormFragment"
+        android:name="com.example.accessoriesManager.form.HeadquarterFormFragment"
+        android:label="HeadquarterFormFragment"
+        tools:layout="@layout/fragment_form_base"/>
 </navigation>

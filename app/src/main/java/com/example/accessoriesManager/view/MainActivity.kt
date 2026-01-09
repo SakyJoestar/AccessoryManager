@@ -7,26 +7,26 @@ import android.view.View
 import androidx.activity.addCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.findNavController
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.accesorymanager.R
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.example.accesorymanager.databinding.AppBarMainBinding
+import com.example.accessoriesManager.ui.common.showQuickMenu
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var bottomNav: BottomNavigationView
-    private lateinit var toolbar: Toolbar
-    private lateinit var auth: FirebaseAuth   // 👈 auth global
+    private lateinit var binding: AppBarMainBinding
+    private lateinit var auth: FirebaseAuth
 
-    // Flag para saber si mostramos el menú (logout) o no
-    private var showLogoutMenu: Boolean = true
+    private var showLogoutMenu = true
+    private var quickMenuDialog: AlertDialog? = null
 
-    // Destinos raíz (los de la bottom bar, donde NO queremos flecha)
     private val rootDestinations = setOf(
         R.id.accessoriesFragment,
         R.id.headquartersFragment,
@@ -36,132 +36,182 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Layout con AppBar + include de activity_main
-        setContentView(R.layout.app_bar_main)
 
-        auth = FirebaseAuth.getInstance()   // 👈 inicializamos FirebaseAuth
+        binding = AppBarMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        toolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(toolbar)
+        auth = FirebaseAuth.getInstance()
+        setSupportActionBar(binding.toolbar)
+
+        // 👇 Esto apunta a las vistas del activity_main.xml incluido
+        val content = binding.contentMain
 
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
 
-        // 👇 Configuramos el startDestination según si hay usuario logeado o no
         val navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
-        val currentUser = auth.currentUser
-
         navGraph.setStartDestination(
-            if (currentUser != null) {
-                // Ya está logeado → ir directo a Accessories
-                R.id.accessoriesFragment
-            } else {
-                // No hay sesión → ir al login
-                R.id.loginFragment
-            }
+            if (auth.currentUser != null) R.id.accessoriesFragment else R.id.loginFragment
         )
-
         navController.graph = navGraph
 
         setupActionBarWithNavController(navController)
 
-        bottomNav = findViewById(R.id.bottom_nav)
-        bottomNav.setupWithNavController(navController)
+        content.bottomNav.setupWithNavController(navController)
 
-        // Mostrar / ocultar Toolbar, BottomNav, menú y flecha según destino
+        content.fabAdd.setOnClickListener {
+            if (quickMenuDialog?.isShowing == true) {
+                quickMenuDialog?.dismiss()
+                return@setOnClickListener
+            }
+
+            val nc = findNavController(R.id.nav_host_fragment)
+            val bottomBarHeight = content.bottomAppBar.height
+
+            toggleFabToClose(content, true)
+
+            quickMenuDialog = showQuickMenu(
+                activity = this,
+                bottomBarHeightPx = bottomBarHeight,
+                onSedeClick = { nc.navigate(R.id.headquarterFormFragment) }
+            ).apply {
+                setOnDismissListener {
+                    toggleFabToClose(content, false)
+                    quickMenuDialog = null
+                }
+            }
+        }
+
         navController.addOnDestinationChangedListener { _, destination, _ ->
 
             val isAuthScreen = destination.id == R.id.loginFragment
+            val isHeadquarterForm = destination.id == R.id.headquarterFormFragment
 
-            if (isAuthScreen) {
-                // Login: sin toolbar, sin bottomNav, sin menú, sin flecha
-                bottomNav.visibility = View.GONE
-                toolbar.visibility = View.GONE
-                showLogoutMenu = false
-                supportActionBar?.setDisplayHomeAsUpEnabled(false)
-            } else {
-                // Resto de pantallas: toolbar y bottomNav visibles
-                bottomNav.visibility = View.VISIBLE
-                toolbar.visibility = View.VISIBLE
-                showLogoutMenu = true
+            quickMenuDialog?.dismiss()
 
-                supportActionBar?.title = "CFT"
+            when {
 
-                // Si es un destino raíz (tabs): NO flecha
-                if (destination.id in rootDestinations) {
+                isAuthScreen -> {
+                    hideMainUi(content)
+                    binding.toolbar.visibility = View.GONE
                     supportActionBar?.setDisplayHomeAsUpEnabled(false)
-                } else {
-                    // Pantallas internas: SÍ flecha
+                }
+
+                isHeadquarterForm -> {
+                    hideMainUi(content)
+                    binding.toolbar.visibility = View.VISIBLE
+                    supportActionBar?.title = "Nueva Sede"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                }
+
+                else -> {
+                    binding.toolbar.visibility = View.VISIBLE
+                    content.bottomNav.visibility = View.VISIBLE
+                    content.bottomAppBar.visibility = View.VISIBLE
+                    content.fabAdd.visibility = View.VISIBLE
+
+                    showLogoutMenu = true
+                    supportActionBar?.title = "CFT"
+                    supportActionBar?.setDisplayHomeAsUpEnabled(destination.id !in rootDestinations)
                 }
             }
 
-            // Forzar recreación del menú cuando cambia de destino
             invalidateOptionsMenu()
         }
 
-        // 🔹 Manejo GLOBAL del botón atrás
         onBackPressedDispatcher.addCallback(this) {
             val currentDestId = navController.currentDestination?.id
-
             when {
                 currentDestId == R.id.loginFragment -> {
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                 }
-                currentDestId in rootDestinations -> {
-                    showExitDialog()
-                }
-                else -> {
-                    navController.navigateUp()
-                }
+                currentDestId in rootDestinations -> showExitDialog()
+                else -> navController.navigateUp()
             }
         }
     }
 
-    // Inflar el menú SOLO cuando showLogoutMenu es true
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         if (!showLogoutMenu) return false
+
+        menuInflater.inflate(R.menu.theme_toggle, menu)
         menuInflater.inflate(R.menu.logout, menu)
+
+
+        updateThemeIcon(menu.findItem(R.id.action_toggle_theme))
         return true
     }
 
-    // Manejar clicks del menú
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_logout -> {
-                // Cerrar sesión en Firebase
-                auth.signOut()
 
-                // Navegar al loginFragment
-                val navHostFragment =
-                    supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-                val navController = navHostFragment.navController
-
-                navController.navigate(R.id.loginFragment)
-
+            R.id.action_toggle_theme -> {
+                toggleTheme()
                 true
             }
+
+            R.id.action_logout -> {
+                auth.signOut()
+                val navController = (supportFragmentManager
+                    .findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
+                navController.navigate(R.id.loginFragment)
+                true
+            }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        val navHostFragment =
-            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
+        val navController = (supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
         return navController.navigateUp() || super.onSupportNavigateUp()
+    }
+
+    private fun toggleTheme() {
+        val current = AppCompatDelegate.getDefaultNightMode()
+
+        if (current == AppCompatDelegate.MODE_NIGHT_YES) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        }
+
+        // Para que el icono se actualice de una
+        invalidateOptionsMenu()
+    }
+
+    private fun updateThemeIcon(item: MenuItem?) {
+        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+
+        item?.setIcon(
+            if (isDark) R.drawable.ic_dark_mode
+            else R.drawable.ic_light_mode
+        )
     }
 
     private fun showExitDialog() {
         AlertDialog.Builder(this)
             .setTitle("Salir de la aplicación")
             .setMessage("¿Deseas cerrar la app?")
-            .setPositiveButton("Sí") { _, _ ->
-                finish()
-            }
+            .setPositiveButton("Sí") { _, _ -> finish() }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun toggleFabToClose(
+        content: com.example.accesorymanager.databinding.ActivityMainBinding,
+        isOpen: Boolean
+    ) {
+        content.fabAdd.setImageResource(if (isOpen) R.drawable.ic_close else R.drawable.ic_add_24)
+    }
+
+    private fun hideMainUi(content: com.example.accesorymanager.databinding.ActivityMainBinding) {
+        content.bottomNav.visibility = View.GONE
+        content.bottomAppBar.visibility = View.GONE
+        content.fabAdd.visibility = View.GONE
+        showLogoutMenu = false
     }
 }

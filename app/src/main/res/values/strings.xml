@@ -15,7 +15,7 @@
     <string name="email">Email</string>
     <string name="accesory_n_manager">Accesory \n Manager</string>
     <string name="password">Password</string>
-    <string name="tema">Tema</string>
+    <string name="tema">Tema Oscuro</string>
     <string name="iniciar_sesion">Sign in</string>
     <string name="registrar">Registrar</string>
     <string name="image">image</string>
@@ -30,4 +30,9 @@
     <string name="or_login_email">o inicia sesión con Email</string>
     <string name="or_signup_email">o regístrate con Email</string>
     <string name="contrase_a_olvidada">contraseña olvidada</string>
+    <string name="fab_add">boton para crear\n</string>
+    <string name="instalaciones">Instalaciones</string>
+    <string name="sede">Sede</string>
+    <string name="vehiculos">Vehículos</string>
+    <string name="accesorios">Accesorios</string>
 </resources>
