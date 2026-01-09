@@ -1,4 +1,4 @@
-package com.example.accessoriesManager.ui.common
+package com.example.accessoriesManager.view
 
 import android.app.Activity
 import android.app.AlertDialog
@@ -36,7 +36,7 @@ fun showQuickMenu(
         ActionItem("Sede", R.drawable.sede, 0xFF8D6E63.toInt())
     )
 
-    val adapter = object : ArrayAdapter<ActionItem>(activity, R.layout.item_action, items) {
+    val adapter = object : android.widget.ArrayAdapter<ActionItem>(activity, R.layout.item_action, items) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             val view = convertView ?: LayoutInflater.from(context)
                 .inflate(R.layout.item_action, parent, false)

@@ -6,5 +6,6 @@
         android:id="@+id/action_logout"
         android:title="Cerrar sesión"
         android:icon="@drawable/exit_to_app"
-        app:showAsAction="always" />
+        app:showAsAction="always"
+        app:actionLayout="@layout/menu_item_centered"/>
 </menu>

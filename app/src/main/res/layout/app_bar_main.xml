@@ -3,29 +3,82 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="com.example.accessoriesManager.view.MainActivity">
-
-    <com.google.android.material.appbar.AppBarLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/Theme.AccesoryManager.AppBarOverlay">
+        android:layout_height="match_parent"
+        tools:context="com.example.accessoriesManager.view.MainActivity">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
+        <!-- APP BAR -->
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/Theme.AccesoryManager.PopupOverlay" />
+            android:layout_height="wrap_content">
 
-    </com.google.android.material.appbar.AppBarLayout>
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:background="?attr/colorPrimary"
+                android:gravity="center_vertical"
+                app:titleTextColor="@color/on_primary"
+                app:contentInsetStart="16dp"
+                app:contentInsetEnd="16dp">
 
-    <include
-        android:id="@+id/contentMain"
-        layout="@layout/activity_main" />
+                <!-- BACK custom (centrado verticalmente sí o sí) -->
+                <ImageButton
+                    android:id="@+id/btnBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="@color/on_primary"
+                    android:contentDescription="@string/back"
+                    android:visibility="gone"/>
+
+                <!-- Acciones a la derecha -->
+                <LinearLayout
+                    android:id="@+id/toolbarActions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="end|center_vertical"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:dividerPadding="8dp"
+                    android:showDividers="middle">
+
+                    <ImageButton
+                        android:id="@+id/btnTheme"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_dark_mode"
+                        app:tint="@color/on_primary"
+                        android:contentDescription="@string/toggle_theme" />
+
+                    <ImageButton
+                        android:id="@+id/btnLogout"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="12dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:padding="8dp"
+                        android:src="@drawable/exit_to_app"
+                        app:tint="@color/on_primary"
+                        android:contentDescription="@string/logout" />
+                </LinearLayout>
+
+            </com.google.android.material.appbar.MaterialToolbar>
 
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <!-- CONTENIDO -->
+        <include
+            android:id="@+id/contentMain"
+            layout="@layout/activity_main" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>
