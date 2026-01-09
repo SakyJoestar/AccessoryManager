@@ -1,29 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Paleta 1 -->
-
-<!--    &lt;!&ndash; PRIMARIO &ndash;&gt;-->
-<!--    <color name="primary">#0D6EFD</color>-->
-<!--    <color name="primary_light">#4793FF</color>-->
-<!--    <color name="primary_dark">#0A58CA</color>-->
-
-<!--    &lt;!&ndash; FONDOS &ndash;&gt;-->
-<!--    <color name="background">#F8FAFC</color>-->
-<!--    <color name="surface">#FFFFFF</color>-->
-<!--    <color name="border_soft">#E2E8F0</color>-->
-
-<!--    &lt;!&ndash; TEXTO &ndash;&gt;-->
-<!--    <color name="text_primary">#1E293B</color>-->
-<!--    <color name="text_secondary">#64748B</color>-->
-<!--    <color name="on_primary">#FFFFFF</color>-->
-
-<!--    &lt;!&ndash; ESTADOS &ndash;&gt;-->
-<!--    <color name="success">#22C55E</color>-->
-<!--    <color name="warning">#F59E0B</color>-->
-<!--    <color name="error">#EF4444</color>-->
-<!--    <color name="info">#3B82F6</color>-->
-
-    <!-- Paleta 2 -->
     <!-- PRIMARIO (botones, acciones) -->
     <color name="primary">#F59E0B</color>          <!-- Anaranjado cálido -->
     <color name="primary_light">#FDBA74</color>    <!-- Hover / estados suaves -->
