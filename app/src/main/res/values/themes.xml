@@ -18,9 +18,6 @@
         <!-- Color de la barra de navegación (zona de gestos) en tema CLARO -->
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:navigationBarColor">@color/surface</item>
-
-        <!-- Como el fondo es CLARO, iconos/píldora oscuros -->
-        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
     <style name="Theme.AccesoryManager.NoActionBar">
@@ -45,5 +42,6 @@
     <style name="images" >
         <item name="android:tint">@color/text_primary</item>
     </style>
+
 
 </resources>

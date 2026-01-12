@@ -20,7 +20,5 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:navigationBarColor">@color/surface</item>
 
-        <!-- Como el fondo es OSCURO, iconos/píldora claros -->
-        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>
