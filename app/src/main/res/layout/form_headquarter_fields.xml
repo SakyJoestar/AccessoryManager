@@ -21,7 +21,8 @@
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
             android:inputType="text"
-            android:paddingBottom="1dp"
+            android:paddingTop="32dp"
+            android:paddingBottom="2dp"
             />
 
     </com.google.android.material.textfield.TextInputLayout>
@@ -42,8 +43,9 @@
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
             android:inputType="number"
-            android:paddingBottom="1dp"
-            android:text="0"/>
+            android:text="0"
+            android:paddingTop="32dp"
+            android:paddingBottom="2dp"/>
 
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>
