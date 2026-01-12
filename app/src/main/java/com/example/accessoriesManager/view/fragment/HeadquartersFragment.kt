@@ -36,7 +36,11 @@ class HeadquartersFragment : Fragment() {
         adapter = HeadquarterAdapter(
             onView = { _ -> },
             onEdit = { _ -> },
-            onDelete = { hq -> hq.id?.let { viewModel.delete(it) } }
+            onDelete = { hq ->
+                hq.id?.let { id ->
+                    showDeleteDialog(id)
+                }
+            }
         )
 
         binding.recyclerHeadquarters.adapter = adapter
@@ -56,4 +60,23 @@ class HeadquartersFragment : Fragment() {
         _binding = null
         super.onDestroyView()
     }
+
+    private fun showDeleteDialog(id: String) {
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Eliminar sede")
+            .setMessage("¿Quieres eliminar la sede?")
+            .setPositiveButton("Sí") { _, _ ->
+                viewModel.delete(id)
+                showDeletedMessage()
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
+    private fun showDeletedMessage() {
+        com.google.android.material.snackbar.Snackbar
+            .make(binding.root, "Sede eliminada", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+            .show()
+    }
+
 }
