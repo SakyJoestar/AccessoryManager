@@ -1,30 +1,32 @@
 package com.example.accessoriesManager.view
 
 import android.os.Bundle
-import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.activity.addCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.findNavController
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.AppBarMainBinding
-import com.example.accessoriesManager.ui.common.showQuickMenu
+import com.example.accesorymanager.databinding.ActivityMainBinding
+import com.example.accessoriesManager.ui.QuickMenu
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.core.content.edit
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: AppBarMainBinding
+    private lateinit var content: ActivityMainBinding
+    private lateinit var navController: NavController
     private lateinit var auth: FirebaseAuth
 
-    private var showLogoutMenu = true
     private var quickMenuDialog: AlertDialog? = null
 
     private val rootDestinations = setOf(
@@ -38,158 +40,175 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         binding = AppBarMainBinding.inflate(layoutInflater)
+
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        val isDark = prefs.getBoolean("dark_mode", false)
+
+        AppCompatDelegate.setDefaultNightMode(
+            if (isDark) AppCompatDelegate.MODE_NIGHT_YES
+            else AppCompatDelegate.MODE_NIGHT_NO
+        )
+
         setContentView(binding.root)
 
+        content = binding.contentMain
         auth = FirebaseAuth.getInstance()
+
         setSupportActionBar(binding.toolbar)
 
-        // 👇 Esto apunta a las vistas del activity_main.xml incluido
-        val content = binding.contentMain
-
+        // ---------- NAV CONTROLLER ----------
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
+        navController = navHostFragment.navController
 
-        val navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
-        navGraph.setStartDestination(
-            if (auth.currentUser != null) R.id.accessoriesFragment else R.id.loginFragment
-        )
-        navController.graph = navGraph
+        if (savedInstanceState == null) {
+            val navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
+            navGraph.setStartDestination(
+                if (auth.currentUser != null)
+                    R.id.accessoriesFragment
+                else
+                    R.id.loginFragment
+            )
+            navController.graph = navGraph
+        }
 
         setupActionBarWithNavController(navController)
-
         content.bottomNav.setupWithNavController(navController)
 
+        // ---------- TOOLBAR ----------
+        binding.btnTheme.setOnClickListener { toggleTheme() }
+
+        binding.btnLogout.setOnClickListener {
+            showLogoutDialog()
+        }
+
+        updateThemeButtonIcon()
+
+        // ---------- FAB ----------
         content.fabAdd.setOnClickListener {
+
             if (quickMenuDialog?.isShowing == true) {
                 quickMenuDialog?.dismiss()
                 return@setOnClickListener
             }
 
-            val nc = findNavController(R.id.nav_host_fragment)
-            val bottomBarHeight = content.bottomAppBar.height
+            toggleFabToClose(true)
 
-            toggleFabToClose(content, true)
-
-            quickMenuDialog = showQuickMenu(
+            quickMenuDialog = QuickMenu.showQuickMenu(
                 activity = this,
-                bottomBarHeightPx = bottomBarHeight,
-                onSedeClick = { nc.navigate(R.id.headquarterFormFragment) }
+                bottomBarHeightPx = content.bottomAppBar.height,
+                onSedeClick = {
+                    navController.navigate(R.id.headquarterFormFragment)
+                }
             ).apply {
                 setOnDismissListener {
-                    toggleFabToClose(content, false)
+                    toggleFabToClose(false)
                     quickMenuDialog = null
                 }
             }
         }
 
+        // ---------- DESTINATION CHANGES ----------
         navController.addOnDestinationChangedListener { _, destination, _ ->
-
-            val isAuthScreen = destination.id == R.id.loginFragment
-            val isHeadquarterForm = destination.id == R.id.headquarterFormFragment
 
             quickMenuDialog?.dismiss()
 
-            when {
+            when (destination.id) {
 
-                isAuthScreen -> {
-                    hideMainUi(content)
-                    binding.toolbar.visibility = View.GONE
+                R.id.loginFragment -> {
+                    hideMainUi()
+                    binding.appBar.visibility = View.GONE
                     supportActionBar?.setDisplayHomeAsUpEnabled(false)
                 }
 
-                isHeadquarterForm -> {
-                    hideMainUi(content)
-                    binding.toolbar.visibility = View.VISIBLE
+                R.id.headquarterFormFragment -> {
+                    hideMainUi()
+                    binding.appBar.visibility = View.VISIBLE
                     supportActionBar?.title = "Nueva Sede"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
                 }
 
                 else -> {
-                    binding.toolbar.visibility = View.VISIBLE
+                    binding.appBar.visibility = View.VISIBLE
                     content.bottomNav.visibility = View.VISIBLE
                     content.bottomAppBar.visibility = View.VISIBLE
                     content.fabAdd.visibility = View.VISIBLE
 
-                    showLogoutMenu = true
-                    supportActionBar?.title = "CFT"
-                    supportActionBar?.setDisplayHomeAsUpEnabled(destination.id !in rootDestinations)
+                    supportActionBar?.title = "Car Facility Tracker"
+                    supportActionBar?.setDisplayHomeAsUpEnabled(
+                        destination.id !in rootDestinations
+                    )
                 }
             }
-
-            invalidateOptionsMenu()
         }
 
+        // ---------- BACK FÍSICO ----------
         onBackPressedDispatcher.addCallback(this) {
-            val currentDestId = navController.currentDestination?.id
-            when {
-                currentDestId == R.id.loginFragment -> {
+            when (navController.currentDestination?.id) {
+                R.id.loginFragment -> {
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                 }
-                currentDestId in rootDestinations -> showExitDialog()
+                in rootDestinations -> showExitDialog()
                 else -> navController.navigateUp()
             }
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        if (!showLogoutMenu) return false
-
-        menuInflater.inflate(R.menu.theme_toggle, menu)
-        menuInflater.inflate(R.menu.logout, menu)
-
-
-        updateThemeIcon(menu.findItem(R.id.action_toggle_theme))
-        return true
+    // ---------- FLECHA TOOLBAR ----------
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-
-            R.id.action_toggle_theme -> {
-                toggleTheme()
+            android.R.id.home -> {
+                navController.navigateUp()
                 true
             }
-
-            R.id.action_logout -> {
-                auth.signOut()
-                val navController = (supportFragmentManager
-                    .findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
-                navController.navigate(R.id.loginFragment)
-                true
-            }
-
             else -> super.onOptionsItemSelected(item)
         }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = (supportFragmentManager
-            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment).navController
-        return navController.navigateUp() || super.onSupportNavigateUp()
-    }
-
+    // ---------- THEME ----------
     private fun toggleTheme() {
         val current = AppCompatDelegate.getDefaultNightMode()
+        val newMode =
+            if (current == AppCompatDelegate.MODE_NIGHT_YES)
+                AppCompatDelegate.MODE_NIGHT_NO
+            else
+                AppCompatDelegate.MODE_NIGHT_YES
 
-        if (current == AppCompatDelegate.MODE_NIGHT_YES) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-        }
+        AppCompatDelegate.setDefaultNightMode(newMode)
 
-        // Para que el icono se actualice de una
-        invalidateOptionsMenu()
+        // ✅ Guardar preferencia
+        getSharedPreferences("settings", MODE_PRIVATE)
+            .edit {
+                putBoolean("dark_mode", newMode == AppCompatDelegate.MODE_NIGHT_YES)
+            }
+
+        updateThemeButtonIcon()
     }
 
-    private fun updateThemeIcon(item: MenuItem?) {
-        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
 
-        item?.setIcon(
-            if (isDark) R.drawable.ic_dark_mode
-            else R.drawable.ic_light_mode
+    private fun updateThemeButtonIcon() {
+        val isDark = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
+        binding.btnTheme.setImageResource(
+            if (isDark) R.drawable.ic_dark_mode else R.drawable.ic_light_mode
         )
+    }
+
+    // ---------- UI HELPERS ----------
+    private fun toggleFabToClose(isOpen: Boolean) {
+        content.fabAdd.setImageResource(
+            if (isOpen) R.drawable.ic_close else R.drawable.ic_add_24
+        )
+    }
+
+    private fun hideMainUi() {
+        content.bottomNav.visibility = View.GONE
+        content.bottomAppBar.visibility = View.GONE
+        content.fabAdd.visibility = View.GONE
     }
 
     private fun showExitDialog() {
@@ -201,17 +220,16 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun toggleFabToClose(
-        content: com.example.accesorymanager.databinding.ActivityMainBinding,
-        isOpen: Boolean
-    ) {
-        content.fabAdd.setImageResource(if (isOpen) R.drawable.ic_close else R.drawable.ic_add_24)
+    private fun showLogoutDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Cerrar sesión")
+            .setMessage("¿Quieres cerrar sesión?")
+            .setPositiveButton("Sí") { _, _ ->
+                auth.signOut()
+                navController.navigate(R.id.loginFragment)
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 
-    private fun hideMainUi(content: com.example.accesorymanager.databinding.ActivityMainBinding) {
-        content.bottomNav.visibility = View.GONE
-        content.bottomAppBar.visibility = View.GONE
-        content.fabAdd.visibility = View.GONE
-        showLogoutMenu = false
-    }
 }

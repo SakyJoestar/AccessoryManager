@@ -35,4 +35,7 @@
     <string name="sede">Sede</string>
     <string name="vehiculos">Vehículos</string>
     <string name="accesorios">Accesorios</string>
+    <string name="toggle_theme">cambiar tema</string>
+    <string name="logout">salir</string>
+    <string name="back">atras</string>
 </resources>

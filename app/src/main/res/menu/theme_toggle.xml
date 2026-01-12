@@ -5,6 +5,7 @@
         android:id="@+id/action_toggle_theme"
         android:icon="@drawable/ic_dark_mode"
         android:title="Cambiar tema"
-        app:showAsAction="always" />
+        app:showAsAction="always"
+        app:actionLayout="@layout/menu_item_centered"/>
 
 </menu>

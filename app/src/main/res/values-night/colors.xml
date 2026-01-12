@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- PRIMARIO -->
-    <color name="primary">#FBBF24</color>          <!-- Amarillo intenso -->
+    <color name="primary">#F59E0B</color>          <!-- Amarillo intenso -->
     <color name="primary_light">#FDE047</color>    <!-- Hover -->
     <color name="primary_dark">#D97706</color>     <!-- Mismo oscuro que light -->
 

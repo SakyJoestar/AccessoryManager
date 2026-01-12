@@ -5,6 +5,8 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 
 @IgnoreExtraProperties
 data class Headquarter(
+    @DocumentId
+    var id: String? = null,
     var name: String? = null,
     var increment: Int = 0
 )
