@@ -48,6 +48,8 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
             )
         }
 
+
+
         // ✅ Observar estado del VM y actualizar UI
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -76,6 +78,8 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
 
                         is HeadquarterFormViewModel.UiState.Success -> {
                             Snackbar.make(view, state.msg, Snackbar.LENGTH_SHORT).show()
+                            hideKeyboard()
+
                             etName.setText("")
                             etIncrement.setText("0")
                             etName.requestFocus()
@@ -93,5 +97,10 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
                 }
             }
         }
+    }
+
+    private fun hideKeyboard() {
+        val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(requireView().windowToken, 0)
     }
 }
