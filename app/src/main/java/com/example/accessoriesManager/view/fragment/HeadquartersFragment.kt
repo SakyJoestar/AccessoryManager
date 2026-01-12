@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentHeadquartersBinding
 import com.example.accessoriesManager.adapter.HeadquarterAdapter
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,7 +37,12 @@ class HeadquartersFragment : Fragment() {
 
         adapter = HeadquarterAdapter(
             onView = { _ -> },
-            onEdit = { _ -> },
+            onEdit = { hq ->
+                val bundle = Bundle().apply {
+                    putString("hqId", hq.id)
+                }
+                findNavController().navigate(R.id.action_headquartersFragment_to_headquarterFormFragment, bundle)
+            },
             onDelete = { hq ->
                 hq.id?.let { id ->
                     showDeleteDialog(id)
@@ -75,7 +82,7 @@ class HeadquartersFragment : Fragment() {
 
     private fun showDeletedMessage() {
         com.google.android.material.snackbar.Snackbar
-            .make(binding.root, "Sede eliminada", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+            .make(binding.root, "Sede eliminada ✅", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
             .show()
     }
 

@@ -78,7 +78,9 @@
         <!-- CONTENIDO -->
         <include
             android:id="@+id/contentMain"
-            layout="@layout/activity_main" />
+            layout="@layout/activity_main"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

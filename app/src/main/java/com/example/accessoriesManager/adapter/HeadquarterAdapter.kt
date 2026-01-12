@@ -30,15 +30,15 @@ class HeadquarterAdapter(
     inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvName = itemView.findViewById<TextView>(R.id.tvHeadquarterName)
         private val tvInc = itemView.findViewById<TextView>(R.id.tvIncrement)
-        private val btnView = itemView.findViewById<ImageButton>(R.id.btnView)
+//        private val btnView = itemView.findViewById<ImageButton>(R.id.btnView)
         private val btnEdit = itemView.findViewById<ImageButton>(R.id.btnEdit)
         private val btnDelete = itemView.findViewById<ImageButton>(R.id.btnDelete)
 
         fun bind(item: Headquarter) {
             tvName.text = item.name
             tvInc.text = "Incremento: ${item.increment}"
-
-            btnView.setOnClickListener { onView(item) }
+            itemView.setOnClickListener { onEdit(item) }
+//          btnView.setOnClickListener { onView(item) }
             btnEdit.setOnClickListener { onEdit(item) }
             btnDelete.setOnClickListener { onDelete(item) }
         }

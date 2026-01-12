@@ -24,6 +24,9 @@
         android:name="com.example.accessoriesManager.view.fragment.HeadquartersFragment"
         android:label="HeadquartersFragment"
         tools:layout="@layout/fragment_headquarters"/>
+        <action
+            android:id="@+id/action_headquartersFragment_to_headquarterFormFragment"
+            app:destination="@id/headquarterFormFragment" />
     <fragment
         android:id="@+id/recordsFragment"
         android:name="com.example.accessoriesManager.view.fragment.RecordsFragment"
@@ -40,6 +43,11 @@
     <fragment
         android:id="@+id/headquarterFormFragment"
         android:name="com.example.accessoriesManager.form.HeadquarterFormFragment"
-        android:label="HeadquarterFormFragment"
-        tools:layout="@layout/fragment_form_base"/>
+        android:label="Formulario Sede">
+
+        <argument
+            android:name="hqId"
+            app:argType="string"
+            app:nullable="true" />
+    </fragment>
 </navigation>

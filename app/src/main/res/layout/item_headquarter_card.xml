@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -9,7 +10,10 @@
     app:cardElevation="2dp"
     app:cardBackgroundColor="@color/surface"
     app:strokeColor="@color/border_soft"
-    app:strokeWidth="1dp">
+    app:strokeWidth="1dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -55,16 +59,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent">
-
-            <ImageButton
-                android:id="@+id/btnView"
-                android:paddingHorizontal="16dp"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Ver"
-                app:srcCompat="@drawable/ic_eye"
-                app:tint="@color/info" />
 
             <ImageButton
                 android:id="@+id/btnEdit"

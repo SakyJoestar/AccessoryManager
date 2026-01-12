@@ -48,4 +48,9 @@ class HeadquarterRepository @Inject constructor(
     suspend fun deleteHeadquarter(id: String) {
         firestore.collection("headquarters").document(id).delete().await()
     }
+
+    suspend fun getById(id: String): Headquarter? {
+        val doc = firestore.collection("headquarters").document(id).get().await()
+        return doc.toObject(Headquarter::class.java)?.apply { this.id = doc.id }
+    }
 }
