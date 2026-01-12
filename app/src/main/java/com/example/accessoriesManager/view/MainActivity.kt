@@ -79,8 +79,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnTheme.setOnClickListener { toggleTheme() }
 
         binding.btnLogout.setOnClickListener {
-            auth.signOut()
-            navController.navigate(R.id.loginFragment)
+            showLogoutDialog()
         }
 
         updateThemeButtonIcon()
@@ -219,4 +218,17 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancelar", null)
             .show()
     }
+
+    private fun showLogoutDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Cerrar sesión")
+            .setMessage("¿Quieres cerrar sesión?")
+            .setPositiveButton("Sí") { _, _ ->
+                auth.signOut()
+                navController.navigate(R.id.loginFragment)
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
 }
