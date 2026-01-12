@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentFormBaseBinding
+import com.example.accessoriesManager.ui.showSnack
 import com.example.accessoriesManager.viewmodel.HeadquarterFormViewModel
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
@@ -84,10 +85,10 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
                     incrementRaw = incRaw,
                     onOk = {
                         hideKeyboard()
-                        Snackbar.make(view, "Sede actualizada correctamente ✅", Snackbar.LENGTH_SHORT).show()
+                        showSnack("Sede actualizada")
                     },
                     onFail = { msg ->
-                        Snackbar.make(view, msg, Snackbar.LENGTH_LONG).show()
+                       showSnack(msg)
                     }
                 )
             } else {
@@ -127,7 +128,7 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
                         is HeadquarterFormViewModel.UiState.Success -> {
                             // Solo limpiar si era creación
                             if (!isEditMode) {
-                                Snackbar.make(view, state.msg, Snackbar.LENGTH_SHORT).show()
+                                showSnack(state.msg)
                                 hideKeyboard()
 
                                 etName.setText("")
@@ -140,7 +141,7 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
                         }
 
                         is HeadquarterFormViewModel.UiState.Error -> {
-                            Snackbar.make(view, state.msg, Snackbar.LENGTH_LONG).show()
+                            showSnack(state.msg)
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
@@ -177,7 +178,7 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
             .get()
             .addOnSuccessListener { doc ->
                 if (!doc.exists()) {
-                    Snackbar.make(requireView(), "No se encontró la sede", Snackbar.LENGTH_LONG).show()
+                    showSnack("No se encontró la sede")
                     return@addOnSuccessListener
                 }
 
@@ -188,7 +189,7 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
                 etIncrement.setText(inc)
             }
             .addOnFailureListener {
-                Snackbar.make(requireView(), "Error cargando sede", Snackbar.LENGTH_LONG).show()
+                showSnack("No se pudo cargar la sede: ${it.message ?: "error"}")
             }
     }
 

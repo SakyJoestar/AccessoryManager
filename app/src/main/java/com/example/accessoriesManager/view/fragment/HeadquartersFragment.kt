@@ -1,5 +1,6 @@
 package com.example.accessoriesManager.view.fragment
 
+import android.R.id.content
 import com.example.accessoriesManager.viewmodel.HeadquarterViewModel
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,6 +13,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentHeadquartersBinding
 import com.example.accessoriesManager.adapter.HeadquarterAdapter
+import com.example.accessoriesManager.ui.showSnack
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -81,9 +83,7 @@ class HeadquartersFragment : Fragment() {
     }
 
     private fun showDeletedMessage() {
-        com.google.android.material.snackbar.Snackbar
-            .make(binding.root, "Sede eliminada ✅", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
-            .show()
+        showSnack("Sede eliminada ✅")
     }
 
 }

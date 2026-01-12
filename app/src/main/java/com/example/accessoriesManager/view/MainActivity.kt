@@ -14,7 +14,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.AppBarMainBinding
 import com.example.accesorymanager.databinding.ActivityMainBinding
-import com.example.accessoriesManager.view.showQuickMenu
+import com.example.accessoriesManager.ui.QuickMenu
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.core.content.edit
@@ -86,6 +86,7 @@ class MainActivity : AppCompatActivity() {
 
         // ---------- FAB ----------
         content.fabAdd.setOnClickListener {
+
             if (quickMenuDialog?.isShowing == true) {
                 quickMenuDialog?.dismiss()
                 return@setOnClickListener
@@ -93,7 +94,7 @@ class MainActivity : AppCompatActivity() {
 
             toggleFabToClose(true)
 
-            quickMenuDialog = showQuickMenu(
+            quickMenuDialog = QuickMenu.showQuickMenu(
                 activity = this,
                 bottomBarHeightPx = content.bottomAppBar.height,
                 onSedeClick = {
