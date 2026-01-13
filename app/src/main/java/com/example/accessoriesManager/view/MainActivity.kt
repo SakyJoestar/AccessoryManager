@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                     navController.navigate(R.id.vehicleFormFragment)
                 },
                 onAccessoryClick = {
-//                    navController.navigate(R.id.accessoryFormFragment)
+                    navController.navigate(R.id.accessoryFormFragment)
                 },
                 onInstallationClick = {
 //                    navController.navigate(R.id.recordFormFragment)
