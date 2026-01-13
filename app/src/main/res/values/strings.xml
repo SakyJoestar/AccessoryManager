@@ -40,4 +40,9 @@
     <string name="back">atras</string>
     <string name="menu_icon">menu icon</string>
     <string name="menu_item_centered_icon">menu item centered icon</string>
+    <string name="incremento">Incremento</string>
+    <string name="modelo">Modelo</string>
+    <string name="marca">Marca</string>
+    <string name="editar_vehiculo">Editar vehículo</string>
+    <string name="eliminar_vehiculo">Eliminar vehículo</string>
 </resources>

@@ -23,7 +23,11 @@
         android:id="@+id/headquartersFragment"
         android:name="com.example.accessoriesManager.view.fragment.HeadquartersFragment"
         android:label="HeadquartersFragment"
-        tools:layout="@layout/fragment_headquarters"/>
+        tools:layout="@layout/fragment_headquarters">
+        <action
+            android:id="@+id/action_headquartersFragment_to_headquarterFormFragment2"
+            app:destination="@id/headquarterFormFragment" />
+    </fragment>
         <action
             android:id="@+id/action_headquartersFragment_to_headquarterFormFragment"
             app:destination="@id/headquarterFormFragment" />
@@ -39,7 +43,11 @@
         android:id="@+id/vehiclesFragment"
         android:name="com.example.accessoriesManager.view.fragment.VehiclesFragment"
         android:label="VehiclesFragment"
-        tools:layout="@layout/fragment_vehicles"/>
+        tools:layout="@layout/fragment_vehicles">
+        <action
+            android:id="@+id/action_vehiclesFragment_to_vehicleFormFragment"
+            app:destination="@id/vehicleFormFragment" />
+    </fragment>
     <fragment
         android:id="@+id/headquarterFormFragment"
         android:name="com.example.accessoriesManager.form.HeadquarterFormFragment"
@@ -50,4 +58,8 @@
             app:argType="string"
             app:nullable="true" />
     </fragment>
+    <fragment
+        android:id="@+id/vehicleFormFragment"
+        android:name="com.example.accessoriesManager.form.VehicleFormFragment"
+        android:label="VehicleFormFragment" />
 </navigation>

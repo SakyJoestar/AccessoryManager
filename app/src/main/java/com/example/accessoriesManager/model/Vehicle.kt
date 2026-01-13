@@ -8,7 +8,7 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 data class Vehicle(
     @DocumentId
     var id: String? = null,
-    var modelo: String? = null,
+    var model: String? = null,
     var make: String? = null,
     var createdAt: Timestamp? = null,
     var updatedAt: Timestamp? = null

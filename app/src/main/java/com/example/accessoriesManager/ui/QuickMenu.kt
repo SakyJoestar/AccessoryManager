@@ -26,7 +26,10 @@ object QuickMenu {
     fun showQuickMenu(
         activity: Activity,
         bottomBarHeightPx: Int,
-        onSedeClick: () -> Unit = {}
+        onSedeClick: () -> Unit = {},
+        onVehicleClick: () -> Unit = {},
+        onAccessoryClick: () -> Unit = {},
+        onInstallationClick: () -> Unit = {}
     ): AlertDialog {
 
         val items = listOf(
@@ -68,6 +71,9 @@ object QuickMenu {
 
                         when (position) {
                             3 -> onSedeClick()
+                            2 -> onVehicleClick()
+                            1 -> onAccessoryClick()
+                            0 -> onInstallationClick()
                         }
                     }, 180)
                 }
