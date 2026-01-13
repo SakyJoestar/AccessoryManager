@@ -38,4 +38,6 @@
     <string name="toggle_theme">cambiar tema</string>
     <string name="logout">salir</string>
     <string name="back">atras</string>
+    <string name="menu_icon">menu icon</string>
+    <string name="menu_item_centered_icon">menu item centered icon</string>
 </resources>

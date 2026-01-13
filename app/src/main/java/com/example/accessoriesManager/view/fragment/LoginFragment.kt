@@ -25,6 +25,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import androidx.core.content.edit
 
 @AndroidEntryPoint
 class LoginFragment : Fragment() {
@@ -164,7 +165,7 @@ class LoginFragment : Fragment() {
         swMode.isChecked = isDarkSaved
 
         swMode.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("dark_mode", isChecked).apply()
+            prefs.edit { putBoolean("dark_mode", isChecked) }
             if (isChecked) enableDarkMode() else disableDarkMode()
         }
     }

@@ -43,7 +43,8 @@ class AccessoryViewModel @Inject constructor(
         viewModelScope.launch {
             _progressState.value = true
             try {
-                accessory.createdAt = FieldValue.serverTimestamp()
+                accessory.createdAt = null
+                accessory.updatedAt = null
                 repository.saveAccessory(accessory)
                 getAccessoriesList()
                 _progressState.value = false

@@ -23,7 +23,8 @@
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:layout_gravity="center"
-            app:tint="@color/surface" />
+            app:tint="@color/surface"
+            android:contentDescription="@string/menu_icon"/>
     </FrameLayout>
 
     <TextView

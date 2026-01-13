@@ -2,18 +2,18 @@ package com.example.accessoriesManager.form
 
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentFormBaseBinding
 import com.example.accessoriesManager.ui.showSnack
 import com.example.accessoriesManager.viewmodel.HeadquarterFormViewModel
-import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
-import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -29,9 +29,6 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
 
     companion object {
         private const val ARG_ID = "hqId"
-        private const val COLLECTION = "headquarters"
-        private const val FIELD_NAME = "name"
-        private const val FIELD_INCREMENT = "increment"
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -46,8 +43,10 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
             true
         )
 
-        val etName = binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etName)
-        val etIncrement = binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etIncrement)
+        val etName =
+            binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etName)
+        val etIncrement =
+            binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etIncrement)
 
         // Defaults
         etIncrement.setText("0")
@@ -57,51 +56,32 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
         val isEditMode = !editId.isNullOrBlank()
 
         setTitles(isEditMode)
+        binding.btnSave.text = if (isEditMode) "Actualizar" else "Guardar"
 
+        // Cargar si es edición (desde VM)
         if (isEditMode) {
-            loadFromFirestore(editId!!, etName, etIncrement)
-            binding.btnSave.text = "Actualizar"
-        } else {
-            binding.btnSave.text = "Guardar"
+            viewModel.loadById(editId!!)
         }
 
         val normalText = binding.btnSave.text
 
+        // Guardar / Actualizar (mismo flujo)
         binding.btnSave.setOnClickListener {
             etName.error = null
-
-            // Si estás editando, idealmente deberías tener viewModel.update(...)
-            // Como tu VM ya tiene save(...), aquí te dejo dos caminos:
-            // 1) Si tu VM soporta actualizar por id, úsalo.
-            // 2) Si no, actualizamos directo con Firestore (simple y funciona).
 
             val name = etName.text?.toString().orEmpty()
             val incRaw = etIncrement.text?.toString()
 
-            if (isEditMode) {
-                updateInFirestore(
-                    id = editId!!,
-                    nameRaw = name,
-                    incrementRaw = incRaw,
-                    onOk = {
-                        hideKeyboard()
-                        showSnack("Sede actualizada")
-                    },
-                    onFail = { msg ->
-                       showSnack(msg)
-                    }
-                )
-            } else {
-                viewModel.save(
-                    nameRaw = name,
-                    incrementRaw = incRaw
-                )
-            }
+            viewModel.save(
+                id = editId,
+                nameRaw = name,
+                incrementRaw = incRaw
+            )
         }
 
-        // Estado VM (solo afecta el flujo de CREAR)
+        // Estado VM (crear + editar)
         viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     when (state) {
                         is HeadquarterFormViewModel.UiState.Idle -> {
@@ -116,7 +96,7 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
 
                         is HeadquarterFormViewModel.UiState.Saving -> {
                             binding.btnSave.isEnabled = false
-                            binding.btnSave.text = "Guardando..."
+                            binding.btnSave.text = if (isEditMode) "Actualizando..." else "Guardando..."
                         }
 
                         is HeadquarterFormViewModel.UiState.NameError -> {
@@ -126,11 +106,11 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
                         }
 
                         is HeadquarterFormViewModel.UiState.Success -> {
+                            showSnack(state.msg)
+                            hideKeyboard()
+
                             // Solo limpiar si era creación
                             if (!isEditMode) {
-                                showSnack(state.msg)
-                                hideKeyboard()
-
                                 etName.setText("")
                                 etIncrement.setText("0")
                                 etName.requestFocus()
@@ -150,12 +130,14 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
             }
         }
 
-        // Si tu VM ya expone form (opcional), lo dejamos por si lo usas
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.form.collect { hq ->
-                hq?.let {
-                    etName.setText(it.name)
-                    etIncrement.setText(it.increment.toString())
+        // Cuando cargue el form (modo edición), rellena inputs
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.form.collect { hq ->
+                    hq?.let {
+                        etName.setText(it.name)
+                        etIncrement.setText(it.increment.toString())
+                    }
                 }
             }
         }
@@ -167,75 +149,9 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
             if (isEdit) "Editar sede" else "Nueva sede"
     }
 
-    private fun loadFromFirestore(
-        id: String,
-        etName: TextInputEditText,
-        etIncrement: TextInputEditText
-    ) {
-        FirebaseFirestore.getInstance()
-            .collection(COLLECTION)
-            .document(id)
-            .get()
-            .addOnSuccessListener { doc ->
-                if (!doc.exists()) {
-                    showSnack("No se encontró la sede")
-                    return@addOnSuccessListener
-                }
-
-                val name = doc.getString(FIELD_NAME).orEmpty()
-                val inc = (doc.getLong(FIELD_INCREMENT) ?: 0L).toString()
-
-                etName.setText(name)
-                etIncrement.setText(inc)
-            }
-            .addOnFailureListener {
-                showSnack("No se pudo cargar la sede: ${it.message ?: "error"}")
-            }
-    }
-
-    private fun updateInFirestore(
-        id: String,
-        nameRaw: String,
-        incrementRaw: String?,
-        onOk: () -> Unit,
-        onFail: (String) -> Unit
-    ) {
-        val name = nameRaw.trim()
-        if (name.isEmpty()) {
-            onFail("El nombre no puede estar vacío")
-            return
-        }
-
-        val inc = incrementRaw?.trim().takeUnless { it.isNullOrEmpty() } ?: "0"
-        val incInt = inc.toIntOrNull() ?: 0
-
-        binding.btnSave.isEnabled = false
-        binding.btnSave.text = "Actualizando..."
-
-        FirebaseFirestore.getInstance()
-            .collection(COLLECTION)
-            .document(id)
-            .update(
-                mapOf(
-                    FIELD_NAME to name,
-                    FIELD_INCREMENT to incInt
-                )
-            )
-            .addOnSuccessListener {
-                binding.btnSave.isEnabled = true
-                binding.btnSave.text = "Actualizar"
-                onOk()
-            }
-            .addOnFailureListener { e ->
-                binding.btnSave.isEnabled = true
-                binding.btnSave.text = "Actualizar"
-                onFail("No se pudo actualizar: ${e.message ?: "error"}")
-            }
-    }
-
     private fun hideKeyboard() {
         val imm =
-            requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(requireView().windowToken, 0)
     }
 
