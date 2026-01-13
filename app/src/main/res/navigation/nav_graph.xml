@@ -18,7 +18,11 @@
         android:id="@+id/accessoriesFragment"
         android:name="com.example.accessoriesManager.view.fragment.AccessoriesFragment"
         android:label="AccessoriesFragment"
-        tools:layout="@layout/fragment_accessories"/>
+        tools:layout="@layout/fragment_accessories">
+        <action
+            android:id="@+id/action_accessoriesFragment_to_accessoryFormFragment"
+            app:destination="@id/accessoryFormFragment" />
+    </fragment>
     <fragment
         android:id="@+id/headquartersFragment"
         android:name="com.example.accessoriesManager.view.fragment.HeadquartersFragment"
@@ -51,7 +55,8 @@
     <fragment
         android:id="@+id/headquarterFormFragment"
         android:name="com.example.accessoriesManager.form.HeadquarterFormFragment"
-        android:label="Formulario Sede">
+        android:label="Formulario Sede"
+        tools:layout="@layout/form_headquarter_fields">
 
         <argument
             android:name="hqId"
@@ -61,5 +66,11 @@
     <fragment
         android:id="@+id/vehicleFormFragment"
         android:name="com.example.accessoriesManager.form.VehicleFormFragment"
-        android:label="VehicleFormFragment" />
+        android:label="VehicleFormFragment"
+        tools:layout="@layout/form_vehicle_fields"/>
+    <fragment
+        android:id="@+id/accessoryFormFragment"
+        android:name="com.example.accessoriesManager.form.AccessoryFormFragment"
+        android:label="AccessoryFormFragment"
+        tools:layout="@layout/form_accessory_fields"/>
 </navigation>

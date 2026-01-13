@@ -1,83 +1,52 @@
 package com.example.accessoriesManager.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.accessoriesManager.model.Accessory
 import com.example.accessoriesManager.repository.AccessoryRepository
+import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.google.firebase.firestore.FieldValue
 
 @HiltViewModel
 class AccessoryViewModel @Inject constructor(
     private val repository: AccessoryRepository
 ) : ViewModel() {
 
-    private val _accessoriesList = MutableLiveData<MutableList<Accessory>>()
-    val accessoriesList: LiveData<MutableList<Accessory>> get() = _accessoriesList
+    private val _items = MutableStateFlow<List<Accessory>>(emptyList())
+    val items: StateFlow<List<Accessory>> = _items
 
-    private val _progressState = MutableLiveData(false)
-    val progressState: LiveData<Boolean> get() = _progressState
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
 
-    private fun getAccessoriesList() {
+    private var listener: ListenerRegistration? = null
+
+    fun startListening() {
+        if (listener != null) return
+
+        listener = repository.listenAccessories(
+            onChange = { _items.value = it },
+            onError = { _error.value = it.message }
+        )
+    }
+
+    fun stopListening() {
+        listener?.remove()
+        listener = null
+    }
+
+    fun delete(id: String) {
         viewModelScope.launch {
-            _progressState.value = true
-            try {
-                val result = repository.getAccessoriesList()
-               if(result.isSuccess) {
-                   _accessoriesList.value = result.getOrElse { mutableListOf() }
-               } else {
-                   _accessoriesList.value = mutableListOf()
-               }
-                _progressState.value = false
-            } catch (e: Exception) {
-                _progressState.value = false
-            }
+            runCatching { repository.deleteAccessory(id) }
+                .onFailure { _error.value = it.message }
         }
     }
 
-    fun saveAccessory(accessory: Accessory) {
-        viewModelScope.launch {
-            _progressState.value = true
-            try {
-                accessory.createdAt = null
-                accessory.updatedAt = null
-                repository.saveAccessory(accessory)
-                getAccessoriesList()
-                _progressState.value = false
-            } catch (e: Exception) {
-                _progressState.value = false
-            }
-            _progressState.value = false
-        }
-    }
-
-    fun deleteAccessory(accessory: Accessory) {
-        viewModelScope.launch {
-            _progressState.value = true
-            try {
-                repository.deleteAccessory(accessory)
-                getAccessoriesList()
-                _progressState.value = false
-            } catch (e: Exception) {
-                _progressState.value = false
-            }
-        }
-    }
-
-    fun updateAccessory(accessory: Accessory) {
-        viewModelScope.launch {
-            _progressState.value = true
-            try {
-                repository.updateAccessory(accessory)
-                getAccessoriesList()
-                _progressState.value = false
-            } catch (e: Exception) {
-                _progressState.value = false
-            }
-        }
+    override fun onCleared() {
+        stopListening()
+        super.onCleared()
     }
 }

@@ -9,7 +9,7 @@ data class Accessory(
     @DocumentId
     var id: String = "",
     var name: String = "",
-    var price: Double = 0.0,
+    var price: Long = 0L,
     var createdAt: Timestamp? = null,
     var updatedAt: Timestamp? = null
 )

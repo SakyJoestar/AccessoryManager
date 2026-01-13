@@ -45,4 +45,10 @@
     <string name="marca">Marca</string>
     <string name="editar_vehiculo">Editar vehículo</string>
     <string name="eliminar_vehiculo">Eliminar vehículo</string>
+    <string name="editar_accesorio">Editar accesorio</string>
+    <string name="eliminar_accesorio">Eliminar accesorio</string>
+    <string name="nombre_del_accesorio">Nombre del accesorio</string>
+    <string name="precio">Precio</string>
+    <string name="_50_000">$ 50.000</string>
+    <string name="alarma">Alarma</string>
 </resources>
