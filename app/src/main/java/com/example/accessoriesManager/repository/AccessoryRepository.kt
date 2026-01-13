@@ -1,96 +1,114 @@
 package com.example.accessoriesManager.repository
 
-import com.example.accessoriesManager.data.AccessoryDao
 import com.example.accessoriesManager.model.Accessory
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class AccessoryRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
 ) {
-    private fun getCurrentUserId(): String? {
-        return FirebaseAuth.getInstance().currentUser?.uid
+
+    // ✅ Ruta por usuario: /users/{uid}/accessories
+    private fun accessoriesRef() =
+        firestore.collection("users")
+            .document(requireUid())
+            .collection("accessories")
+
+    private fun requireUid(): String =
+        auth.currentUser?.uid
+            ?: throw IllegalStateException("No hay usuario autenticado")
+
+    suspend fun existsByName(name: String): Boolean {
+        val snap = accessoriesRef()
+            .whereEqualTo("name", name)
+            .limit(1)
+            .get()
+            .await()
+
+        return !snap.isEmpty
     }
 
-    suspend fun saveAccessory(accessory: Accessory): Result<Unit> {
-        val userId = getCurrentUserId()
-        return userId?.let {
-            try {
-                firestore
-                    .collection("users")
-                    .document(it)
-                    .collection("accessories")
-                    .add(accessory)
-                    .await()
+    suspend fun add(accessory: Accessory) {
+        val data = hashMapOf(
+            "name" to accessory.name,
+            "price" to accessory.price, // Long
+            "createdAt" to FieldValue.serverTimestamp(),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
 
-                Result.success(Unit)
-            } catch (e: Exception) {
-                Result.failure(Exception("Error saving accessory: ${e.message}"))
-            }
-        } ?: Result.failure(Exception("User not authenticated"))
+        accessoriesRef()
+            .add(data)
+            .await()
     }
 
-    suspend fun updateAccessory(accessory: Accessory): Result<Unit> {
-        val userId = getCurrentUserId()
-        return userId?.let {
-            accessory.id?.let { id ->
-                try {
-                    firestore.collection("users")
-                        .document(it)
-                        .collection("accessories")
-                        .document(id)
-                        .set(accessory)
-                        .await()
+    suspend fun update(id: String, accessory: Accessory) {
+        val updates = hashMapOf(
+            "name" to accessory.name,
+            "price" to accessory.price, // Long
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
 
-                    Result.success(Unit)
-                } catch (e: Exception) {
-                    Result.failure(Exception("Error updating accessory: ${e.message}"))
+        accessoriesRef()
+            .document(id)
+            .update(updates)
+            .await()
+    }
+
+    fun listenAccessories(
+        onChange: (List<Accessory>) -> Unit,
+        onError: (Exception) -> Unit
+    ): ListenerRegistration {
+        return accessoriesRef()
+            .orderBy("name")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    onError(e)
+                    return@addSnapshotListener
                 }
-            } ?: Result.failure(Exception("Accessory ID is null"))
-        } ?: Result.failure(Exception("User not authenticated"))
-    }
 
-    suspend fun deleteAccessory(accessory: Accessory): Result<Unit> {
-        val userId = getCurrentUserId()
-        return userId?.let {
-            accessory.id?.let { id ->
-                try {
-                    firestore
-                        .collection("users")
-                        .document(it)
-                        .collection("accessories")
-                        .document(id)
-                        .delete()
-                        .await()
+                val list = snapshot
+                    ?.documents
+                    ?.mapNotNull { doc ->
+                        doc.toObject(Accessory::class.java)?.apply {
+                            this.id = doc.id
+                        }
+                    }
+                    .orEmpty()
 
-                    Result.success(Unit)
-                } catch (e: Exception) {
-                    Result.failure(Exception("Error deleting accessory: ${e.message}"))
-                }
-            } ?: Result.failure(Exception("Accessory ID is null"))
-        } ?: Result.failure(Exception("User not authenticated"))
-    }
-
-    suspend fun getAccessoriesList(): Result<MutableList<Accessory>> {
-        val userId = getCurrentUserId()
-        return userId?.let {
-            try {
-                val snapshot = firestore
-                    .collection("users")
-                    .document(it)
-                    .collection("accessories")
-                    .orderBy("createdAt", Query.Direction.DESCENDING)
-                    .get()
-                    .await()
-
-                val accessories = snapshot.toObjects(Accessory::class.java)
-                Result.success(accessories)
-            } catch (e: Exception) {
-                Result.failure(Exception("Error getting accessories: ${e.message}"))
+                onChange(list)
             }
-        } ?: Result.failure(Exception("User not authenticated"))
+    }
+
+    suspend fun deleteAccessory(id: String) {
+        accessoriesRef()
+            .document(id)
+            .delete()
+            .await()
+    }
+
+    suspend fun getById(id: String): Accessory? {
+        val doc = accessoriesRef()
+            .document(id)
+            .get()
+            .await()
+
+        return doc.toObject(Accessory::class.java)?.apply {
+            this.id = doc.id
+        }
+    }
+
+    suspend fun existsByNameExcludingId(name: String, excludeId: String): Boolean {
+        val snap = accessoriesRef()
+            .whereEqualTo("name", name)
+            .limit(5)
+            .get()
+            .await()
+
+        return snap.documents.any { it.id != excludeId }
     }
 }

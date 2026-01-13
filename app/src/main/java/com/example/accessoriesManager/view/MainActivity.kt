@@ -99,6 +99,14 @@ class MainActivity : AppCompatActivity() {
                 bottomBarHeightPx = content.bottomAppBar.height,
                 onSedeClick = {
                     navController.navigate(R.id.headquarterFormFragment)
+                }, onVehicleClick = {
+                    navController.navigate(R.id.vehicleFormFragment)
+                },
+                onAccessoryClick = {
+                    navController.navigate(R.id.accessoryFormFragment)
+                },
+                onInstallationClick = {
+//                    navController.navigate(R.id.recordFormFragment)
                 }
             ).apply {
                 setOnDismissListener {
@@ -127,6 +135,21 @@ class MainActivity : AppCompatActivity() {
                     supportActionBar?.title = "Nueva Sede"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
                 }
+
+                R.id.vehicleFormFragment -> {
+                    hideMainUi()
+                    binding.appBar.visibility = View.VISIBLE
+                    supportActionBar?.title = "Nuevo Vehiculo"
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                }
+
+                R.id.accessoryFormFragment -> {
+                    hideMainUi()
+                    binding.appBar.visibility = View.VISIBLE
+                    supportActionBar?.title = "Nuevo Accesorio"
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                }
+
 
                 else -> {
                     binding.appBar.visibility = View.VISIBLE

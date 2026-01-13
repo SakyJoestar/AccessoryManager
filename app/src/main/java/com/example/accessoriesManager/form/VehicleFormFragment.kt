@@ -12,23 +12,23 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentFormBaseBinding
 import com.example.accessoriesManager.ui.showSnack
-import com.example.accessoriesManager.viewmodel.HeadquarterFormViewModel
+import com.example.accessoriesManager.viewmodel.VehicleFormViewModel
 import com.google.android.material.textfield.TextInputEditText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
+class VehicleFormFragment : Fragment(R.layout.fragment_form_base) {
 
     private var _binding: FragmentFormBaseBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HeadquarterFormViewModel by viewModels()
+    private val viewModel: VehicleFormViewModel by viewModels()
 
     private var editId: String? = null
 
     companion object {
-        private const val ARG_ID = "hqId"
+        private const val ARG_ID = "vehicleId"
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -38,18 +38,15 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
 
         // Inflar campos específicos
         layoutInflater.inflate(
-            R.layout.form_headquarter_fields,
+            R.layout.form_vehicle_fields,
             binding.formFieldsContainer,
             true
         )
 
-        val etName =
-            binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etName)
-        val etIncrement =
-            binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etIncrement)
-
-        // Defaults
-        etIncrement.setText("0")
+        val etMake =
+            binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etMake)
+        val etModel =
+            binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etModel)
 
         // ¿Edición?
         editId = arguments?.getString(ARG_ID)
@@ -65,17 +62,18 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
 
         val normalText = binding.btnSave.text
 
-        // Guardar / Actualizar (mismo flujo)
+        // Guardar / Actualizar
         binding.btnSave.setOnClickListener {
-            etName.error = null
+            etMake.error = null
+            etModel.error = null
 
-            val name = etName.text?.toString().orEmpty()
-            val incRaw = etIncrement.text?.toString()
+            val make = etMake.text?.toString().orEmpty()
+            val model = etModel.text?.toString().orEmpty()
 
             viewModel.save(
                 id = editId,
-                nameRaw = name,
-                incrementRaw = incRaw
+                makeRaw = make,
+                modelRaw = model
             )
         }
 
@@ -84,43 +82,50 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     when (state) {
-                        is HeadquarterFormViewModel.UiState.Idle -> {
+                        is VehicleFormViewModel.UiState.Idle -> {
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is HeadquarterFormViewModel.UiState.Checking -> {
+                        is VehicleFormViewModel.UiState.Checking -> {
                             binding.btnSave.isEnabled = false
                             binding.btnSave.text = "Verificando..."
                         }
 
-                        is HeadquarterFormViewModel.UiState.Saving -> {
+                        is VehicleFormViewModel.UiState.Saving -> {
                             binding.btnSave.isEnabled = false
-                            binding.btnSave.text = if (isEditMode) "Actualizando..." else "Guardando..."
+                            binding.btnSave.text =
+                                if (isEditMode) "Actualizando..." else "Guardando..."
                         }
 
-                        is HeadquarterFormViewModel.UiState.NameError -> {
-                            etName.error = state.msg
+                        is VehicleFormViewModel.UiState.MakeError -> {
+                            etMake.error = state.msg
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is HeadquarterFormViewModel.UiState.Success -> {
+                        is VehicleFormViewModel.UiState.ModelError -> {
+                            etModel.error = state.msg
+                            binding.btnSave.isEnabled = true
+                            binding.btnSave.text = normalText
+                        }
+
+                        is VehicleFormViewModel.UiState.Success -> {
                             showSnack(state.msg)
                             hideKeyboard()
 
                             // Solo limpiar si era creación
                             if (!isEditMode) {
-                                etName.setText("")
-                                etIncrement.setText("0")
-                                etName.requestFocus()
+                                etMake.setText("")
+                                etModel.setText("")
+                                etMake.requestFocus()
                             }
 
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is HeadquarterFormViewModel.UiState.Error -> {
+                        is VehicleFormViewModel.UiState.Error -> {
                             showSnack(state.msg)
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
@@ -133,10 +138,10 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
         // Cuando cargue el form (modo edición), rellena inputs
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.form.collect { hq ->
-                    hq?.let {
-                        etName.setText(it.name)
-                        etIncrement.setText(it.increment.toString())
+                viewModel.form.collect { vehicle ->
+                    vehicle?.let {
+                        etMake.setText(it.make)
+                        etModel.setText(it.model)
                     }
                 }
             }
@@ -144,9 +149,9 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
     }
 
     private fun setTitles(isEdit: Boolean) {
-        binding.tvFormTitle.text = if (isEdit) "Editar sede" else "Nueva sede"
+        binding.tvFormTitle.text = if (isEdit) "Editar vehículo" else "Nuevo vehículo"
         (requireActivity() as? AppCompatActivity)?.supportActionBar?.title =
-            if (isEdit) "Editar sede" else "Nueva sede"
+            if (isEdit) "Editar vehículo" else "Nuevo vehículo"
     }
 
     private fun hideKeyboard() {

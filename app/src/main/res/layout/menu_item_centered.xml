@@ -9,5 +9,6 @@
         android:id="@+id/icon"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:contentDescription="@string/menu_item_centered_icon"/>
 </FrameLayout>
