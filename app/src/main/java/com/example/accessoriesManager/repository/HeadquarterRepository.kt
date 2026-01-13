@@ -1,6 +1,7 @@
 package com.example.accessoriesManager.repository
 
 import com.example.accessoriesManager.model.Headquarter
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
@@ -20,10 +21,31 @@ class HeadquarterRepository @Inject constructor(
     }
 
     suspend fun add(headquarter: Headquarter) {
+        val data = hashMapOf(
+            "name" to headquarter.name,
+            "increment" to headquarter.increment,
+            "createdAt" to FieldValue.serverTimestamp(),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+
         firestore.collection("headquarters")
-            .add(headquarter)
+            .add(data)
             .await()
     }
+
+    suspend fun update(id: String, headquarter: Headquarter) {
+        val updates = hashMapOf(
+            "name" to headquarter.name,
+            "increment" to headquarter.increment,
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+
+        firestore.collection("headquarters")
+            .document(id)
+            .update(updates)
+            .await()
+    }
+
 
     fun listenHeadquarters(
         onChange: (List<Headquarter>) -> Unit,
@@ -52,5 +74,16 @@ class HeadquarterRepository @Inject constructor(
     suspend fun getById(id: String): Headquarter? {
         val doc = firestore.collection("headquarters").document(id).get().await()
         return doc.toObject(Headquarter::class.java)?.apply { this.id = doc.id }
+    }
+
+    suspend fun existsByNameExcludingId(name: String, excludeId: String): Boolean {
+        val snap = firestore.collection("headquarters")
+            .whereEqualTo("name", name)
+            .limit(5)
+            .get()
+            .await()
+
+        // Si hay alguno con ese nombre y su id != excludeId => conflicto
+        return snap.documents.any { it.id != excludeId }
     }
 }
