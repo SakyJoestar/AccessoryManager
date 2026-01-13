@@ -99,6 +99,14 @@ class MainActivity : AppCompatActivity() {
                 bottomBarHeightPx = content.bottomAppBar.height,
                 onSedeClick = {
                     navController.navigate(R.id.headquarterFormFragment)
+                }, onVehicleClick = {
+                    navController.navigate(R.id.vehicleFormFragment)
+                },
+                onAccessoryClick = {
+//                    navController.navigate(R.id.accessoryFormFragment)
+                },
+                onInstallationClick = {
+//                    navController.navigate(R.id.recordFormFragment)
                 }
             ).apply {
                 setOnDismissListener {

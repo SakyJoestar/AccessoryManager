@@ -30,23 +30,25 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent">
 
+            <!-- MODELO -->
             <TextView
-                android:id="@+id/tvHeadquarterName"
+                android:id="@+id/tvVehicleModel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="@string/modelo"
                 android:textColor="@color/text_primary"
                 android:textSize="20sp"
-                android:textStyle="bold"
-                android:text="@string/sede" />
+                android:textStyle="bold" />
 
+            <!-- MARCA -->
             <TextView
-                android:id="@+id/tvIncrement"
+                android:id="@+id/tvVehicleMake"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:text="@string/marca"
                 android:textColor="@color/text_secondary"
-                android:textSize="16sp"
-                android:text="@string/incremento" />
+                android:textSize="16sp" />
         </LinearLayout>
 
         <!-- ACCIONES -->
@@ -63,20 +65,20 @@
             <ImageButton
                 android:id="@+id/btnEdit"
                 android:layout_width="44dp"
-                android:paddingHorizontal="16dp"
                 android:layout_height="44dp"
+                android:paddingHorizontal="16dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Editar"
+                android:contentDescription="@string/editar_vehiculo"
                 app:srcCompat="@drawable/ic_edit"
                 app:tint="@color/warning" />
 
             <ImageButton
                 android:id="@+id/btnDelete"
                 android:layout_width="44dp"
-                android:paddingHorizontal="16dp"
                 android:layout_height="44dp"
+                android:paddingHorizontal="16dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Eliminar"
+                android:contentDescription="@string/eliminar_vehiculo"
                 app:srcCompat="@drawable/ic_delete"
                 app:tint="@color/error" />
         </LinearLayout>
