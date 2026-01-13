@@ -1,6 +1,7 @@
 package com.example.accessoriesManager.repository
 
 import com.example.accessoriesManager.model.Headquarter
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -8,10 +9,22 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class HeadquarterRepository @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
 ) {
+
+    // ✅ Ruta por usuario: /users/{uid}/headquarters
+    private fun headquartersRef() =
+        firestore.collection("users")
+            .document(requireUid())
+            .collection("headquarters")
+
+    private fun requireUid(): String =
+        auth.currentUser?.uid
+            ?: throw IllegalStateException("No hay usuario autenticado")
+
     suspend fun existsByName(name: String): Boolean {
-        val snap = firestore.collection("headquarters")
+        val snap = headquartersRef()
             .whereEqualTo("name", name)
             .limit(1)
             .get()
@@ -28,7 +41,7 @@ class HeadquarterRepository @Inject constructor(
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        firestore.collection("headquarters")
+        headquartersRef()
             .add(data)
             .await()
     }
@@ -40,18 +53,17 @@ class HeadquarterRepository @Inject constructor(
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        firestore.collection("headquarters")
+        headquartersRef()
             .document(id)
             .update(updates)
             .await()
     }
 
-
     fun listenHeadquarters(
         onChange: (List<Headquarter>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
-        return firestore.collection("headquarters")
+        return headquartersRef()
             .orderBy("name")
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
@@ -59,8 +71,14 @@ class HeadquarterRepository @Inject constructor(
                     return@addSnapshotListener
                 }
 
+                // ✅ Para que cada item tenga su id
                 val list = snapshot
-                    ?.toObjects(Headquarter::class.java)
+                    ?.documents
+                    ?.mapNotNull { doc ->
+                        doc.toObject(Headquarter::class.java)?.apply {
+                            this.id = doc.id
+                        }
+                    }
                     .orEmpty()
 
                 onChange(list)
@@ -68,22 +86,30 @@ class HeadquarterRepository @Inject constructor(
     }
 
     suspend fun deleteHeadquarter(id: String) {
-        firestore.collection("headquarters").document(id).delete().await()
+        headquartersRef()
+            .document(id)
+            .delete()
+            .await()
     }
 
     suspend fun getById(id: String): Headquarter? {
-        val doc = firestore.collection("headquarters").document(id).get().await()
-        return doc.toObject(Headquarter::class.java)?.apply { this.id = doc.id }
+        val doc = headquartersRef()
+            .document(id)
+            .get()
+            .await()
+
+        return doc.toObject(Headquarter::class.java)?.apply {
+            this.id = doc.id
+        }
     }
 
     suspend fun existsByNameExcludingId(name: String, excludeId: String): Boolean {
-        val snap = firestore.collection("headquarters")
+        val snap = headquartersRef()
             .whereEqualTo("name", name)
             .limit(5)
             .get()
             .await()
 
-        // Si hay alguno con ese nombre y su id != excludeId => conflicto
         return snap.documents.any { it.id != excludeId }
     }
 }

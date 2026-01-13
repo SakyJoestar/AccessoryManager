@@ -1,6 +1,7 @@
 package com.example.accessoriesManager.repository
 
 import com.example.accessoriesManager.model.Accessory
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -8,11 +9,22 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class AccessoryRepository @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
 ) {
 
+    // ✅ Ruta por usuario: /users/{uid}/accessories
+    private fun accessoriesRef() =
+        firestore.collection("users")
+            .document(requireUid())
+            .collection("accessories")
+
+    private fun requireUid(): String =
+        auth.currentUser?.uid
+            ?: throw IllegalStateException("No hay usuario autenticado")
+
     suspend fun existsByName(name: String): Boolean {
-        val snap = firestore.collection("accessories")
+        val snap = accessoriesRef()
             .whereEqualTo("name", name)
             .limit(1)
             .get()
@@ -29,7 +41,7 @@ class AccessoryRepository @Inject constructor(
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        firestore.collection("accessories")
+        accessoriesRef()
             .add(data)
             .await()
     }
@@ -41,7 +53,7 @@ class AccessoryRepository @Inject constructor(
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        firestore.collection("accessories")
+        accessoriesRef()
             .document(id)
             .update(updates)
             .await()
@@ -51,7 +63,7 @@ class AccessoryRepository @Inject constructor(
         onChange: (List<Accessory>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
-        return firestore.collection("accessories")
+        return accessoriesRef()
             .orderBy("name")
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
@@ -60,7 +72,12 @@ class AccessoryRepository @Inject constructor(
                 }
 
                 val list = snapshot
-                    ?.toObjects(Accessory::class.java)
+                    ?.documents
+                    ?.mapNotNull { doc ->
+                        doc.toObject(Accessory::class.java)?.apply {
+                            this.id = doc.id
+                        }
+                    }
                     .orEmpty()
 
                 onChange(list)
@@ -68,14 +85,14 @@ class AccessoryRepository @Inject constructor(
     }
 
     suspend fun deleteAccessory(id: String) {
-        firestore.collection("accessories")
+        accessoriesRef()
             .document(id)
             .delete()
             .await()
     }
 
     suspend fun getById(id: String): Accessory? {
-        val doc = firestore.collection("accessories")
+        val doc = accessoriesRef()
             .document(id)
             .get()
             .await()
@@ -86,7 +103,7 @@ class AccessoryRepository @Inject constructor(
     }
 
     suspend fun existsByNameExcludingId(name: String, excludeId: String): Boolean {
-        val snap = firestore.collection("accessories")
+        val snap = accessoriesRef()
             .whereEqualTo("name", name)
             .limit(5)
             .get()
