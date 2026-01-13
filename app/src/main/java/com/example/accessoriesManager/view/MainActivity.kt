@@ -136,6 +136,21 @@ class MainActivity : AppCompatActivity() {
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
                 }
 
+                R.id.vehicleFormFragment -> {
+                    hideMainUi()
+                    binding.appBar.visibility = View.VISIBLE
+                    supportActionBar?.title = "Nuevo Vehiculo"
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                }
+
+                R.id.accessoryFormFragment -> {
+                    hideMainUi()
+                    binding.appBar.visibility = View.VISIBLE
+                    supportActionBar?.title = "Nuevo Accesorio"
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                }
+
+
                 else -> {
                     binding.appBar.visibility = View.VISIBLE
                     content.bottomNav.visibility = View.VISIBLE

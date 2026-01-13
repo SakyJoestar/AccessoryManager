@@ -1,6 +1,7 @@
 package com.example.accessoriesManager.repository
 
 import com.example.accessoriesManager.model.Vehicle
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -8,12 +9,24 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class VehicleRepository @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
 ) {
+
+    // 🔐 UID obligatorio
+    private fun requireUid(): String =
+        auth.currentUser?.uid
+            ?: throw IllegalStateException("No hay usuario autenticado")
+
+    // 📍 Ruta: /users/{uid}/vehicles
+    private fun vehiclesRef() =
+        firestore.collection("users")
+            .document(requireUid())
+            .collection("vehicles")
 
     // ✅ Validar si ya existe un vehículo por (make + model)
     suspend fun existsByMakeAndModel(make: String, model: String): Boolean {
-        val snap = firestore.collection("vehicles")
+        val snap = vehiclesRef()
             .whereEqualTo("make", make)
             .whereEqualTo("model", model)
             .limit(1)
@@ -23,7 +36,7 @@ class VehicleRepository @Inject constructor(
         return !snap.isEmpty
     }
 
-    // ✅ Crear vehículo (createdAt y updatedAt automáticos)
+    // ✅ Crear vehículo
     suspend fun add(vehicle: Vehicle) {
         val data = hashMapOf(
             "make" to vehicle.make,
@@ -32,12 +45,12 @@ class VehicleRepository @Inject constructor(
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        firestore.collection("vehicles")
+        vehiclesRef()
             .add(data)
             .await()
     }
 
-    // ✅ Actualizar vehículo (updatedAt automático)
+    // ✅ Actualizar vehículo
     suspend fun update(id: String, vehicle: Vehicle) {
         val updates = hashMapOf(
             "make" to vehicle.make,
@@ -45,18 +58,18 @@ class VehicleRepository @Inject constructor(
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        firestore.collection("vehicles")
+        vehiclesRef()
             .document(id)
             .update(updates)
             .await()
     }
 
-    // ✅ Listener en tiempo real para lista de vehículos
+    // ✅ Listener en tiempo real
     fun listenVehicles(
         onChange: (List<Vehicle>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
-        return firestore.collection("vehicles")
+        return vehiclesRef()
             .orderBy("make")
             .orderBy("model")
             .addSnapshotListener { snapshot, e ->
@@ -66,7 +79,12 @@ class VehicleRepository @Inject constructor(
                 }
 
                 val list = snapshot
-                    ?.toObjects(Vehicle::class.java)
+                    ?.documents
+                    ?.mapNotNull { doc ->
+                        doc.toObject(Vehicle::class.java)?.apply {
+                            this.id = doc.id
+                        }
+                    }
                     .orEmpty()
 
                 onChange(list)
@@ -75,32 +93,37 @@ class VehicleRepository @Inject constructor(
 
     // ✅ Eliminar
     suspend fun deleteVehicle(id: String) {
-        firestore.collection("vehicles")
+        vehiclesRef()
             .document(id)
             .delete()
             .await()
     }
 
-    // ✅ Obtener por ID (y asegurar que se setee el id del documento)
+    // ✅ Obtener por ID
     suspend fun getById(id: String): Vehicle? {
-        val doc = firestore.collection("vehicles")
+        val doc = vehiclesRef()
             .document(id)
             .get()
             .await()
 
-        return doc.toObject(Vehicle::class.java)?.apply { this.id = doc.id }
+        return doc.toObject(Vehicle::class.java)?.apply {
+            this.id = doc.id
+        }
     }
 
-    // ✅ Validar duplicado por (make + model) excluyendo un id (para editar sin bloquearte)
-    suspend fun existsByMakeAndModelExcludingId(make: String, model: String, excludeId: String): Boolean {
-        val snap = firestore.collection("vehicles")
+    // ✅ Validar duplicado excluyendo ID (para edición)
+    suspend fun existsByMakeAndModelExcludingId(
+        make: String,
+        model: String,
+        excludeId: String
+    ): Boolean {
+        val snap = vehiclesRef()
             .whereEqualTo("make", make)
             .whereEqualTo("model", model)
             .limit(5)
             .get()
             .await()
 
-        // Si hay alguno con esa combinación y su id != excludeId => conflicto
         return snap.documents.any { it.id != excludeId }
     }
 }
