@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.accesorymanager.R
 import com.example.accessoriesManager.model.Headquarter
+import java.text.NumberFormat
+import java.util.Locale
 
 class HeadquarterAdapter(
     private val onView: (Headquarter) -> Unit,
@@ -36,7 +38,9 @@ class HeadquarterAdapter(
 
         fun bind(item: Headquarter) {
             tvName.text = item.name
-            tvInc.text = "Incremento: ${item.increment}"
+            tvInc.text = "Incremento: $ ${
+                NumberFormat.getInstance(Locale("es", "CO")).format(item.increment)
+            }"
             itemView.setOnClickListener { onEdit(item) }
 //          btnView.setOnClickListener { onView(item) }
             btnEdit.setOnClickListener { onEdit(item) }

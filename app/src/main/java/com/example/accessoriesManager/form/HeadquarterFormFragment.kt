@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentFormBaseBinding
+import com.example.accessoriesManager.ui.ThousandsSeparatorTextWatcher
 import com.example.accessoriesManager.ui.showSnack
 import com.example.accessoriesManager.viewmodel.HeadquarterFormViewModel
 import com.google.android.material.textfield.TextInputEditText
@@ -48,6 +49,9 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
         val etIncrement =
             binding.formFieldsContainer.findViewById<TextInputEditText>(R.id.etIncrement)
 
+        // ✅ Formatear incremento con puntos de miles mientras escribe (igual que precio)
+        etIncrement.addTextChangedListener(ThousandsSeparatorTextWatcher(etIncrement))
+
         // Defaults
         etIncrement.setText("0")
 
@@ -68,9 +72,14 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
         // Guardar / Actualizar (mismo flujo)
         binding.btnSave.setOnClickListener {
             etName.error = null
+            etIncrement.error = null
 
             val name = etName.text?.toString().orEmpty()
-            val incRaw = etIncrement.text?.toString()
+
+            // ✅ quitar puntos para mandar el número limpio al VM
+            val incRaw = etIncrement.text
+                ?.toString()
+                ?.replace(".", "")
 
             viewModel.save(
                 id = editId,
@@ -101,6 +110,13 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
 
                         is HeadquarterFormViewModel.UiState.NameError -> {
                             etName.error = state.msg
+                            binding.btnSave.isEnabled = true
+                            binding.btnSave.text = normalText
+                        }
+
+                        // ✅ Igual que en Accesorios: error específico del número
+                        is HeadquarterFormViewModel.UiState.IncrementError -> {
+                            etIncrement.error = state.msg
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
@@ -136,6 +152,7 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
                 viewModel.form.collect { hq ->
                     hq?.let {
                         etName.setText(it.name)
+                        // ✅ setea el incremento y el watcher lo formatea solo
                         etIncrement.setText(it.increment.toString())
                     }
                 }
