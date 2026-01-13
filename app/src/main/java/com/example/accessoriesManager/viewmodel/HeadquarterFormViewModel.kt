@@ -22,7 +22,10 @@ class HeadquarterFormViewModel @Inject constructor(
         data object Idle : UiState()
         data object Checking : UiState()
         data object Saving : UiState()
+
         data class NameError(val msg: String) : UiState()
+        data class IncrementError(val msg: String) : UiState() // 👈 AQUÍ
+
         data class Success(val msg: String = "Sede guardada correctamente ✅") : UiState()
         data class Error(val msg: String) : UiState()
     }
