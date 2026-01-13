@@ -1,6 +1,6 @@
 package com.example.accessoriesManager.ui
 
-import android.R
+import com.example.accesorymanager.R
 import android.app.Activity
 import android.view.View
 import androidx.annotation.IdRes
@@ -18,7 +18,7 @@ fun Fragment.showSnack(
     fallbackAnchorId: Int? = null
 ) {
     val activity = requireActivity()
-    val root = activity.findViewById<View>(R.id.content)
+    val root = activity.findViewById<View>(android.R.id.content)
 
     // 1) Anchor principal (si lo mandas)
     val anchor: View? = anchorId?.let { activity.findViewById(it) }
@@ -38,7 +38,7 @@ fun Activity.showSnack(
     duration: Int = Snackbar.LENGTH_SHORT,
     @IdRes anchorId: Int? = null
 ) {
-    val root = findViewById<View>(R.id.content)
+    val root = findViewById<View>(android.R.id.content)
     val anchor = anchorId?.let { findViewById<View>(it) }
 
     Snackbar.make(root, message, duration).apply {
