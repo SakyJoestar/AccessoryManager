@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Guías para 2 columnas -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guidelineStart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.0" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guidelineMid"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guidelineEnd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="1.0" />
+
+        <!-- ========== FILA 1: Orden | Serie ========== -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilOrder"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Orden"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:layout_constraintStart_toStartOf="@id/guidelineStart"
+            app:layout_constraintEnd_toStartOf="@id/guidelineMid"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginEnd="10dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etOrder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSerie"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Serie"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:layout_constraintStart_toStartOf="@id/guidelineMid"
+            app:layout_constraintEnd_toStartOf="@id/guidelineEnd"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginStart="10dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSerie"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ========== FILA 2: Placa | Bodega ========== -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilPlate"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Placa"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="10dp"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:layout_constraintTop_toBottomOf="@id/tilOrder"
+            app:layout_constraintStart_toStartOf="@id/guidelineStart"
+            app:layout_constraintEnd_toStartOf="@id/guidelineMid">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPlate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapCharacters"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilWarehouse"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Bodega"
+            android:layout_marginTop="14dp"
+            android:layout_marginStart="10dp"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:layout_constraintTop_toBottomOf="@id/tilSerie"
+            app:layout_constraintStart_toStartOf="@id/guidelineMid"
+            app:layout_constraintEnd_toStartOf="@id/guidelineEnd">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etWarehouse"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ========== FILA 3: Condición | Fecha ========== -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilCondition"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Condición"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="10dp"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:endIconMode="dropdown_menu"
+            app:layout_constraintTop_toBottomOf="@id/tilPlate"
+            app:layout_constraintStart_toStartOf="@id/guidelineStart"
+            app:layout_constraintEnd_toStartOf="@id/guidelineMid">
+
+            <AutoCompleteTextView
+                android:id="@+id/actCondition"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilDate"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Fecha"
+            android:layout_marginTop="14dp"
+            android:layout_marginStart="10dp"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:endIconDrawable="@drawable/ic_calendar"
+            app:layout_constraintTop_toBottomOf="@id/tilWarehouse"
+            app:layout_constraintStart_toStartOf="@id/guidelineMid"
+            app:layout_constraintEnd_toStartOf="@id/guidelineEnd">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:clickable="true"
+                android:inputType="none"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ========== FILA 4: Sede | Incremento ========== -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilHeadquarter"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Sede"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="10dp"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:endIconMode="dropdown_menu"
+            app:layout_constraintTop_toBottomOf="@id/tilCondition"
+            app:layout_constraintStart_toStartOf="@id/guidelineStart"
+            app:layout_constraintEnd_toStartOf="@id/guidelineMid">
+
+            <AutoCompleteTextView
+                android:id="@+id/actHeadquarter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilIncrement"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Incremento"
+            android:layout_marginTop="14dp"
+            android:layout_marginStart="10dp"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:layout_constraintTop_toBottomOf="@id/tilDate"
+            app:layout_constraintStart_toStartOf="@id/guidelineMid"
+            app:layout_constraintEnd_toStartOf="@id/guidelineEnd">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etIncrement"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ========== FILA 5: Marca | Vehículo ========== -->
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilVehicle"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Vehículo"
+            android:layout_marginTop="14dp"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:endIconMode="dropdown_menu"
+            app:layout_constraintTop_toBottomOf="@id/tilIncrement"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <AutoCompleteTextView
+                android:id="@+id/actVehicle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ========== LISTA DE ACCESORIOS ========== -->
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutAccessoriesHeader"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toBottomOf="@id/tilVehicle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <TextView
+                android:id="@+id/tvAccessoriesTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Accesorios"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btnAddAccessory"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddAccessory"
+                style="@style/Widget.MaterialComponents.Button.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Agregar"
+                android:icon="@drawable/ic_add_24"
+                android:iconPadding="6dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvAccessories"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/layoutAccessoriesHeader" />
+
+        <!-- ========== ESTADO DE PAGO (EXCLUYENTE) ========== -->
+
+        <!-- Recomendado: ToggleGroup exclusivo -->
+
+        <TextView
+            android:id="@+id/tvPaymentTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Estado de pago"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/rvAccessories" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/tgPaymentStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:layout_constraintTop_toBottomOf="@id/tvPaymentTitle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPaid"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Pagado" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNotPaid"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="No pagado" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPartiallyPaid"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Abonado" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Valor (si abonado o lo que quieras guardar como String) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilPaymentValue"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Valor (opcional)"
+            android:layout_marginTop="14dp"
+            app:boxBackgroundMode="filled"
+            app:boxBackgroundColor="@android:color/transparent"
+            app:layout_constraintTop_toBottomOf="@id/tgPaymentStatus"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPaymentValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:background="@android:color/transparent"
+                android:paddingTop="28dp"
+                android:paddingBottom="2dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Espaciador final -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="24dp"
+            app:layout_constraintTop_toBottomOf="@id/tilPaymentValue"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>
