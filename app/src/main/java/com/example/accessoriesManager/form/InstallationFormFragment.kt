@@ -121,6 +121,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         )
         actCondition.setAdapter(conditionAdapter)
 
+        actCondition.setOnItemClickListener { _, _, _, _ ->
+            hideKeyboardFrom(actCondition)
+            actCondition.clearFocus()
+        }
+
         // ---------- Date picker ----------
         etDate.setOnClickListener {
             showDatePicker { cal ->
@@ -325,6 +330,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                         actHeadquarter.setOnItemClickListener { _, _, idx, _ ->
                             viewModel.setHeadquarter(list[idx])
+
+                            hideKeyboardFrom(actHeadquarter)
+                            actHeadquarter.clearFocus()
                         }
                     }
                 }
@@ -341,6 +349,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                         actVehicle.setOnItemClickListener { _, _, idx, _ ->
                             viewModel.setVehicle(list[idx])
+                            hideKeyboardFrom(actVehicle)
+                            actVehicle.clearFocus()
                         }
                     }
                 }
@@ -498,5 +508,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         if (current == value) return
         et.setText(value)
         et.setSelection(et.text?.length ?: 0)
+    }
+
+    private fun hideKeyboardFrom(view: View) {
+        val imm = requireContext()
+            .getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
 }

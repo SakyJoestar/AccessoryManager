@@ -3,6 +3,7 @@ package com.example.accessoriesManager.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.RecyclerView
@@ -119,7 +120,9 @@ class InstalledAccessoryAdapter(
         binding.chkPaid.setOnCheckedChangeListener(null)
         binding.chkPaid.isChecked = item.isPaid
         binding.chkPaid.setOnCheckedChangeListener { _, checked ->
-            updateItem(position, item.copy(isPaid = checked))
+            val pos = holder.adapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@setOnCheckedChangeListener
+            updateItem(pos, items[pos].copy(isPaid = checked))
         }
 
         /* ---------- Precio listener ---------- */
@@ -133,10 +136,16 @@ class InstalledAccessoryAdapter(
             updateItem(pos, items[pos].copy(price = price))
         }
 
+        // ✅ (Opcional) cerrar teclado cuando sales del precio
+        binding.etPrice.setOnFocusChangeListener { v, hasFocus ->
+            if (!hasFocus) hideKeyboard(v)
+        }
+
         /* ---------- Accesorio seleccionado ---------- */
         binding.actAccessory.setOnItemClickListener { _, _, idx, _ ->
             val pos = holder.adapterPosition
             if (pos == RecyclerView.NO_POSITION) return@setOnItemClickListener
+            if (idx !in options.indices) return@setOnItemClickListener
 
             val opt = options[idx]
 
@@ -149,6 +158,10 @@ class InstalledAccessoryAdapter(
 
             setTextSafely(binding.etPrice, opt.price.toString())
             onChanged(items.toList())
+
+            // ✅ cerrar teclado al seleccionar
+            hideKeyboard(binding.actAccessory)
+            binding.actAccessory.clearFocus()
         }
     }
 
@@ -170,5 +183,10 @@ class InstalledAccessoryAdapter(
         if (current == value) return
         et.setText(value)
         et.setSelection(et.text?.length ?: 0)
+    }
+
+    private fun hideKeyboard(view: View) {
+        val imm = view.context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
 }
