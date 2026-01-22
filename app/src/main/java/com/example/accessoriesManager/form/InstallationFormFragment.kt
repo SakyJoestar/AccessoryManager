@@ -491,10 +491,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     }
 
     private fun setDateText(et: TextInputEditText, cal: Calendar) {
-        val y = cal.get(Calendar.YEAR)
-        val m = cal.get(Calendar.MONTH) + 1
         val d = cal.get(Calendar.DAY_OF_MONTH)
-        et.setText(String.format("%04d-%02d-%02d", y, m, d))
+        val m = cal.get(Calendar.MONTH) + 1
+        val y = cal.get(Calendar.YEAR)
+
+        et.setText(String.format("%02d/%02d/%04d", d, m, y))
     }
 
     private fun fromCalendarToTimestamp(cal: Calendar): Timestamp {
