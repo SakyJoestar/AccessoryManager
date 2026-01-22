@@ -1,6 +1,7 @@
 package com.example.accessoriesManager.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.core.widget.doAfterTextChanged
@@ -21,6 +22,17 @@ class InstalledAccessoryAdapter(
     fun submitList(list: List<InstalledAccessory>) {
         items.clear()
         items.addAll(list)
+
+        // ✅ Garantiza mínimo 1 fila
+        if (items.isEmpty()) {
+            items.add(
+                InstalledAccessory(
+                    price = 0L,
+                    isPaid = false
+                )
+            )
+        }
+
         notifyDataSetChanged()
         onChanged(items.toList())
     }
@@ -40,6 +52,13 @@ class InstalledAccessoryAdapter(
 
     fun removeAt(position: Int) {
         if (position !in items.indices) return
+
+        // ✅ Nunca permitir quedar en 0 filas
+        if (items.size == 1) return
+
+        // ✅ La primera nunca se elimina
+        if (position == 0) return
+
         items.removeAt(position)
         notifyItemRemoved(position)
         onChanged(items.toList())
@@ -62,61 +81,74 @@ class InstalledAccessoryAdapter(
     override fun getItemCount(): Int = items.size
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        val b = holder.binding
+        val binding = holder.binding
         val item = items[position]
+
+        val cantRemove = position == 0
+
+        // ✅ X deshabilitada/oculta en la primera
+        binding.btnRemove.apply {
+            isEnabled = !cantRemove
+            alpha = if (cantRemove) 0.3f else 1f
+            visibility = if (cantRemove) View.INVISIBLE else View.VISIBLE
+            setOnClickListener {
+                val pos = holder.adapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                removeAt(pos)
+            }
+        }
 
         /* ---------- Dropdown Accesorio ---------- */
         val names = options.map { it.name }
         val adapter = ArrayAdapter(
-            b.root.context,
+            binding.root.context,
             android.R.layout.simple_list_item_1,
             names
         )
-        b.actAccessory.setAdapter(adapter)
-        b.actAccessory.setText(item.name.orEmpty(), false)
+        binding.actAccessory.setAdapter(adapter)
+        binding.actAccessory.setText(item.name.orEmpty(), false)
 
         /* ---------- Precio ---------- */
-        setTextSafely(b.etPrice, item.price.toString())
+        setTextSafely(binding.etPrice, item.price.toString())
 
-        holder.priceWatcher?.let { b.etPrice.removeTextChangedListener(it) }
-        holder.priceWatcher = ThousandsSeparatorTextWatcher(b.etPrice)
-        b.etPrice.addTextChangedListener(holder.priceWatcher)
+        holder.priceWatcher?.let { binding.etPrice.removeTextChangedListener(it) }
+        holder.priceWatcher = ThousandsSeparatorTextWatcher(binding.etPrice)
+        binding.etPrice.addTextChangedListener(holder.priceWatcher)
 
         /* ---------- Pagado ---------- */
-        b.chkPaid.setOnCheckedChangeListener(null)
-        b.chkPaid.isChecked = item.isPaid
-        b.chkPaid.setOnCheckedChangeListener { _, checked ->
+        binding.chkPaid.setOnCheckedChangeListener(null)
+        binding.chkPaid.isChecked = item.isPaid
+        binding.chkPaid.setOnCheckedChangeListener { _, checked ->
             updateItem(position, item.copy(isPaid = checked))
         }
 
         /* ---------- Precio listener ---------- */
-        b.etPrice.doAfterTextChanged {
-            if (holder.adapterPosition == RecyclerView.NO_POSITION) return@doAfterTextChanged
+        binding.etPrice.doAfterTextChanged {
+            val pos = holder.adapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@doAfterTextChanged
 
-            val price = parseLongClean(b.etPrice.text?.toString())
-            if (price == items[position].price) return@doAfterTextChanged
+            val price = parseLongClean(binding.etPrice.text?.toString())
+            if (price == items[pos].price) return@doAfterTextChanged
 
-            updateItem(position, items[position].copy(price = price))
+            updateItem(pos, items[pos].copy(price = price))
         }
 
         /* ---------- Accesorio seleccionado ---------- */
-        b.actAccessory.setOnItemClickListener { _, _, idx, _ ->
+        binding.actAccessory.setOnItemClickListener { _, _, idx, _ ->
+            val pos = holder.adapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@setOnItemClickListener
+
             val opt = options[idx]
 
-            val updated = items[position].copy(
+            val updated = items[pos].copy(
                 accessoryId = opt.id,
                 name = opt.name,
                 price = opt.price
             )
-            items[position] = updated
+            items[pos] = updated
 
-            setTextSafely(b.etPrice, opt.price.toString())
+            setTextSafely(binding.etPrice, opt.price.toString())
             onChanged(items.toList())
-        }
-
-        b.btnRemove.setOnClickListener {
-            val pos = holder.adapterPosition
-            if (pos != RecyclerView.NO_POSITION) removeAt(pos)
         }
     }
 
