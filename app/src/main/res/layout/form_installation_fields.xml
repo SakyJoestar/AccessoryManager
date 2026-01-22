@@ -35,12 +35,10 @@
         <!-- ========== FILA 1: Orden | Serie ========== -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilOrder"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Orden"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:layout_constraintStart_toStartOf="@id/guidelineStart"
             app:layout_constraintEnd_toStartOf="@id/guidelineMid"
             app:layout_constraintTop_toTopOf="parent"
@@ -48,22 +46,18 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etOrder"
+                style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="number" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilSerie"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Serie"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:layout_constraintStart_toStartOf="@id/guidelineMid"
             app:layout_constraintEnd_toStartOf="@id/guidelineEnd"
             app:layout_constraintTop_toTopOf="parent"
@@ -71,101 +65,83 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSerie"
+                style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ========== FILA 2: Placa | Bodega ========== -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilPlate"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Placa"
             android:layout_marginTop="14dp"
             android:layout_marginEnd="10dp"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:layout_constraintTop_toBottomOf="@id/tilOrder"
             app:layout_constraintStart_toStartOf="@id/guidelineStart"
             app:layout_constraintEnd_toStartOf="@id/guidelineMid">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPlate"
+                style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapCharacters"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="textCapCharacters" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilWarehouse"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Bodega"
             android:layout_marginTop="14dp"
             android:layout_marginStart="10dp"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:layout_constraintTop_toBottomOf="@id/tilSerie"
             app:layout_constraintStart_toStartOf="@id/guidelineMid"
             app:layout_constraintEnd_toStartOf="@id/guidelineEnd">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etWarehouse"
+                style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ========== FILA 3: Condición | Fecha ========== -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilCondition"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Condición"
             android:layout_marginTop="14dp"
             android:layout_marginEnd="10dp"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:endIconMode="dropdown_menu"
             app:layout_constraintTop_toBottomOf="@id/tilPlate"
             app:layout_constraintStart_toStartOf="@id/guidelineStart"
             app:layout_constraintEnd_toStartOf="@id/guidelineMid">
 
-            <AutoCompleteTextView
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/actCondition"
+                style="@style/AppInputDropdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none"
-                android:focusable="false"
-                android:clickable="true"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilDate"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Fecha"
             android:layout_marginTop="14dp"
             android:layout_marginStart="10dp"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:endIconDrawable="@drawable/ic_calendar"
             app:layout_constraintTop_toBottomOf="@id/tilWarehouse"
             app:layout_constraintStart_toStartOf="@id/guidelineMid"
@@ -173,94 +149,78 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etDate"
+                style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:focusable="false"
                 android:clickable="true"
-                android:inputType="none"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ========== FILA 4: Sede | Incremento ========== -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilHeadquarter"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Sede"
             android:layout_marginTop="14dp"
             android:layout_marginEnd="10dp"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:endIconMode="dropdown_menu"
             app:layout_constraintTop_toBottomOf="@id/tilCondition"
             app:layout_constraintStart_toStartOf="@id/guidelineStart"
             app:layout_constraintEnd_toStartOf="@id/guidelineMid">
 
-            <AutoCompleteTextView
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/actHeadquarter"
+                style="@style/AppInputDropdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilIncrement"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Incremento"
             android:layout_marginTop="14dp"
             android:layout_marginStart="10dp"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:layout_constraintTop_toBottomOf="@id/tilDate"
             app:layout_constraintStart_toStartOf="@id/guidelineMid"
             app:layout_constraintEnd_toStartOf="@id/guidelineEnd">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etIncrement"
+                style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="number" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- ========== FILA 5: Marca | Vehículo ========== -->
-
+        <!-- ========== FILA 5: Vehículo ========== -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilVehicle"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Vehículo"
             android:layout_marginTop="14dp"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:endIconMode="dropdown_menu"
             app:layout_constraintTop_toBottomOf="@id/tilIncrement"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <AutoCompleteTextView
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/actVehicle"
+                style="@style/AppInputDropdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ========== LISTA DE ACCESORIOS ========== -->
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layoutAccessoriesHeader"
             android:layout_width="0dp"
@@ -294,7 +254,6 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
-
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.recyclerview.widget.RecyclerView
@@ -302,14 +261,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/layoutAccessoriesHeader" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutAccessoriesHeader" />
 
-        <!-- ========== ESTADO DE PAGO (EXCLUYENTE) ========== -->
-
-        <!-- Recomendado: ToggleGroup exclusivo -->
-
+        <!-- ========== ESTADO DE PAGO ========== -->
         <TextView
             android:id="@+id/tvPaymentTitle"
             android:layout_width="0dp"
@@ -318,10 +274,9 @@
             android:text="Estado de pago"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintTop_toBottomOf="@id/rvAccessories"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/rvAccessories" />
+            app:layout_constraintEnd_toEndOf="parent" />
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/tgPaymentStatus"
@@ -356,28 +311,23 @@
                 android:text="Abonado" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
-        <!-- Valor (si abonado o lo que quieras guardar como String) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilPaymentValue"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Valor (opcional)"
             android:layout_marginTop="14dp"
-            app:boxBackgroundMode="filled"
-            app:boxBackgroundColor="@android:color/transparent"
             app:layout_constraintTop_toBottomOf="@id/tgPaymentStatus"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPaymentValue"
+                style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:background="@android:color/transparent"
-                android:paddingTop="28dp"
-                android:paddingBottom="2dp" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Espaciador final -->

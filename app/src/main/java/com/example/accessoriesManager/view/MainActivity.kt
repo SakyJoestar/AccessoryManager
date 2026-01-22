@@ -150,6 +150,13 @@ class MainActivity : AppCompatActivity() {
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
                 }
 
+                R.id.installationFormFragment -> {
+                    hideMainUi()
+                    binding.appBar.visibility = View.VISIBLE
+                    supportActionBar?.title = "Nueva Instalación"
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                }
+
 
                 else -> {
                     binding.appBar.visibility = View.VISIBLE

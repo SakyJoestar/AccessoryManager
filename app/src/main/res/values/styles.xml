@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppInputLayout" parent="Widget.MaterialComponents.TextInputLayout.FilledBox.Dense">
+        <!-- Fondo / borde -->
+        <item name="boxBackgroundMode">filled</item>
+        <item name="boxBackgroundColor">@android:color/transparent</item>
+
+        <!-- Borde consistente -->
+        <item name="boxStrokeColor">@color/border_soft</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+
+        <!-- Hint / iconos -->
+        <item name="hintTextColor">@color/text_secondary</item>
+        <item name="endIconTint">@color/text_secondary</item>
+
+        <!-- Quita espacios raros -->
+        <item name="expandedHintEnabled">true</item>
+    </style>
+
+    <style name="AppInputText" parent="Widget.MaterialComponents.TextInputEditText.FilledBox.Dense">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+
+        <!-- 👇 esto arregla el “centrado” vs izquierda -->
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:textAlignment">viewStart</item>
+
+        <!-- padding igual al que vienes usando -->
+        <item name="android:paddingTop">28dp</item>
+        <item name="android:paddingBottom">2dp</item>
+    </style>
+
+    <style name="AppInputDropdown" parent="Widget.MaterialComponents.AutoCompleteTextView.FilledBox.Dense">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+
+        <!-- 👇 igual que EditText -->
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:textAlignment">viewStart</item>
+
+        <item name="android:paddingTop">28dp</item>
+        <item name="android:paddingBottom">2dp</item>
+    </style>
+
+</resources>
