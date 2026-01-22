@@ -28,7 +28,12 @@ class InstalledAccessoryAdapter(
     fun getCurrent(): List<InstalledAccessory> = items.toList()
 
     fun addEmpty() {
-        items.add(InstalledAccessory(quantity = 1, isPaid = false, total = 0))
+        items.add(
+            InstalledAccessory(
+                price = 0L,
+                isPaid = false
+            )
+        )
         notifyItemInserted(items.lastIndex)
         onChanged(items.toList())
     }
@@ -40,10 +45,9 @@ class InstalledAccessoryAdapter(
         onChanged(items.toList())
     }
 
-    inner class VH(val binding: ItemAccessoryRowBinding) : RecyclerView.ViewHolder(binding.root) {
-        // Watchers para evitar duplicados por reciclaje
+    inner class VH(val binding: ItemAccessoryRowBinding) :
+        RecyclerView.ViewHolder(binding.root) {
         var priceWatcher: ThousandsSeparatorTextWatcher? = null
-        var qtyWatcherAttached = false
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -61,115 +65,74 @@ class InstalledAccessoryAdapter(
         val b = holder.binding
         val item = items[position]
 
-        // ---------- Dropdown ----------
+        /* ---------- Dropdown Accesorio ---------- */
         val names = options.map { it.name }
-        val adapter = ArrayAdapter(b.root.context, android.R.layout.simple_list_item_1, names)
+        val adapter = ArrayAdapter(
+            b.root.context,
+            android.R.layout.simple_list_item_1,
+            names
+        )
         b.actAccessory.setAdapter(adapter)
         b.actAccessory.setText(item.name.orEmpty(), false)
 
-        // ---------- Precio (derivamos un "unitPrice" temporal) ----------
-        val unitPrice = inferUnitPrice(item.total, item.quantity)
-        setTextSafely(b.etPrice, unitPrice.toString())
+        /* ---------- Precio ---------- */
+        setTextSafely(b.etPrice, item.price.toString())
 
-        // Formateo miles (evitar añadir múltiples watchers)
         holder.priceWatcher?.let { b.etPrice.removeTextChangedListener(it) }
         holder.priceWatcher = ThousandsSeparatorTextWatcher(b.etPrice)
         b.etPrice.addTextChangedListener(holder.priceWatcher)
 
-        // ---------- Cantidad ----------
-        setTextSafely(b.etQty, item.quantity.toString())
-
-        // ---------- Check pagado ----------
+        /* ---------- Pagado ---------- */
         b.chkPaid.setOnCheckedChangeListener(null)
         b.chkPaid.isChecked = item.isPaid
         b.chkPaid.setOnCheckedChangeListener { _, checked ->
             updateItem(position, item.copy(isPaid = checked))
         }
 
-        // ---------- Total (UI) ----------
-        b.tvTotal.text = "Total: ${item.total}"
-
-        // ---------- Listeners (precio / qty) ----------
-        // Usamos doAfterTextChanged (simple) pero cuidando loops con setTextSafely
-
+        /* ---------- Precio listener ---------- */
         b.etPrice.doAfterTextChanged {
             if (holder.adapterPosition == RecyclerView.NO_POSITION) return@doAfterTextChanged
 
-            val price = parseIntClean(b.etPrice.text?.toString())
-            val qty = parseIntClean(b.etQty.text?.toString(), default = 1).coerceAtLeast(1)
+            val price = parseLongClean(b.etPrice.text?.toString())
+            if (price == items[position].price) return@doAfterTextChanged
 
-            val newTotal: Long = (price * qty).toLong()
-            if (newTotal.toLong() == items[position].total && items[position].quantity == qty) return@doAfterTextChanged
-
-            val updated = items[position].copy(
-                quantity = qty,
-                total = newTotal
-            )
-            items[position] = updated
-            b.tvTotal.text = "Total: ${updated.total}"
-            onChanged(items.toList())
+            updateItem(position, items[position].copy(price = price))
         }
 
-        b.etQty.doAfterTextChanged {
-            if (holder.adapterPosition == RecyclerView.NO_POSITION) return@doAfterTextChanged
-
-            val qty = parseIntClean(b.etQty.text?.toString(), default = 1).coerceAtLeast(1)
-            val price = parseIntClean(b.etPrice.text?.toString())
-
-            val newTotal: Long = (price * qty).toLong()
-            if (newTotal.toLong() == items[position].total && items[position].quantity == qty) return@doAfterTextChanged
-
-            val updated = items[position].copy(
-                quantity = qty,
-                total = newTotal
-            )
-            items[position] = updated
-            b.tvTotal.text = "Total: ${updated.total}"
-            onChanged(items.toList())
-        }
-
+        /* ---------- Accesorio seleccionado ---------- */
         b.actAccessory.setOnItemClickListener { _, _, idx, _ ->
             val opt = options[idx]
-
-            // si eliges un accesorio, seteamos id+name y usamos su precio por defecto
-            val qty = items[position].quantity.coerceAtLeast(1)
-            val newTotal = opt.price * qty
 
             val updated = items[position].copy(
                 accessoryId = opt.id,
                 name = opt.name,
-                total = newTotal
+                price = opt.price
             )
             items[position] = updated
 
-            // actualizar precio mostrado (temporal) y total
             setTextSafely(b.etPrice, opt.price.toString())
-            b.tvTotal.text = "Total: ${updated.total}"
-
             onChanged(items.toList())
+        }
+
+        b.btnRemove.setOnClickListener {
+            val pos = holder.adapterPosition
+            if (pos != RecyclerView.NO_POSITION) removeAt(pos)
         }
     }
 
     private fun updateItem(position: Int, newItem: InstalledAccessory) {
         if (position !in items.indices) return
         items[position] = newItem
-        notifyItemChanged(position)
         onChanged(items.toList())
     }
 
-    private fun parseIntClean(text: String?, default: Int = 0): Int {
+    /* ---------- Helpers ---------- */
+
+    private fun parseLongClean(text: String?): Long {
         val raw = text.orEmpty().replace(".", "").trim()
-        return raw.toIntOrNull() ?: default
+        return raw.toLongOrNull() ?: 0L
     }
 
-    private fun inferUnitPrice(total: Long, qty: Int): Int {
-        val q = if (qty <= 0) 1 else qty
-        return (if (total <= 0) 0 else (total / q)) as Int
-    }
-
-    /**
-     * Evita loops: solo setea si cambió realmente
-     */
     private fun setTextSafely(et: TextInputEditText, value: String) {
         val current = et.text?.toString().orEmpty()
         if (current == value) return

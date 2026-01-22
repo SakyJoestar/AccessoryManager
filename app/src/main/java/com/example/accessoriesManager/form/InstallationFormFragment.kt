@@ -103,7 +103,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val normalText = binding.btnSave.text
 
         // ---------- Condición dropdown (simple) ----------
-        val conditions = listOf("Nuevo", "Usado", "Garantía", "Reproceso")
+        val conditions = listOf("Nuevo", "Usado", "Taller")
         val conditionAdapter = android.widget.ArrayAdapter(
             requireContext(),
             android.R.layout.simple_list_item_1,

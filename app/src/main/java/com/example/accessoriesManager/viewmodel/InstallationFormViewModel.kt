@@ -165,12 +165,6 @@ class InstallationFormViewModel @Inject constructor(
                 return@launch
             }
 
-            // Arreglar accessories: asegurar qty >= 1 y total >= 0
-            val cleanAccessories = selectedAccessories.map { acc ->
-                val qty = acc.quantity.coerceAtLeast(1)
-                val total = acc.total.coerceAtLeast(0)
-                acc.copy(quantity = qty, total = total)
-            }
 
             val paymentValue = paymentValueRaw
                 ?.replace(".", "")
@@ -201,7 +195,6 @@ class InstallationFormViewModel @Inject constructor(
                     date = selectedDate,
                     headquarter = selectedHeadquarter,
                     vehicle = selectedVehicle,
-                    accessories = cleanAccessories,
                     state = paymentState,
                     createdAt = current?.createdAt ?: now,
                     updatedAt = now
