@@ -126,4 +126,18 @@ class VehicleRepository @Inject constructor(
 
         return snap.documents.any { it.id != excludeId }
     }
+
+    suspend fun getAll(): List<Vehicle> {
+        val snap = vehiclesRef()
+            .orderBy("make")
+            .orderBy("model")
+            .get()
+            .await()
+
+        return snap.documents.mapNotNull { doc ->
+            doc.toObject(Vehicle::class.java)?.apply {
+                this.id = doc.id
+            }
+        }
+    }
 }

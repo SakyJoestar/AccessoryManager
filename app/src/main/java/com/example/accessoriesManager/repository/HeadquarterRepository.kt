@@ -7,6 +7,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import kotlin.text.get
 
 class HeadquarterRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
@@ -111,5 +112,18 @@ class HeadquarterRepository @Inject constructor(
             .await()
 
         return snap.documents.any { it.id != excludeId }
+    }
+
+    suspend fun getAll(): List<Headquarter> {
+        val snap = headquartersRef()
+            .orderBy("name")
+            .get()
+            .await()
+
+        return snap.documents.mapNotNull { doc ->
+            doc.toObject(Headquarter::class.java)?.apply {
+                this.id = doc.id
+            }
+        }
     }
 }
