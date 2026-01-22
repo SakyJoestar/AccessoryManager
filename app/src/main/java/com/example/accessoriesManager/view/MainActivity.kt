@@ -134,6 +134,7 @@ class MainActivity : AppCompatActivity() {
                     binding.appBar.visibility = View.VISIBLE
                     supportActionBar?.title = "Nueva Sede"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    setToolbarActionsEnabled(false)
                 }
 
                 R.id.vehicleFormFragment -> {
@@ -141,6 +142,7 @@ class MainActivity : AppCompatActivity() {
                     binding.appBar.visibility = View.VISIBLE
                     supportActionBar?.title = "Nuevo Vehiculo"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    setToolbarActionsEnabled(false)
                 }
 
                 R.id.accessoryFormFragment -> {
@@ -148,6 +150,7 @@ class MainActivity : AppCompatActivity() {
                     binding.appBar.visibility = View.VISIBLE
                     supportActionBar?.title = "Nuevo Accesorio"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    setToolbarActionsEnabled(false)
                 }
 
                 R.id.installationFormFragment -> {
@@ -155,6 +158,7 @@ class MainActivity : AppCompatActivity() {
                     binding.appBar.visibility = View.VISIBLE
                     supportActionBar?.title = "Nueva Instalación"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    setToolbarActionsEnabled(false)
                 }
 
 
@@ -163,6 +167,7 @@ class MainActivity : AppCompatActivity() {
                     content.bottomNav.visibility = View.VISIBLE
                     content.bottomAppBar.visibility = View.VISIBLE
                     content.fabAdd.visibility = View.VISIBLE
+                    setToolbarActionsEnabled(true)
 
                     supportActionBar?.title = "Car Facility Tracker"
                     supportActionBar?.setDisplayHomeAsUpEnabled(
@@ -262,4 +267,9 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun setToolbarActionsEnabled(enabled: Boolean) {
+        binding.btnTheme.visibility = if (enabled) View.VISIBLE else View.GONE
+        binding.btnLogout.visibility = if (enabled) View.VISIBLE else View.GONE
+
+    }
 }
