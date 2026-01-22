@@ -30,9 +30,9 @@ class MainActivity : AppCompatActivity() {
     private var quickMenuDialog: AlertDialog? = null
 
     private val rootDestinations = setOf(
+        R.id.installationsFragment,
         R.id.accessoriesFragment,
         R.id.headquartersFragment,
-        R.id.recordsFragment,
         R.id.vehiclesFragment
     )
 
@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
             val navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
             navGraph.setStartDestination(
                 if (auth.currentUser != null)
-                    R.id.accessoriesFragment
+                    R.id.installationsFragment
                 else
                     R.id.loginFragment
             )
@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
                     navController.navigate(R.id.accessoryFormFragment)
                 },
                 onInstallationClick = {
-//                    navController.navigate(R.id.recordFormFragment)
+                    navController.navigate(R.id.installationFormFragment)
                 }
             ).apply {
                 setOnDismissListener {
