@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginVertical="8dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/border_soft"
+        app:cardBackgroundColor="@color/surface">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp">
+
+            <!-- SELECT: Accesorio -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilAccessory"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.Dense"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="Accesorio"
+                app:endIconMode="dropdown_menu"
+                app:boxBackgroundMode="filled"
+                app:boxBackgroundColor="@android:color/transparent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/vDivider"
+                android:layout_marginEnd="10dp">
+
+                <AutoCompleteTextView
+                    android:id="@+id/actAccessory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:background="@android:color/transparent"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="2dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Divisor punteado vertical -->
+            <View
+                android:id="@+id/vDivider"
+                android:layout_width="2dp"
+                android:layout_height="0dp"
+                android:background="@drawable/divider_dashed_vertical"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@id/tilAccessory"/>
+
+            <!-- Precio -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPrice"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.Dense"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="Precio"
+                app:boxBackgroundMode="filled"
+                app:boxBackgroundColor="@android:color/transparent"
+                app:layout_constraintStart_toEndOf="@id/vDivider"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/tilQty"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPrice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:background="@android:color/transparent"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="2dp"
+                    android:textColor="@color/text_primary"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Total -->
+            <TextView
+                android:id="@+id/tvTotal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Total: 0"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                app:layout_constraintTop_toBottomOf="@id/tilPrice"
+                app:layout_constraintStart_toStartOf="@id/tilPrice"
+                app:layout_constraintEnd_toEndOf="@id/tilPrice"
+                android:layout_marginTop="4dp"/>
+
+            <!-- Cantidad -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilQty"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.Dense"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:hint="#"
+                app:boxBackgroundMode="filled"
+                app:boxBackgroundColor="@android:color/transparent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/chkPaid"
+                android:layout_marginEnd="10dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etQty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:background="@android:color/transparent"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="2dp"
+                    android:textColor="@color/text_primary"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Pagado -->
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/chkPaid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="pagado"
+                android:textColor="@color/text_primary"
+                app:buttonTint="@color/primary"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+</layout>
