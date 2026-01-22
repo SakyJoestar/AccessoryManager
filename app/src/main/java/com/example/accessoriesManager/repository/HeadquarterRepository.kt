@@ -126,4 +126,25 @@ class HeadquarterRepository @Inject constructor(
             }
         }
     }
+
+    suspend fun getIncrement(headquarterId: String): Int {
+        return try {
+            val snap = firestore.collection("users")
+                .document(requireUid())
+                .collection("installations")
+                .whereEqualTo("headquarter.id", headquarterId)
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .await()
+
+            val doc = snap.documents.firstOrNull() ?: return 0
+            (doc.getLong("increment") ?: 0L).toInt()
+
+        } catch (e: Exception) {
+            // ✅ Evita crash y te deja log para depurar
+            android.util.Log.e("HeadquarterRepo", "getIncrement failed", e)
+            0
+        }
+    }
 }

@@ -15,6 +15,7 @@ import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentFormBaseBinding
 import com.example.accessoriesManager.adapter.InstalledAccessoryAdapter
 import com.example.accessoriesManager.model.Accessory
+import com.example.accessoriesManager.model.Headquarter
 import com.example.accessoriesManager.model.InstalledAccessory
 import com.example.accessoriesManager.ui.ThousandsSeparatorTextWatcher
 import com.example.accessoriesManager.ui.showSnack
@@ -39,6 +40,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private var editId: String? = null
 
     private lateinit var accessoriesAdapter: InstalledAccessoryAdapter
+
+    var hqCache: List<Headquarter> = emptyList()
 
     // ✅ Mantener accesorios actuales para calcular total
     private var currentAccessories: List<InstalledAccessory> = emptyList()
@@ -293,6 +296,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                     // sede / vehiculo
                     actHeadquarter.setText(installation.headquarter?.name.orEmpty(), false)
+                    val inc = installation.headquarter?.increment ?: 0
+                    setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
+
                     actVehicle.setText(installation.vehicle?.model.orEmpty(), false)
 
                     // accesorios
@@ -329,7 +335,15 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         actHeadquarter.setAdapter(hqAdapter)
 
                         actHeadquarter.setOnItemClickListener { _, _, idx, _ ->
-                            viewModel.setHeadquarter(list[idx])
+                            val hq = list[idx]
+                            viewModel.setHeadquarter(hq)
+
+                            // ✅ 1) Rellenar INMEDIATO con el incremento de la sede
+                            val incHq = hq.increment ?: 0
+                            setTextSafely(etIncrement, formatMoneyDots(incHq.toLong()))
+
+                            // ✅ 2) (Opcional) pedir al VM el último incremento usado en instalaciones
+                            viewModel.loadIncrementForHeadquarter(hq.id ?: "", incHq)
 
                             hideKeyboardFrom(actHeadquarter)
                             actHeadquarter.clearFocus()
@@ -383,6 +397,17 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                         // ✅ si está en PAGADO, recalcular con las nuevas options/lista
                         applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
+                    }
+                }
+
+                launch {
+                    viewModel.suggestedIncrement.collect { inc ->
+                        inc ?: return@collect
+
+                        // ✅ Si llega 0, ignorarlo (evita que pise el incremento real)
+                        if (inc <= 0) return@collect
+
+                        setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
                     }
                 }
             }

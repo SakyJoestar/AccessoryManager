@@ -215,4 +215,20 @@ class InstallationFormViewModel @Inject constructor(
             }
         }
     }
+
+    private val _suggestedIncrement = kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
+    val suggestedIncrement: kotlinx.coroutines.flow.StateFlow<Int?> = _suggestedIncrement
+
+    fun loadIncrementForHeadquarter(headquarterId: String, fallback: Int) {
+        viewModelScope.launch {
+            val inc = try {
+                headquarterRepository.getIncrement(headquarterId) // último de installations
+            } catch (_: Exception) {
+                0
+            }
+
+            // ✅ nunca emitir 0 si hay fallback
+            _suggestedIncrement.value = if (inc > 0) inc else fallback
+        }
+    }
 }
