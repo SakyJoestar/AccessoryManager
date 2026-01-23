@@ -86,6 +86,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val btnNotPaid = container.findViewById<MaterialButton>(R.id.btnNotPaid)
         val btnPartiallyPaid = container.findViewById<MaterialButton>(R.id.btnPartiallyPaid)
 
+        btnPaid.isClickable = false
+        btnNotPaid.isClickable = false
+        btnPartiallyPaid.isClickable = false
+
         val tilPaymentValue = container.findViewById<TextInputLayout>(R.id.tilPaymentValue)
         val etPaymentValue = container.findViewById<TextInputEditText>(R.id.etPaymentValue)
 
@@ -144,7 +148,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 currentAccessories = list
                 viewModel.setAccessories(list)
 
-                // ✅ Si está en PAGADO, recalcular total cada vez que cambian accesorios
+                // ✅ 1) Auto-seleccionar toggle según checkboxes
+                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, list)
+
+                // ✅ 2) Aplicar regla del total según toggle (tu lógica actual)
                 applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
             }
         )
@@ -308,13 +315,15 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     val safeList = if (list.isEmpty()) listOf(InstalledAccessory()) else list
                     accessoriesAdapter.submitList(safeList)
                     currentAccessories = accessoriesAdapter.getCurrent()
+                    autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+                    applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
 
-                    // estado pago
-                    when (installation.state) {
-                        "PAGADO" -> tgPayment.check(btnPaid.id)
-                        "ABONADO" -> tgPayment.check(btnPartiallyPaid.id)
-                        else -> tgPayment.check(btnNotPaid.id)
-                    }
+//                    // estado pago
+//                    when (installation.state) {
+//                        "PAGADO" -> tgPayment.check(btnPaid.id)
+//                        "ABONADO" -> tgPayment.check(btnPartiallyPaid.id)
+//                        else -> tgPayment.check(btnNotPaid.id)
+//                    }
 
                     // ✅ aplicar regla UI según estado (pagado suma / no pagado 0 / abonado vacío)
                     applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
@@ -390,6 +399,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         accessoriesAdapter = InstalledAccessoryAdapter(opts) { updated ->
                             currentAccessories = updated
                             viewModel.setAccessories(updated)
+
+                            autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, updated)
                             applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
                         }
                         rvAccessories.adapter = accessoriesAdapter
@@ -456,7 +467,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             }
 
             btnPartiallyPaid.id -> {
-                setTextSafely(etPaymentValue, "")
+                val paidTotal = paidAccessoriesTotal()
+                setTextSafely(etPaymentValue, formatMoneyDots(paidTotal))
             }
 
             else -> {
@@ -544,4 +556,37 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             .getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
+
+    private fun autoSetPaymentToggle(
+        tg: MaterialButtonToggleGroup,
+        btnPaid: MaterialButton,
+        btnNotPaid: MaterialButton,
+        btnPartiallyPaid: MaterialButton,
+        accessories: List<InstalledAccessory>
+    ) {
+        if (accessories.isEmpty()) {
+            // si no hay accesorios, lo más lógico: NO
+            if (tg.checkedButtonId != btnNotPaid.id) tg.check(btnNotPaid.id)
+            return
+        }
+
+        val paidCount = accessories.count { it.isPaid }
+        val targetId = when {
+            paidCount == 0 -> btnNotPaid.id
+            paidCount == accessories.size -> btnPaid.id
+            else -> btnPartiallyPaid.id
+        }
+
+        // ✅ Evitar re-check innecesario (y loops)
+        if (tg.checkedButtonId != targetId) {
+            tg.check(targetId)
+        }
+    }
+
+    private fun paidAccessoriesTotal(): Long {
+        return currentAccessories
+            .filter { it.isPaid }
+            .sumOf { it.price ?: 0L }
+    }
+
 }
