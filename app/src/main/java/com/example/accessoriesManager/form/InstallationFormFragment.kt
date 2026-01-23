@@ -299,7 +299,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     val inc = installation.headquarter?.increment ?: 0
                     setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
 
-                    actVehicle.setText(installation.vehicle?.model.orEmpty(), false)
+                    val mk = installation.vehicle?.make.orEmpty()
+                    val md = installation.vehicle?.model.orEmpty()
+                    actVehicle.setText(if (mk.isNotBlank() && md.isNotBlank()) "$mk - $md" else md, false)
 
                     // accesorios
                     val list = installation.accessories.orEmpty()
@@ -353,7 +355,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                 launch {
                     viewModel.vehicles.collect { list ->
-                        val labels = list.map { "${it.make} ${it.model}" }
+                        android.util.Log.d("VEHICLES", "vehicles size = ${list.size}")
+                        val labels = list.map { "${it.make} - ${it.model}" }
                         val vAdapter = android.widget.ArrayAdapter(
                             requireContext(),
                             android.R.layout.simple_list_item_1,

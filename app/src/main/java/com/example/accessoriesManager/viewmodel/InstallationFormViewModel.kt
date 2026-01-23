@@ -12,6 +12,7 @@ import com.example.accessoriesManager.repository.HeadquarterRepository
 import com.example.accessoriesManager.repository.InstallationRepository
 import com.example.accessoriesManager.repository.VehicleRepository
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,13 +46,16 @@ class InstallationFormViewModel @Inject constructor(
     private val _form = MutableStateFlow<Installation?>(null)
     val form: StateFlow<Installation?> = _form.asStateFlow()
 
-    // Dropdown options
+    // Headquarters
     private val _headquarters = MutableStateFlow<List<Headquarter>>(emptyList())
     val headquarters: StateFlow<List<Headquarter>> = _headquarters.asStateFlow()
 
+    // Vehicles
+    private var vehiclesListener: ListenerRegistration? = null
     private val _vehicles = MutableStateFlow<List<Vehicle>>(emptyList())
     val vehicles: StateFlow<List<Vehicle>> = _vehicles.asStateFlow()
 
+    //Accessories
     private val _accessories = MutableStateFlow<List<Accessory>>(emptyList())
     val accessories: StateFlow<List<Accessory>> = _accessories.asStateFlow()
 
@@ -62,9 +66,12 @@ class InstallationFormViewModel @Inject constructor(
     private var selectedAccessories: List<InstalledAccessory> = emptyList()
     private var paymentState: String? = "NO_PAGADO" // default
 
+
     init {
         // Cargar combos
         refreshOptions()
+
+        startListeningVehicles()
     }
 
     private fun refreshOptions() {
@@ -219,6 +226,8 @@ class InstallationFormViewModel @Inject constructor(
     private val _suggestedIncrement = kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
     val suggestedIncrement: kotlinx.coroutines.flow.StateFlow<Int?> = _suggestedIncrement
 
+
+    // Traer el incremento del headquarter
     fun loadIncrementForHeadquarter(headquarterId: String, fallback: Int) {
         viewModelScope.launch {
             val inc = try {
@@ -230,5 +239,22 @@ class InstallationFormViewModel @Inject constructor(
             // ✅ nunca emitir 0 si hay fallback
             _suggestedIncrement.value = if (inc > 0) inc else fallback
         }
+    }
+
+    fun startListeningVehicles() {
+        if (vehiclesListener != null) return
+
+        vehiclesListener = vehicleRepository.listenVehicles(
+            onChange = { _vehicles.value = it },
+            onError = { e ->
+                android.util.Log.e("VM", "Error listening vehicles", e)
+            }
+        )
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        vehiclesListener?.remove()
+        vehiclesListener = null
     }
 }
