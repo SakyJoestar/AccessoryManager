@@ -101,39 +101,41 @@ class InstalledAccessoryAdapter(
 
         /* ---------- Dropdown Accesorio ---------- */
         val names = options.map { it.name }
-        val adapter = ArrayAdapter(
+        val dropdownAdapter = ArrayAdapter(
             binding.root.context,
             android.R.layout.simple_list_item_1,
             names
         )
-        binding.actAccessory.setAdapter(adapter)
+        binding.actAccessory.setAdapter(dropdownAdapter)
         binding.actAccessory.setText(item.name.orEmpty(), false)
 
-        /* ---------- Precio ---------- */
-        setTextSafely(binding.etPrice, item.price.toString())
-
+        /* ---------- Precio (set inicial + watcher con separador) ---------- */
         holder.priceWatcher?.let { binding.etPrice.removeTextChangedListener(it) }
         holder.priceWatcher = ThousandsSeparatorTextWatcher(binding.etPrice)
         binding.etPrice.addTextChangedListener(holder.priceWatcher)
 
+        // ✅ set inicial del precio SIN romper el cursor
+        setTextSafely(binding.etPrice, item.price.toString())
+
+        /* ---------- Estado habilitado según selección ---------- */
         val isAccessorySelected = !item.accessoryId.isNullOrBlank()
 
-        /* ---------- Pagado ---------- */
+        // ✅ primero quitamos listener para no dispararlo al setear estado
         binding.chkPaid.setOnCheckedChangeListener(null)
 
-        // ✅ habilitar solo si hay accesorio
-        binding.chkPaid.isEnabled = isAccessorySelected
-        binding.chkPaid.alpha = if (isAccessorySelected) 1f else 0.4f
-
-        // ✅ si NO hay accesorio, forzar a false
+        // ✅ set estado del checkbox (solo válido si hay accesorio)
         binding.chkPaid.isChecked = if (isAccessorySelected) item.isPaid else false
 
+        // ✅ bloquea / desbloquea precio y pagado
+        updateEnabledState(binding, isAccessorySelected)
+
+        /* ---------- Pagado listener ---------- */
         binding.chkPaid.setOnCheckedChangeListener { _, checked ->
             val pos = holder.adapterPosition
             if (pos == RecyclerView.NO_POSITION) return@setOnCheckedChangeListener
 
             // 🚫 seguridad extra
-            if (!isAccessorySelected) return@setOnCheckedChangeListener
+            if (items[pos].accessoryId.isNullOrBlank()) return@setOnCheckedChangeListener
 
             updateItem(pos, items[pos].copy(isPaid = checked))
         }
@@ -142,6 +144,9 @@ class InstalledAccessoryAdapter(
         binding.etPrice.doAfterTextChanged {
             val pos = holder.adapterPosition
             if (pos == RecyclerView.NO_POSITION) return@doAfterTextChanged
+
+            // 🚫 si no hay accesorio seleccionado, ignorar cambios
+            if (items[pos].accessoryId.isNullOrBlank()) return@doAfterTextChanged
 
             val price = parseLongClean(binding.etPrice.text?.toString())
             if (price == items[pos].price) return@doAfterTextChanged
@@ -173,6 +178,9 @@ class InstalledAccessoryAdapter(
             notifyItemChanged(pos)
             onChanged(items.toList())
 
+            // ✅ ahora sí: habilitar precio y checkbox
+            updateEnabledState(binding, true)
+
             hideKeyboard(binding.actAccessory)
             binding.actAccessory.clearFocus()
         }
@@ -185,6 +193,23 @@ class InstalledAccessoryAdapter(
     }
 
     /* ---------- Helpers ---------- */
+
+    private fun updateEnabledState(
+        binding: ItemAccessoryRowBinding,
+        enabled: Boolean
+    ) {
+        binding.etPrice.isEnabled = enabled
+        binding.etPrice.alpha = if (enabled) 1f else 0.4f
+
+        binding.chkPaid.isEnabled = enabled
+        binding.chkPaid.alpha = if (enabled) 1f else 0.4f
+
+        if (!enabled) {
+            // ✅ si no hay accesorio seleccionado, forzar valores
+            binding.etPrice.setText("0")
+            binding.chkPaid.isChecked = false
+        }
+    }
 
     private fun parseLongClean(text: String?): Long {
         val raw = text.orEmpty().replace(".", "").trim()
