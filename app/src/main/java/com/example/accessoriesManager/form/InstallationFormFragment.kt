@@ -159,6 +159,24 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         val normalText = binding.btnSave.text
 
+        etSerie.doAfterTextChanged {
+            val text = it?.toString() ?: return@doAfterTextChanged
+            val upper = text.uppercase()
+            if (text != upper) {
+                etSerie.setText(upper)
+                etSerie.setSelection(upper.length)
+            }
+        }
+
+        etPlate.doAfterTextChanged {
+            val text = it?.toString() ?: return@doAfterTextChanged
+            val upper = text.uppercase()
+            if (text != upper) {
+                etPlate.setText(upper)
+                etPlate.setSelection(upper.length)
+            }
+        }
+
         // ---------- Condición ----------
         val conditions = listOf("Nuevo", "Usado", "Taller")
         actCondition.setAdapter(

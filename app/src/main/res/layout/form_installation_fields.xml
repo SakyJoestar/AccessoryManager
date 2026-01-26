@@ -70,8 +70,9 @@
                 style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:maxLength="8" />
+                android:maxLength="8"
+                android:inputType="textCapCharacters"
+                />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ========== FILA 2: Placa | Bodega ========== -->
@@ -93,7 +94,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textCapCharacters"
-                android:maxLength="6" />
+                android:maxLength="6"
+                />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -114,7 +116,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="number"
-                android:maxLength="4"/>
+                android:maxLength="4"
+                />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ========== FILA 3: Condición | Fecha ========== -->
