@@ -48,10 +48,19 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
     private var isAutoToggling = false
 
-    var hqCache: List<Headquarter> = emptyList()
-
-    // Mantener accesorios actuales
+    // Mantener accesorios actuales (los del adapter)
     private var currentAccessories: List<InstalledAccessory> = emptyList()
+
+    // refs para recalcular fácil
+    private lateinit var etIncrement: TextInputEditText
+    private lateinit var etTotalWorked: TextInputEditText
+    private lateinit var etPaid: TextInputEditText
+    private lateinit var etUnpaid: TextInputEditText
+
+    private lateinit var tgPayment: MaterialButtonToggleGroup
+    private lateinit var btnPaid: MaterialButton
+    private lateinit var btnNotPaid: MaterialButton
+    private lateinit var btnPartiallyPaid: MaterialButton
 
     companion object {
         private const val ARG_ID = "installationId"
@@ -79,17 +88,17 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val etDate = container.findViewById<TextInputEditText>(R.id.etDate)
 
         val actHeadquarter = container.findViewById<AutoCompleteTextView>(R.id.actHeadquarter)
-        val etIncrement = container.findViewById<TextInputEditText>(R.id.etIncrement)
+        etIncrement = container.findViewById(R.id.etIncrement)
 
         val actVehicle = container.findViewById<AutoCompleteTextView>(R.id.actVehicle)
 
         val rvAccessories = container.findViewById<RecyclerView>(R.id.rvAccessories)
         val btnAddAccessory = container.findViewById<MaterialButton>(R.id.btnAddAccessory)
 
-        val tgPayment = container.findViewById<MaterialButtonToggleGroup>(R.id.tgPaymentStatus)
-        val btnPaid = container.findViewById<MaterialButton>(R.id.btnPaid)
-        val btnNotPaid = container.findViewById<MaterialButton>(R.id.btnNotPaid)
-        val btnPartiallyPaid = container.findViewById<MaterialButton>(R.id.btnPartiallyPaid)
+        tgPayment = container.findViewById(R.id.tgPaymentStatus)
+        btnPaid = container.findViewById(R.id.btnPaid)
+        btnNotPaid = container.findViewById(R.id.btnNotPaid)
+        btnPartiallyPaid = container.findViewById(R.id.btnPartiallyPaid)
 
         val tilOrder = container.findViewById<TextInputLayout>(R.id.tilOrder)
         val tilSerie = container.findViewById<TextInputLayout>(R.id.tilSerie)
@@ -99,53 +108,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val tilHeadquarter = container.findViewById<TextInputLayout>(R.id.tilHeadquarter)
         val tilVehicle = container.findViewById<TextInputLayout>(R.id.tilVehicle)
 
-        fun clearGroupErrors() {
-            clearError(tilOrder)
-            clearError(tilSerie)
-            clearError(tilPlate)
-        }
-
-        etOrder.doAfterTextChanged { clearGroupErrors() }
-        etSerie.doAfterTextChanged { clearGroupErrors() }
-        etPlate.doAfterTextChanged { clearGroupErrors() }
-
-        // ---------- Limpiar error de grupo al escribir ----------
-        etOrder.doAfterTextChanged {
-            clearGroupErrors(tilOrder, tilSerie, tilPlate)
-        }
-
-        etSerie.doAfterTextChanged {
-            clearGroupErrors(tilOrder, tilSerie, tilPlate)
-        }
-
-        etPlate.doAfterTextChanged {
-            clearGroupErrors(tilOrder, tilSerie, tilPlate)
-        }
-
-        // ✅ Totales (según tus IDs)
-        val etTotalWorked = container.findViewById<TextInputEditText>(R.id.etTotalWorked) // Total trabajado
-        val etPaid = container.findViewById<TextInputEditText>(R.id.etPaid)               // Total pagado
-        val etUnpaid = container.findViewById<TextInputEditText>(R.id.etUnpaid)
-
-
-        // ---------- Limpiar error cuando el usuario escriba ----------
-        etOrder.doAfterTextChanged {
-            tilOrder.error = null
-            tilSerie.error = null
-            tilPlate.error = null
-        }
-
-        etSerie.doAfterTextChanged {
-            tilOrder.error = null
-            tilSerie.error = null
-            tilPlate.error = null
-        }
-
-        etPlate.doAfterTextChanged {
-            tilOrder.error = null
-            tilSerie.error = null
-            tilPlate.error = null
-        }// Total no pagado
+        // ✅ Totales
+        etTotalWorked = container.findViewById(R.id.etTotalWorked)
+        etPaid = container.findViewById(R.id.etPaid)
+        etUnpaid = container.findViewById(R.id.etUnpaid)
 
         // ✅ Solo lectura (no se editan a mano)
         makeReadOnly(etTotalWorked)
@@ -157,9 +123,24 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         btnNotPaid.isClickable = false
         btnPartiallyPaid.isClickable = false
 
-        // Defaults
+        // ---------- Limpiar errores ----------
+        fun clearGroupErrors() {
+            clearError(tilOrder); clearError(tilSerie); clearError(tilPlate)
+        }
+
+        etOrder.doAfterTextChanged { clearGroupErrors() }
+        etSerie.doAfterTextChanged { clearGroupErrors() }
+        etPlate.doAfterTextChanged { clearGroupErrors() }
+
+        // ---------- Defaults ----------
         etIncrement.setText("0")
         etIncrement.addTextChangedListener(ThousandsSeparatorTextWatcher(etIncrement))
+
+        // ✅ Cuando cambia incremento (por sede o manual), recalcular totales
+        etIncrement.doAfterTextChanged {
+            updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
+            autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+        }
 
         // ---------- Edit mode ----------
         editId = arguments?.getString(ARG_ID)
@@ -203,10 +184,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 currentAccessories = list
                 viewModel.setAccessories(list)
 
-                // ✅ 1) Actualizar los 3 totales SIEMPRE
+                // ✅ Totales con incremento
                 updateTotalsUI(list, etTotalWorked, etPaid, etUnpaid)
 
-                // ✅ 2) Auto-toggle según checkboxes
+                // ✅ Auto-toggle según checkboxes
                 autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, list)
             }
         )
@@ -218,11 +199,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             ensureAtLeastOneAccessoryRow()
         }
 
-        btnAddAccessory.setOnClickListener {
-            accessoriesAdapter.addEmpty()
-        }
+        btnAddAccessory.setOnClickListener { accessoriesAdapter.addEmpty() }
 
-        //Mayusculas
+        // ---------- Mayúsculas ----------
         etSerie.doAfterTextChanged {
             val up = it?.toString()?.uppercase().orEmpty()
             if (up != it.toString()) etSerie.setText(up).also { etSerie.setSelection(up.length) }
@@ -249,24 +228,16 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         // ---------- Save ----------
         binding.btnSave.setOnClickListener {
-            etOrder.error = null
-            etSerie.error = null
-            etPlate.error = null
-            etWarehouse.error = null
-            etIncrement.error = null
-            tilOrder.error = null
-            tilSerie.error = null
-            tilPlate.error = null
+            tilOrder.error = null; tilSerie.error = null; tilPlate.error = null
 
             val order = etOrder.text?.toString()?.toIntOrNull()
             val serie = etSerie.text?.toString().orEmpty()
             val plate = etPlate.text?.toString().orEmpty()
             val warehouse = etWarehouse.text?.toString().orEmpty()
 
-            val incrementRaw = etIncrement.text?.toString()?.replace(".", "") ?: "0"
-            val increment = incrementRaw.toIntOrNull() ?: 0
+            val increment = getIncrementValue().toInt()
 
-            // ✅ Totales calculados por checkboxes
+            // ✅ Totales calculados en UI (con incremento)
             val total = totalWorked()
             val paidValue = totalPaid()
             val unPaidValue = totalUnpaid()
@@ -278,8 +249,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 plate = plate,
                 warehouse = warehouse,
                 condition = actCondition.text?.toString(),
-                increment = increment,
-                paymentValueRaw = paidValue.toString(), // (si lo sigues usando, aquí va lo pagado)
+                increment = increment, // fallback
+                paymentValueRaw = paidValue.toString(),
                 total = total,
                 paidValue = paidValue,
                 unPaidValue = unPaidValue
@@ -318,7 +289,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 accessoriesAdapter.submitList(listOf(InstalledAccessory()))
                                 currentAccessories = accessoriesAdapter.getCurrent()
 
-                                // ✅ recalcular totales en limpio
                                 updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
 
                                 setDateText(etDate, Calendar.getInstance())
@@ -335,26 +305,16 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             binding.btnSave.text = normalText
                         }
 
-                        // ✅ AQUÍ VA TU BLOQUE
                         is InstallationFormViewModel.UiState.FieldError -> {
-
-                            // Limpia primero (así no quedan iconos rojos viejos)
                             clearError(tilOrder); clearError(tilSerie); clearError(tilPlate)
                             clearError(tilDate); clearError(tilHeadquarter); clearError(tilVehicle)
 
                             when (state.field) {
-
-                                "order_serie_plate" -> {
-                                    setGroupErrorNoText(state.msg, tilOrder, tilSerie, tilPlate)
-                                }
-
-                                "date" -> markError(tilDate,  state.msg)
-
+                                "order_serie_plate" -> setGroupErrorNoText(state.msg, tilOrder, tilSerie, tilPlate)
+                                "date" -> markError(tilDate, state.msg)
                                 "headquarter" -> markError(tilHeadquarter, state.msg)
-
                                 "vehicle" -> markError(tilVehicle, state.msg)
-
-                                "accessories" -> showSnack(state.msg) // si no tienes TIL para accesorios
+                                "accessories" -> showSnack(state.msg)
                             }
 
                             binding.btnSave.isEnabled = true
@@ -364,7 +324,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 }
             }
         }
-
 
         // ---------- VM form: rellenar si edición ----------
         viewLifecycleOwner.lifecycleScope.launch {
@@ -385,8 +344,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     }
 
                     actHeadquarter.setText(installation.headquarter?.name.orEmpty(), false)
-                    val inc = installation.headquarter?.increment ?: 0
-                    setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
+
+                    // ✅ usa el increment guardado en la instalación (histórico)
+                    val inc = installation.increment ?: 0L
+                    setTextSafely(etIncrement, formatMoneyDots(inc))
 
                     val mk = installation.vehicle?.make.orEmpty()
                     val md = installation.vehicle?.model.orEmpty()
@@ -397,7 +358,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     accessoriesAdapter.submitList(safeList)
                     currentAccessories = accessoriesAdapter.getCurrent()
 
-                    // ✅ forzar cálculo + auto toggle
                     updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                     autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
                 }
@@ -419,9 +379,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             val hq = list[idx]
                             viewModel.setHeadquarter(hq)
 
-                            val incHq = hq.increment ?: 0
-                            setTextSafely(etIncrement, formatMoneyDots(incHq.toLong()))
-                            viewModel.loadIncrementForHeadquarter(hq.id ?: "", incHq)
+                            val incHq = (hq.increment ?: 0).toLong()
+                            setTextSafely(etIncrement, formatMoneyDots(incHq))
+
+                            // ✅ recalcular por si cambia la sede/incremento
+                            updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
+                            autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
 
                             hideKeyboardFrom(actHeadquarter)
                             actHeadquarter.clearFocus()
@@ -482,12 +445,61 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     viewModel.suggestedIncrement.collect { inc ->
                         inc ?: return@collect
                         if (inc <= 0) return@collect
+
                         setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
+
+                        // ✅ recalcular porque cambió el incremento
+                        updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
+                        autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
                     }
                 }
             }
         }
     }
+
+    // -------------------- Totales con incremento --------------------
+
+    private fun getIncrementValue(): Long {
+        val raw = etIncrement.text?.toString()?.replace(".", "")?.trim().orEmpty()
+        return raw.toLongOrNull() ?: 0L
+    }
+
+    private fun selectedAccessoriesOnly(list: List<InstalledAccessory>): List<InstalledAccessory> =
+        list.filter { !it.accessoryId.isNullOrBlank() }
+
+    private fun totalWorked(): Long {
+        val inc = getIncrementValue()
+        val list = selectedAccessoriesOnly(currentAccessories)
+        return list.sumOf { it.price + inc }
+    }
+
+    private fun totalPaid(): Long {
+        val inc = getIncrementValue()
+        val list = selectedAccessoriesOnly(currentAccessories)
+        return list.filter { it.isPaid }.sumOf { it.price + inc }
+    }
+
+    private fun totalUnpaid(): Long = totalWorked() - totalPaid()
+
+    private fun updateTotalsUI(
+        accessories: List<InstalledAccessory>,
+        etTotal: TextInputEditText,
+        etPaid: TextInputEditText,
+        etUnpaid: TextInputEditText
+    ) {
+        val inc = getIncrementValue()
+        val selected = selectedAccessoriesOnly(accessories)
+
+        val total = selected.sumOf { it.price + inc }
+        val paid = selected.filter { it.isPaid }.sumOf { it.price + inc }
+        val unpaid = total - paid
+
+        setTextSafely(etTotal, formatMoneyDots(total))
+        setTextSafely(etPaid, formatMoneyDots(paid))
+        setTextSafely(etUnpaid, formatMoneyDots(unpaid))
+    }
+
+    // -------------------- UI helpers --------------------
 
     private fun makeReadOnly(et: TextInputEditText) {
         et.isFocusable = false
@@ -504,41 +516,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         }
     }
 
-    // ✅ Totales reales
-    private fun totalWorked(): Long = currentAccessories.sumOf { it.price ?: 0L }
-    private fun totalPaid(): Long = currentAccessories.filter { it.isPaid }.sumOf { it.price ?: 0L }
-    private fun totalUnpaid(): Long = totalWorked() - totalPaid()
-
-    private fun updateTotalsUI(
-        accessories: List<InstalledAccessory>,
-        etTotal: TextInputEditText,
-        etPaid: TextInputEditText,
-        etUnpaid: TextInputEditText
-    ) {
-        val total = accessories.sumOf { it.price ?: 0L }
-        val paid = accessories.filter { it.isPaid }.sumOf { it.price ?: 0L }
-        val unpaid = total - paid
-
-        setTextSafely(etTotal, formatMoneyDots(total))
-        setTextSafely(etPaid, formatMoneyDots(paid))
-        setTextSafely(etUnpaid, formatMoneyDots(unpaid))
-    }
-
-    private fun clearGroupErrors(
-        tilOrder: TextInputLayout,
-        tilSerie: TextInputLayout,
-        tilPlate: TextInputLayout
-    ) {
-        tilOrder.error = null
-        tilOrder.isErrorEnabled = false
-
-        tilSerie.error = null
-        tilSerie.isErrorEnabled = false
-
-        tilPlate.error = null
-        tilPlate.isErrorEnabled = false
-    }
-
     private fun autoSetPaymentToggle(
         tg: MaterialButtonToggleGroup,
         btnPaid: MaterialButton,
@@ -546,10 +523,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         btnPartiallyPaid: MaterialButton,
         accessories: List<InstalledAccessory>
     ) {
-        val paidCount = accessories.count { it.isPaid }
+        val selected = accessories.filter { !it.accessoryId.isNullOrBlank() }
+        val paidCount = selected.count { it.isPaid }
+
         val targetId = when {
-            accessories.isEmpty() || paidCount == 0 -> btnNotPaid.id
-            paidCount == accessories.size -> btnPaid.id
+            selected.isEmpty() || paidCount == 0 -> btnNotPaid.id
+            paidCount == selected.size -> btnPaid.id
             else -> btnPartiallyPaid.id
         }
 
@@ -642,16 +621,14 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     }
 
     private fun setGroupErrorNoText(msg: String, vararg tils: TextInputLayout) {
-        // íconos rojos en los 3
         tils.forEach { it.isErrorEnabled = true; it.error = msg }
-        // mensaje solo una vez
         showSnack(msg)
     }
 
-    private fun markError(til: com.google.android.material.textfield.TextInputLayout, msg: String) {
+    private fun markError(til: TextInputLayout, msg: String) {
         til.isErrorEnabled = true
-        til.error = msg // <- necesario para que salga el ícono rojo
-        showSnack(msg)  // <- tu snackbar global
+        til.error = msg
+        showSnack(msg)
     }
 
     private fun clearError(til: TextInputLayout) {

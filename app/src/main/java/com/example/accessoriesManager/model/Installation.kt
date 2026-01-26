@@ -15,6 +15,7 @@ data class Installation(
     val condition: String? = null,
     val date: Timestamp? = null,
     val headquarter: Headquarter? = null,
+    val increment: Long? = null,
     val vehicle: Vehicle? = null,
     val accessories: List<InstalledAccessory>? = null,
     val state: String? = null,

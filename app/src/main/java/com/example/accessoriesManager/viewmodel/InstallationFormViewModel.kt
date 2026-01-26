@@ -34,8 +34,6 @@ class InstallationFormViewModel @Inject constructor(
         data object Saving : UiState()
         data class Success(val msg: String) : UiState()
         data class Error(val msg: String) : UiState()
-
-        // Si luego quieres validaciones específicas:
         data class FieldError(val field: String, val msg: String) : UiState()
     }
 
@@ -55,7 +53,7 @@ class InstallationFormViewModel @Inject constructor(
     private val _vehicles = MutableStateFlow<List<Vehicle>>(emptyList())
     val vehicles: StateFlow<List<Vehicle>> = _vehicles.asStateFlow()
 
-    //Accessories
+    // Accessories
     private val _accessories = MutableStateFlow<List<Accessory>>(emptyList())
     val accessories: StateFlow<List<Accessory>> = _accessories.asStateFlow()
 
@@ -66,54 +64,29 @@ class InstallationFormViewModel @Inject constructor(
     private var selectedAccessories: List<InstalledAccessory> = emptyList()
     private var paymentState: String? = "NO_PAGADO" // default
 
-
     init {
-        // Cargar combos
         refreshOptions()
-
         startListeningVehicles()
     }
 
     private fun refreshOptions() {
         viewModelScope.launch {
-            try {
-                _headquarters.value = headquarterRepository.getAll() // <-- ajusta si tu repo se llama distinto
-            } catch (_: Exception) {}
+            try { _headquarters.value = headquarterRepository.getAll() } catch (_: Exception) {}
         }
-
         viewModelScope.launch {
-            try {
-                _vehicles.value = vehicleRepository.getAll()
-            } catch (_: Exception) {}
+            try { _vehicles.value = vehicleRepository.getAll() } catch (_: Exception) {}
         }
-
         viewModelScope.launch {
-            try {
-                _accessories.value = accessoryRepository.getAll()
-            } catch (_: Exception) {}
+            try { _accessories.value = accessoryRepository.getAll() } catch (_: Exception) {}
         }
     }
 
     // -------------------- Setters desde Fragment --------------------
-    fun setDate(ts: Timestamp?) {
-        selectedDate = ts
-    }
-
-    fun setHeadquarter(hq: Headquarter?) {
-        selectedHeadquarter = hq
-    }
-
-    fun setVehicle(vehicle: Vehicle?) {
-        selectedVehicle = vehicle
-    }
-
-    fun setAccessories(list: List<InstalledAccessory>) {
-        selectedAccessories = list
-    }
-
-    fun setPaymentState(state: String?) {
-        paymentState = state
-    }
+    fun setDate(ts: Timestamp?) { selectedDate = ts }
+    fun setHeadquarter(hq: Headquarter?) { selectedHeadquarter = hq }
+    fun setVehicle(vehicle: Vehicle?) { selectedVehicle = vehicle }
+    fun setAccessories(list: List<InstalledAccessory>) { selectedAccessories = list }
+    fun setPaymentState(state: String?) { paymentState = state }
 
     // -------------------- Load (edit mode) --------------------
     fun loadById(id: String) {
@@ -122,12 +95,14 @@ class InstallationFormViewModel @Inject constructor(
                 val installation = installationRepository.getById(id)
                 _form.value = installation
 
-                // llenar drafts para que el usuario edite sin perder estado
                 selectedDate = installation?.date
                 selectedHeadquarter = installation?.headquarter
                 selectedVehicle = installation?.vehicle
                 selectedAccessories = installation?.accessories.orEmpty()
                 paymentState = installation?.state ?: "NO_PAGADO"
+
+                // ✅ para que el fragment muestre el incremento guardado en esa instalación
+                _suggestedIncrement.value = (installation?.increment ?: 0L).toInt()
 
             } catch (e: Exception) {
                 _state.value = UiState.Error(e.message ?: "Error cargando la instalación")
@@ -143,7 +118,7 @@ class InstallationFormViewModel @Inject constructor(
         plate: String,
         warehouse: String,
         condition: String?,
-        increment: Int,
+        increment: Int, // lo dejamos por compatibilidad, pero la fuente real es la sede
         paymentValueRaw: String?,
         total: Long,
         paidValue: Long,
@@ -162,7 +137,6 @@ class InstallationFormViewModel @Inject constructor(
             val hasSerie = serieClean.isNotBlank()
             val hasPlate = plateClean.isNotBlank()
 
-
             // ---------- 1) Al menos uno de los 3 ----------
             if (!hasOrder && !hasSerie && !hasPlate) {
                 _state.value = UiState.FieldError(
@@ -172,13 +146,11 @@ class InstallationFormViewModel @Inject constructor(
                 return@launch
             }
 
-
             // ---------- 2) Obligatorios ----------
             if (selectedDate == null) {
                 _state.value = UiState.FieldError("date", "La fecha es obligatoria")
                 return@launch
             }
-
             if (selectedHeadquarter == null) {
                 _state.value = UiState.FieldError("headquarter", "La sede es obligatoria")
                 return@launch
@@ -191,12 +163,11 @@ class InstallationFormViewModel @Inject constructor(
             // ---------- 3) Accesorios ----------
             val hasAnyAccessorySelected = selectedAccessories.any { !it.accessoryId.isNullOrBlank() }
             if (!hasAnyAccessorySelected) {
-                _state.value =
-                    UiState.FieldError("accessories", "Debes agregar al menos un accesorio")
+                _state.value = UiState.FieldError("accessories", "Debes agregar al menos un accesorio")
                 return@launch
             }
 
-            // ---------- 4) Validaciones individuales (solo si vienen) ----------
+            // ---------- 4) Validaciones individuales ----------
             if (hasOrder && orderStr.length > 7) {
                 _state.value = UiState.FieldError("order", "Orden: máximo 7 caracteres")
                 return@launch
@@ -226,16 +197,22 @@ class InstallationFormViewModel @Inject constructor(
             try {
                 val now = Timestamp.now()
 
-                // Totales desde accesorios
-                val totalWorked = selectedAccessories.sumOf { it.price ?: 0L }
-                val totalPaid = selectedAccessories.filter { it.isPaid }.sumOf { it.price ?: 0L }
+                // ✅ Incremento REAL desde la sede seleccionada (si por algo no viene, fallback al parámetro)
+                val inc = (selectedHeadquarter?.increment ?: increment).toLong()
+
+                // ✅ Guardar solo accesorios seleccionados (sin filas vacías)
+                val selectedReal = selectedAccessories.filter { !it.accessoryId.isNullOrBlank() }
+
+                // ✅ Totales: precio base + incremento por accesorio
+                val totalWorked = selectedReal.sumOf { it.price + inc }
+                val totalPaid = selectedReal.filter { it.isPaid }.sumOf { it.price + inc }
                 val totalUnpaid = totalWorked - totalPaid
 
                 val current = if (!id.isNullOrBlank()) installationRepository.getById(id) else null
 
                 val installation = Installation(
                     id = id,
-                    order = order, // opcional
+                    order = order,
                     serie = serieClean.ifBlank { null },
                     plate = plateClean.ifBlank { null },
                     warehouse = warehouseClean.ifBlank { null },
@@ -243,8 +220,9 @@ class InstallationFormViewModel @Inject constructor(
                     date = selectedDate,
                     headquarter = selectedHeadquarter,
                     vehicle = selectedVehicle,
-                    accessories = selectedAccessories,
-                    state = paymentState, // toggle
+                    accessories = selectedReal,  // ✅ base price
+                    increment = inc,             // ✅ histórico
+                    state = paymentState,
                     totalWorked = totalWorked,
                     totalPaid = totalPaid,
                     totalUnpaid = totalUnpaid,
@@ -266,20 +244,17 @@ class InstallationFormViewModel @Inject constructor(
         }
     }
 
-    private val _suggestedIncrement = kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
-    val suggestedIncrement: kotlinx.coroutines.flow.StateFlow<Int?> = _suggestedIncrement
+    private val _suggestedIncrement = MutableStateFlow<Int?>(null)
+    val suggestedIncrement: StateFlow<Int?> = _suggestedIncrement
 
-
-    // Traer el incremento del headquarter
+    // Traer el incremento del headquarter (si lo sigues usando para sugerir)
     fun loadIncrementForHeadquarter(headquarterId: String, fallback: Int) {
         viewModelScope.launch {
             val inc = try {
-                headquarterRepository.getIncrement(headquarterId) // último de installations
+                headquarterRepository.getIncrement(headquarterId)
             } catch (_: Exception) {
                 0
             }
-
-            // ✅ nunca emitir 0 si hay fallback
             _suggestedIncrement.value = if (inc > 0) inc else fallback
         }
     }
