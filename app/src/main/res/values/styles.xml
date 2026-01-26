@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- styles.xml -->
+    <style name="NoErrorText" parent="@style/TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">0sp</item>
+        <item name="android:textColor">@android:color/transparent</item>
+    </style>
+
     <style name="AppInputLayout" parent="Widget.MaterialComponents.TextInputLayout.FilledBox.Dense">
         <!-- Fondo / borde -->
         <item name="boxBackgroundMode">filled</item>
@@ -15,6 +21,10 @@
 
         <!-- Quita espacios raros -->
         <item name="expandedHintEnabled">true</item>
+
+
+        <item name="errorEnabled">true</item>
+        <item name="errorTextAppearance">@style/NoErrorText</item>
     </style>
 
     <style name="AppInputText" parent="Widget.MaterialComponents.TextInputEditText.FilledBox.Dense">

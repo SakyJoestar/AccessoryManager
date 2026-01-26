@@ -29,6 +29,7 @@ import com.example.accessoriesManager.viewmodel.InstallationFormViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.Timestamp
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -90,10 +91,61 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val btnNotPaid = container.findViewById<MaterialButton>(R.id.btnNotPaid)
         val btnPartiallyPaid = container.findViewById<MaterialButton>(R.id.btnPartiallyPaid)
 
+        val tilOrder = container.findViewById<TextInputLayout>(R.id.tilOrder)
+        val tilSerie = container.findViewById<TextInputLayout>(R.id.tilSerie)
+        val tilPlate = container.findViewById<TextInputLayout>(R.id.tilPlate)
+
+        val tilDate = container.findViewById<TextInputLayout>(R.id.tilDate)
+        val tilHeadquarter = container.findViewById<TextInputLayout>(R.id.tilHeadquarter)
+        val tilVehicle = container.findViewById<TextInputLayout>(R.id.tilVehicle)
+
+        fun clearGroupErrors() {
+            clearError(tilOrder)
+            clearError(tilSerie)
+            clearError(tilPlate)
+        }
+
+        etOrder.doAfterTextChanged { clearGroupErrors() }
+        etSerie.doAfterTextChanged { clearGroupErrors() }
+        etPlate.doAfterTextChanged { clearGroupErrors() }
+
+        // ---------- Limpiar error de grupo al escribir ----------
+        etOrder.doAfterTextChanged {
+            clearGroupErrors(tilOrder, tilSerie, tilPlate)
+        }
+
+        etSerie.doAfterTextChanged {
+            clearGroupErrors(tilOrder, tilSerie, tilPlate)
+        }
+
+        etPlate.doAfterTextChanged {
+            clearGroupErrors(tilOrder, tilSerie, tilPlate)
+        }
+
         // ✅ Totales (según tus IDs)
         val etTotalWorked = container.findViewById<TextInputEditText>(R.id.etTotalWorked) // Total trabajado
         val etPaid = container.findViewById<TextInputEditText>(R.id.etPaid)               // Total pagado
-        val etUnpaid = container.findViewById<TextInputEditText>(R.id.etUnpaid)           // Total no pagado
+        val etUnpaid = container.findViewById<TextInputEditText>(R.id.etUnpaid)
+
+
+        // ---------- Limpiar error cuando el usuario escriba ----------
+        etOrder.doAfterTextChanged {
+            tilOrder.error = null
+            tilSerie.error = null
+            tilPlate.error = null
+        }
+
+        etSerie.doAfterTextChanged {
+            tilOrder.error = null
+            tilSerie.error = null
+            tilPlate.error = null
+        }
+
+        etPlate.doAfterTextChanged {
+            tilOrder.error = null
+            tilSerie.error = null
+            tilPlate.error = null
+        }// Total no pagado
 
         // ✅ Solo lectura (no se editan a mano)
         makeReadOnly(etTotalWorked)
@@ -119,7 +171,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         if (isEditMode) {
             viewModel.loadById(editId!!)
         } else {
-            setDateText(etDate, Calendar.getInstance())
+            val cal = Calendar.getInstance()
+            setDateText(etDate, cal)
+            viewModel.setDate(fromCalendarToTimestamp(cal))
         }
 
         val normalText = binding.btnSave.text
@@ -200,6 +254,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             etPlate.error = null
             etWarehouse.error = null
             etIncrement.error = null
+            tilOrder.error = null
+            tilSerie.error = null
+            tilPlate.error = null
 
             val order = etOrder.text?.toString()?.toIntOrNull()
             val serie = etSerie.text?.toString().orEmpty()
@@ -280,23 +337,26 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                         // ✅ AQUÍ VA TU BLOQUE
                         is InstallationFormViewModel.UiState.FieldError -> {
+
+                            // Limpia primero (así no quedan iconos rojos viejos)
+                            clearError(tilOrder); clearError(tilSerie); clearError(tilPlate)
+                            clearError(tilDate); clearError(tilHeadquarter); clearError(tilVehicle)
+
                             when (state.field) {
-                                "headquarter" -> actHeadquarter.error = state.msg
-                                "vehicle" -> actVehicle.error = state.msg
-                                "date" -> etDate.error = state.msg
-                                "order" -> etOrder.error = state.msg
-                                "serie" -> etSerie.error = state.msg
-                                "plate" -> etPlate.error = state.msg
-                                "warehouse" -> etWarehouse.error = state.msg
 
                                 "order_serie_plate" -> {
-                                    etOrder.error = state.msg
-                                    etSerie.error = state.msg
-                                    etPlate.error = state.msg
+                                    setGroupErrorNoText(state.msg, tilOrder, tilSerie, tilPlate)
                                 }
+
+                                "date" -> markError(tilDate,  state.msg)
+
+                                "headquarter" -> markError(tilHeadquarter, state.msg)
+
+                                "vehicle" -> markError(tilVehicle, state.msg)
+
+                                "accessories" -> showSnack(state.msg) // si no tienes TIL para accesorios
                             }
 
-                            // por si venías de Saving
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
@@ -321,6 +381,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     installation.date?.let { ts ->
                         val cal = Calendar.getInstance().apply { time = ts.toDate() }
                         setDateText(etDate, cal)
+                        viewModel.setDate(ts)
                     }
 
                     actHeadquarter.setText(installation.headquarter?.name.orEmpty(), false)
@@ -463,6 +524,21 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         setTextSafely(etUnpaid, formatMoneyDots(unpaid))
     }
 
+    private fun clearGroupErrors(
+        tilOrder: TextInputLayout,
+        tilSerie: TextInputLayout,
+        tilPlate: TextInputLayout
+    ) {
+        tilOrder.error = null
+        tilOrder.isErrorEnabled = false
+
+        tilSerie.error = null
+        tilSerie.isErrorEnabled = false
+
+        tilPlate.error = null
+        tilPlate.isErrorEnabled = false
+    }
+
     private fun autoSetPaymentToggle(
         tg: MaterialButtonToggleGroup,
         btnPaid: MaterialButton,
@@ -563,5 +639,23 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private fun hideKeyboardFrom(view: View) {
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(view.windowToken, 0)
+    }
+
+    private fun setGroupErrorNoText(msg: String, vararg tils: TextInputLayout) {
+        // íconos rojos en los 3
+        tils.forEach { it.isErrorEnabled = true; it.error = msg }
+        // mensaje solo una vez
+        showSnack(msg)
+    }
+
+    private fun markError(til: com.google.android.material.textfield.TextInputLayout, msg: String) {
+        til.isErrorEnabled = true
+        til.error = msg // <- necesario para que salga el ícono rojo
+        showSnack(msg)  // <- tu snackbar global
+    }
+
+    private fun clearError(til: TextInputLayout) {
+        til.error = null
+        til.isErrorEnabled = false
     }
 }

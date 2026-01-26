@@ -152,110 +152,105 @@ class InstallationFormViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = UiState.Idle
 
-            // ---------- Validaciones ----------
-            if (order == null || order <= 0) {
-                _state.value = UiState.FieldError("order", "La orden debe ser válida")
-                return@launch
-            }
-            if (selectedHeadquarter == null) {
-                _state.value = UiState.FieldError("headquarter", "Selecciona una sede")
-                return@launch
-            }
-            if (selectedVehicle == null) {
-                _state.value = UiState.FieldError("vehicle", "Selecciona un vehículo")
+            // ---------- Normalizar inputs ----------
+            val orderStr = order?.toString().orEmpty().trim()
+            val serieClean = serie.trim().uppercase()
+            val plateClean = plate.trim().uppercase()
+            val warehouseClean = warehouse.trim()
+
+            val hasOrder = orderStr.isNotBlank()
+            val hasSerie = serieClean.isNotBlank()
+            val hasPlate = plateClean.isNotBlank()
+
+
+            // ---------- 1) Al menos uno de los 3 ----------
+            if (!hasOrder && !hasSerie && !hasPlate) {
+                _state.value = UiState.FieldError(
+                    "order_serie_plate",
+                    "Debes llenar al menos uno: Orden, Serie o Placa"
+                )
                 return@launch
             }
 
+
+            // ---------- 2) Obligatorios ----------
+            if (selectedDate == null) {
+                _state.value = UiState.FieldError("date", "La fecha es obligatoria")
+                return@launch
+            }
+
+            if (selectedHeadquarter == null) {
+                _state.value = UiState.FieldError("headquarter", "La sede es obligatoria")
+                return@launch
+            }
+            if (selectedVehicle == null) {
+                _state.value = UiState.FieldError("vehicle", "El vehículo es obligatorio")
+                return@launch
+            }
+
+            // ---------- 3) Accesorios ----------
+            val hasAnyAccessorySelected = selectedAccessories.any { !it.accessoryId.isNullOrBlank() }
+            if (!hasAnyAccessorySelected) {
+                _state.value =
+                    UiState.FieldError("accessories", "Debes agregar al menos un accesorio")
+                return@launch
+            }
+
+            // ---------- 4) Validaciones individuales (solo si vienen) ----------
+            if (hasOrder && orderStr.length > 7) {
+                _state.value = UiState.FieldError("order", "Orden: máximo 7 caracteres")
+                return@launch
+            }
+
+            val serieRegex = Regex("^[A-Z0-9]{1,8}$")
+            if (hasSerie && !serieRegex.matches(serieClean)) {
+                _state.value = UiState.FieldError("serie", "Serie: solo mayúsculas y números (máx 8)")
+                return@launch
+            }
+
+            val plateRegex = Regex("^[A-Z0-9]{6}$")
+            if (hasPlate && !plateRegex.matches(plateClean)) {
+                _state.value = UiState.FieldError("plate", "Placa: debe tener 6 caracteres (A-Z y 0-9)")
+                return@launch
+            }
+
+            val warehouseRegex = Regex("^\\d{1,4}$")
+            if (warehouseClean.isNotBlank() && !warehouseRegex.matches(warehouseClean)) {
+                _state.value = UiState.FieldError("warehouse", "Bodega: solo números (máx 4)")
+                return@launch
+            }
+
+            // ---------- OK: guardar ----------
             _state.value = UiState.Saving
 
             try {
                 val now = Timestamp.now()
 
-                // ✅ AQUÍ VA TU LÓGICA
+                // Totales desde accesorios
                 val totalWorked = selectedAccessories.sumOf { it.price ?: 0L }
-                val totalPaid = selectedAccessories
-                    .filter { it.isPaid }
-                    .sumOf { it.price ?: 0L }
+                val totalPaid = selectedAccessories.filter { it.isPaid }.sumOf { it.price ?: 0L }
+                val totalUnpaid = totalWorked - totalPaid
 
-                val totalUnpaid = selectedAccessories
-                    .filter { !it.isPaid }
-                    .sumOf { it.price ?: 0L }
-
-                val current = if (!id.isNullOrBlank())
-                    installationRepository.getById(id)
-                else null
+                val current = if (!id.isNullOrBlank()) installationRepository.getById(id) else null
 
                 val installation = Installation(
                     id = id,
-                    order = order,
-                    serie = serie.ifBlank { null },
-                    plate = plate.ifBlank { null },
-                    warehouse = warehouse.ifBlank { null },
-                    condition = condition,
+                    order = order, // opcional
+                    serie = serieClean.ifBlank { null },
+                    plate = plateClean.ifBlank { null },
+                    warehouse = warehouseClean.ifBlank { null },
+                    condition = condition?.ifBlank { null },
                     date = selectedDate,
                     headquarter = selectedHeadquarter,
                     vehicle = selectedVehicle,
                     accessories = selectedAccessories,
-                    state = paymentState, // 👈 toggle SOLO define estado
+                    state = paymentState, // toggle
                     totalWorked = totalWorked,
                     totalPaid = totalPaid,
                     totalUnpaid = totalUnpaid,
                     createdAt = current?.createdAt ?: now,
                     updatedAt = now
                 )
-
-                val orderStr = order?.toString().orEmpty().trim()
-                val serieClean = serie.trim().uppercase()
-                val plateClean = plate.trim().uppercase()
-                val warehouseClean = warehouse.trim()
-
-                // ✅ 1) Obligatorios
-                if (selectedHeadquarter == null) {
-                    _state.value = UiState.FieldError("headquarter", "La sede es obligatoria")
-                    return@launch
-                }
-                if (selectedVehicle == null) {
-                    _state.value = UiState.FieldError("vehicle", "El vehículo es obligatorio")
-                    return@launch
-                }
-                if (selectedDate == null) {
-                    _state.value = UiState.FieldError("date", "La fecha es obligatoria")
-                    return@launch
-                }
-
-                // ✅ 2) Al menos uno de los 3: orden / serie / placa
-                val hasOrder = orderStr.isNotBlank()
-                val hasSerie = serieClean.isNotBlank()
-                val hasPlate = plateClean.isNotBlank()
-
-                if (!hasOrder && !hasSerie && !hasPlate) {
-                    _state.value = UiState.FieldError("order_serie_plate", "Debes ingresar al menos: Orden, Serie o Placa")
-                    return@launch
-                }
-
-                // ✅ 3) Validaciones individuales SOLO si vienen llenas
-                if (hasOrder && orderStr.length > 7) {
-                    _state.value = UiState.FieldError("order", "Orden: máximo 7 caracteres")
-                    return@launch
-                }
-
-                val serieRegex = Regex("^[A-Z0-9]{1,8}$")
-                if (hasSerie && !serieRegex.matches(serieClean)) {
-                    _state.value = UiState.FieldError("serie", "Serie: solo mayúsculas y números (máx 8)")
-                    return@launch
-                }
-
-                val plateRegex = Regex("^[A-Z0-9]{6}$")
-                if (hasPlate && !plateRegex.matches(plateClean)) {
-                    _state.value = UiState.FieldError("plate", "Placa: debe tener exactamente 6 caracteres (A-Z y 0-9)")
-                    return@launch
-                }
-
-                val warehouseRegex = Regex("^\\d{1,4}$")
-                if (warehouseClean.isNotBlank() && !warehouseRegex.matches(warehouseClean)) {
-                    _state.value = UiState.FieldError("warehouse", "Bodega: solo números (máx 4)")
-                    return@launch
-                }
 
                 if (id.isNullOrBlank()) {
                     installationRepository.create(installation)
