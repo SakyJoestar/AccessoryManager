@@ -20,18 +20,27 @@ class InstalledAccessoryAdapter(
 
     private val items = mutableListOf<InstalledAccessory>()
 
+    // ✅ Flag: mostrar error en la primera fila si no hay accesorio seleccionado
+    private var showAccessoryRequiredErrorOnFirstRow = false
+
+    fun showAccessoryRequiredErrorOnFirstRow() {
+        showAccessoryRequiredErrorOnFirstRow = true
+        notifyItemChanged(0)
+    }
+
+    fun clearAccessoryRequiredError() {
+        if (!showAccessoryRequiredErrorOnFirstRow) return
+        showAccessoryRequiredErrorOnFirstRow = false
+        notifyItemChanged(0)
+    }
+
     fun submitList(list: List<InstalledAccessory>) {
         items.clear()
         items.addAll(list)
 
         // ✅ Garantiza mínimo 1 fila
         if (items.isEmpty()) {
-            items.add(
-                InstalledAccessory(
-                    price = 0L,
-                    isPaid = false
-                )
-            )
+            items.add(InstalledAccessory(price = 0L, isPaid = false))
         }
 
         notifyDataSetChanged()
@@ -41,12 +50,7 @@ class InstalledAccessoryAdapter(
     fun getCurrent(): List<InstalledAccessory> = items.toList()
 
     fun addEmpty() {
-        items.add(
-            InstalledAccessory(
-                price = 0L,
-                isPaid = false
-            )
-        )
+        items.add(InstalledAccessory(price = 0L, isPaid = false))
         notifyItemInserted(items.lastIndex)
         onChanged(items.toList())
     }
@@ -86,6 +90,14 @@ class InstalledAccessoryAdapter(
         val item = items[position]
 
         val cantRemove = position == 0
+        val isAccessorySelected = !item.accessoryId.isNullOrBlank()
+
+        // ✅ Error en rojo solo en la primera fila (si se pidió mostrar error)
+        binding.tilAccessory?.let { til ->
+            val showError = (position == 0) && showAccessoryRequiredErrorOnFirstRow && !isAccessorySelected
+            til.isErrorEnabled = showError
+            til.error = if (showError) "Selecciona un accesorio" else null
+        }
 
         // ✅ X deshabilitada/oculta en la primera
         binding.btnRemove.apply {
@@ -117,24 +129,17 @@ class InstalledAccessoryAdapter(
         // ✅ set inicial del precio SIN romper el cursor
         setTextSafely(binding.etPrice, item.price.toString())
 
-        /* ---------- Estado habilitado según selección ---------- */
-        val isAccessorySelected = !item.accessoryId.isNullOrBlank()
-
-        // ✅ primero quitamos listener para no dispararlo al setear estado
+        /* ---------- Estado Pagado ---------- */
         binding.chkPaid.setOnCheckedChangeListener(null)
-
-        // ✅ set estado del checkbox (solo válido si hay accesorio)
         binding.chkPaid.isChecked = if (isAccessorySelected) item.isPaid else false
 
-        // ✅ bloquea / desbloquea precio y pagado
+        // ✅ bloquea / desbloquea precio y pagado según selección
         updateEnabledState(binding, isAccessorySelected)
 
         /* ---------- Pagado listener ---------- */
         binding.chkPaid.setOnCheckedChangeListener { _, checked ->
             val pos = holder.adapterPosition
             if (pos == RecyclerView.NO_POSITION) return@setOnCheckedChangeListener
-
-            // 🚫 seguridad extra
             if (items[pos].accessoryId.isNullOrBlank()) return@setOnCheckedChangeListener
 
             updateItem(pos, items[pos].copy(isPaid = checked))
@@ -144,8 +149,6 @@ class InstalledAccessoryAdapter(
         binding.etPrice.doAfterTextChanged {
             val pos = holder.adapterPosition
             if (pos == RecyclerView.NO_POSITION) return@doAfterTextChanged
-
-            // 🚫 si no hay accesorio seleccionado, ignorar cambios
             if (items[pos].accessoryId.isNullOrBlank()) return@doAfterTextChanged
 
             val price = parseLongClean(binding.etPrice.text?.toString())
@@ -154,9 +157,19 @@ class InstalledAccessoryAdapter(
             updateItem(pos, items[pos].copy(price = price))
         }
 
-        // ✅ (Opcional) cerrar teclado cuando sales del precio
+        // ✅ Si borran el precio, al perder foco queda "0" y se guarda 0
         binding.etPrice.setOnFocusChangeListener { v, hasFocus ->
-            if (!hasFocus) hideKeyboard(v)
+            if (!hasFocus) {
+                val pos = holder.adapterPosition
+                if (pos != RecyclerView.NO_POSITION && !items[pos].accessoryId.isNullOrBlank()) {
+                    val raw = binding.etPrice.text?.toString().orEmpty().replace(".", "").trim()
+                    if (raw.isBlank()) {
+                        setTextSafely(binding.etPrice, "0")
+                        updateItem(pos, items[pos].copy(price = 0L))
+                    }
+                }
+                hideKeyboard(v)
+            }
         }
 
         /* ---------- Accesorio seleccionado ---------- */
@@ -178,7 +191,10 @@ class InstalledAccessoryAdapter(
             notifyItemChanged(pos)
             onChanged(items.toList())
 
-            // ✅ ahora sí: habilitar precio y checkbox
+            // ✅ limpiar error si ya seleccionó
+            clearAccessoryRequiredError()
+
+            // ✅ habilitar precio y checkbox
             updateEnabledState(binding, true)
 
             hideKeyboard(binding.actAccessory)

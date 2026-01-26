@@ -332,7 +332,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 "date" -> markError(tilDate, state.msg)
                                 "headquarter" -> markError(tilHeadquarter, state.msg)
                                 "vehicle" -> markError(tilVehicle, state.msg)
-                                "accessories" -> showSnack(state.msg)
+                                "accessories" -> {
+                                    showSnack(state.msg)
+                                    accessoriesAdapter.showAccessoryRequiredErrorOnFirstRow()
+                                    rvAccessories.scrollToPosition(0)
+                                }
                             }
 
                             binding.btnSave.isEnabled = true
