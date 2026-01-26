@@ -135,7 +135,7 @@ class InstallationFormViewModel @Inject constructor(
         }
     }
 
-    // -------------------- Save / Update --------------------
+    // ---------- Save / Update ----------
     fun save(
         id: String?,
         order: Int?,
@@ -144,19 +144,17 @@ class InstallationFormViewModel @Inject constructor(
         warehouse: String,
         condition: String?,
         increment: Int,
-        paymentValueRaw: String?
+        paymentValueRaw: String?,
+        total: Long,
+        paidValue: Long,
+        unPaidValue: Long
     ) {
         viewModelScope.launch {
-            // Reset state
             _state.value = UiState.Idle
 
-            // --------- Validaciones rápidas (mínimas) ---------
+            // ---------- Validaciones ----------
             if (order == null || order <= 0) {
-                _state.value = UiState.FieldError("order", "La orden debe ser un número válido")
-                return@launch
-            }
-            if (plate.isBlank()) {
-                _state.value = UiState.FieldError("plate", "La placa es obligatoria")
+                _state.value = UiState.FieldError("order", "La orden debe ser válida")
                 return@launch
             }
             if (selectedHeadquarter == null) {
@@ -167,30 +165,25 @@ class InstallationFormViewModel @Inject constructor(
                 _state.value = UiState.FieldError("vehicle", "Selecciona un vehículo")
                 return@launch
             }
-            if (selectedDate == null) {
-                _state.value = UiState.FieldError("date", "Selecciona una fecha")
-                return@launch
-            }
-
-
-            val paymentValue = paymentValueRaw
-                ?.replace(".", "")
-                ?.trim()
-                ?.toIntOrNull()
-
-            // Si está ABONADO, podrías exigir paymentValue > 0 (opcional)
-            if (paymentState == "ABONADO" && (paymentValue == null || paymentValue <= 0)) {
-                _state.value = UiState.FieldError("paymentValue", "Si es abonado, ingresa un valor válido")
-                return@launch
-            }
 
             _state.value = UiState.Saving
 
             try {
                 val now = Timestamp.now()
 
-                // Si estás editando, conserva createdAt si ya existe
-                val current = if (!id.isNullOrBlank()) installationRepository.getById(id) else null
+                // ✅ AQUÍ VA TU LÓGICA
+                val totalWorked = selectedAccessories.sumOf { it.price ?: 0L }
+                val totalPaid = selectedAccessories
+                    .filter { it.isPaid }
+                    .sumOf { it.price ?: 0L }
+
+                val totalUnpaid = selectedAccessories
+                    .filter { !it.isPaid }
+                    .sumOf { it.price ?: 0L }
+
+                val current = if (!id.isNullOrBlank())
+                    installationRepository.getById(id)
+                else null
 
                 val installation = Installation(
                     id = id,
@@ -198,11 +191,15 @@ class InstallationFormViewModel @Inject constructor(
                     serie = serie.ifBlank { null },
                     plate = plate.ifBlank { null },
                     warehouse = warehouse.ifBlank { null },
-                    condition = condition?.ifBlank { null },
+                    condition = condition,
                     date = selectedDate,
                     headquarter = selectedHeadquarter,
                     vehicle = selectedVehicle,
-                    state = paymentState,
+                    accessories = selectedAccessories,
+                    state = paymentState, // 👈 toggle SOLO define estado
+                    totalWorked = totalWorked,
+                    totalPaid = totalPaid,
+                    totalUnpaid = totalUnpaid,
                     createdAt = current?.createdAt ?: now,
                     updatedAt = now
                 )
@@ -210,11 +207,9 @@ class InstallationFormViewModel @Inject constructor(
                 if (id.isNullOrBlank()) {
                     installationRepository.create(installation)
                     _state.value = UiState.Success("Instalación guardada")
-                    _form.value = null
                 } else {
                     installationRepository.update(id, installation)
                     _state.value = UiState.Success("Instalación actualizada")
-                    _form.value = installation
                 }
 
             } catch (e: Exception) {

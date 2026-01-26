@@ -1,9 +1,13 @@
 package com.example.accessoriesManager.form
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -11,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentFormBaseBinding
 import com.example.accessoriesManager.adapter.InstalledAccessoryAdapter
@@ -23,7 +28,6 @@ import com.example.accessoriesManager.viewmodel.InstallationFormViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.Timestamp
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -38,12 +42,13 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private val viewModel: InstallationFormViewModel by viewModels()
 
     private var editId: String? = null
-
     private lateinit var accessoriesAdapter: InstalledAccessoryAdapter
+
+    private var isAutoToggling = false
 
     var hqCache: List<Headquarter> = emptyList()
 
-    // ✅ Mantener accesorios actuales para calcular total
+    // Mantener accesorios actuales
     private var currentAccessories: List<InstalledAccessory> = emptyList()
 
     companion object {
@@ -55,14 +60,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         _binding = FragmentFormBaseBinding.bind(view)
 
-        // ✅ Inflar campos específicos del form de instalación
         layoutInflater.inflate(
             R.layout.form_installation_fields,
             binding.formFieldsContainer,
             true
         )
 
-        // ---------- Find Views ----------
         val container = binding.formFieldsContainer
 
         val etOrder = container.findViewById<TextInputEditText>(R.id.etOrder)
@@ -70,38 +73,40 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val etPlate = container.findViewById<TextInputEditText>(R.id.etPlate)
         val etWarehouse = container.findViewById<TextInputEditText>(R.id.etWarehouse)
 
-        val actCondition = container.findViewById<android.widget.AutoCompleteTextView>(R.id.actCondition)
+        val actCondition = container.findViewById<AutoCompleteTextView>(R.id.actCondition)
         val etDate = container.findViewById<TextInputEditText>(R.id.etDate)
 
-        val actHeadquarter = container.findViewById<android.widget.AutoCompleteTextView>(R.id.actHeadquarter)
+        val actHeadquarter = container.findViewById<AutoCompleteTextView>(R.id.actHeadquarter)
         val etIncrement = container.findViewById<TextInputEditText>(R.id.etIncrement)
 
-        val actVehicle = container.findViewById<android.widget.AutoCompleteTextView>(R.id.actVehicle)
+        val actVehicle = container.findViewById<AutoCompleteTextView>(R.id.actVehicle)
 
-        val rvAccessories = container.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvAccessories)
-        val btnAddAccessory = container.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddAccessory)
+        val rvAccessories = container.findViewById<RecyclerView>(R.id.rvAccessories)
+        val btnAddAccessory = container.findViewById<MaterialButton>(R.id.btnAddAccessory)
 
         val tgPayment = container.findViewById<MaterialButtonToggleGroup>(R.id.tgPaymentStatus)
         val btnPaid = container.findViewById<MaterialButton>(R.id.btnPaid)
         val btnNotPaid = container.findViewById<MaterialButton>(R.id.btnNotPaid)
         val btnPartiallyPaid = container.findViewById<MaterialButton>(R.id.btnPartiallyPaid)
 
+        // ✅ Totales (según tus IDs)
+        val etTotalWorked = container.findViewById<TextInputEditText>(R.id.etTotalWorked) // Total trabajado
+        val etPaid = container.findViewById<TextInputEditText>(R.id.etPaid)               // Total pagado
+        val etUnpaid = container.findViewById<TextInputEditText>(R.id.etUnpaid)           // Total no pagado
+
+        // ✅ Solo lectura (no se editan a mano)
+        makeReadOnly(etTotalWorked)
+        makeReadOnly(etPaid)
+        makeReadOnly(etUnpaid)
+
+        // ✅ El usuario NO debería tocar el toggle (se maneja automático)
         btnPaid.isClickable = false
         btnNotPaid.isClickable = false
         btnPartiallyPaid.isClickable = false
 
-        val tilPaymentValue = container.findViewById<TextInputLayout>(R.id.tilPaymentValue)
-        val etPaymentValue = container.findViewById<TextInputEditText>(R.id.etPaymentValue)
-
-        // ✅ SIEMPRE VISIBLE
-        tilPaymentValue.visibility = View.VISIBLE
-
-        // watcher de miles
-        etPaymentValue.addTextChangedListener(ThousandsSeparatorTextWatcher(etPaymentValue))
-
         // Defaults
         etIncrement.setText("0")
-        // (lo setea la regla del toggle más abajo)
+        etIncrement.addTextChangedListener(ThousandsSeparatorTextWatcher(etIncrement))
 
         // ---------- Edit mode ----------
         editId = arguments?.getString(ARG_ID)
@@ -113,21 +118,16 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         if (isEditMode) {
             viewModel.loadById(editId!!)
         } else {
-            // default: hoy
             setDateText(etDate, Calendar.getInstance())
         }
 
         val normalText = binding.btnSave.text
 
-        // ---------- Condición dropdown (simple) ----------
+        // ---------- Condición ----------
         val conditions = listOf("Nuevo", "Usado", "Taller")
-        val conditionAdapter = android.widget.ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_list_item_1,
-            conditions
+        actCondition.setAdapter(
+            ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, conditions)
         )
-        actCondition.setAdapter(conditionAdapter)
-
         actCondition.setOnItemClickListener { _, _, _, _ ->
             hideKeyboardFrom(actCondition)
             actCondition.clearFocus()
@@ -148,18 +148,17 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 currentAccessories = list
                 viewModel.setAccessories(list)
 
-                // ✅ 1) Auto-seleccionar toggle según checkboxes
-                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, list)
+                // ✅ 1) Actualizar los 3 totales SIEMPRE
+                updateTotalsUI(list, etTotalWorked, etPaid, etUnpaid)
 
-                // ✅ 2) Aplicar regla del total según toggle (tu lógica actual)
-                applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
+                // ✅ 2) Auto-toggle según checkboxes
+                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, list)
             }
         )
 
         rvAccessories.layoutManager = LinearLayoutManager(requireContext())
         rvAccessories.adapter = accessoriesAdapter
 
-        // ✅ Siempre iniciar con 1 fila si NO es edición
         if (!isEditMode) {
             ensureAtLeastOneAccessoryRow()
         }
@@ -168,14 +167,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             accessoriesAdapter.addEmpty()
         }
 
-        // ---------- Payment status (toggle exclusive) ----------
+        // ---------- Toggle: solo para guardar state ----------
         tgPayment.addOnButtonCheckedListener { _, _, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
+            if (isAutoToggling) return@addOnButtonCheckedListener
 
-            // ✅ Aplicar regla UI
-            applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
-
-            // Guardamos string state en VM según selección
             val state = when (tgPayment.checkedButtonId) {
                 btnPaid.id -> "PAGADO"
                 btnNotPaid.id -> "NO_PAGADO"
@@ -185,15 +181,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             viewModel.setPaymentState(state)
         }
 
-        // ✅ regla inicial (si ya hay uno marcado por default)
-        applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
-
-        // ---------- Increment miles ----------
-        etIncrement.addTextChangedListener(ThousandsSeparatorTextWatcher(etIncrement))
-
         // ---------- Save ----------
         binding.btnSave.setOnClickListener {
-            // limpiar errores simples
             etOrder.error = null
             etSerie.error = null
             etPlate.error = null
@@ -208,9 +197,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             val incrementRaw = etIncrement.text?.toString()?.replace(".", "") ?: "0"
             val increment = incrementRaw.toIntOrNull() ?: 0
 
-            // ✅ Si está vacío (ABONADO), normalizamos a 0 (o ajusta en VM si quieres null)
-            val paymentValueRaw = etPaymentValue.text?.toString()?.replace(".", "")?.trim().orEmpty()
-            val paymentValueNormalized = if (paymentValueRaw.isBlank()) "0" else paymentValueRaw
+            // ✅ Totales calculados por checkboxes
+            val total = totalWorked()
+            val paidValue = totalPaid()
+            val unPaidValue = totalUnpaid()
 
             viewModel.save(
                 id = editId,
@@ -220,7 +210,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 warehouse = warehouse,
                 condition = actCondition.text?.toString(),
                 increment = increment,
-                paymentValueRaw = paymentValueNormalized
+                paymentValueRaw = paidValue.toString(), // (si lo sigues usando, aquí va lo pagado)
+                total = total,
+                paidValue = paidValue,
+                unPaidValue = unPaidValue
             )
         }
 
@@ -244,7 +237,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             hideKeyboard()
 
                             if (!isEditMode) {
-                                // limpiar “suave”
                                 etOrder.setText("")
                                 etSerie.setText("")
                                 etPlate.setText("")
@@ -254,13 +246,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 actVehicle.setText("", false)
                                 etIncrement.setText("0")
 
-                                // ✅ NO dejar vacío: dejar 1 fila siempre
                                 accessoriesAdapter.submitList(listOf(InstalledAccessory()))
                                 currentAccessories = accessoriesAdapter.getCurrent()
 
-                                // Estado pago a NO_PAGADO y aplicar regla (pone 0)
-                                tgPayment.check(btnNotPaid.id)
-                                applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
+                                // ✅ recalcular totales en limpio
+                                updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
 
                                 setDateText(etDate, Calendar.getInstance())
                                 etOrder.requestFocus()
@@ -292,16 +282,13 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     etSerie.setText(installation.serie.orEmpty())
                     etPlate.setText(installation.plate.orEmpty())
                     etWarehouse.setText(installation.warehouse.orEmpty())
-
                     actCondition.setText(installation.condition.orEmpty(), false)
 
-                    // date
                     installation.date?.let { ts ->
                         val cal = Calendar.getInstance().apply { time = ts.toDate() }
                         setDateText(etDate, cal)
                     }
 
-                    // sede / vehiculo
                     actHeadquarter.setText(installation.headquarter?.name.orEmpty(), false)
                     val inc = installation.headquarter?.increment ?: 0
                     setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
@@ -310,23 +297,14 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     val md = installation.vehicle?.model.orEmpty()
                     actVehicle.setText(if (mk.isNotBlank() && md.isNotBlank()) "$mk - $md" else md, false)
 
-                    // accesorios
                     val list = installation.accessories.orEmpty()
                     val safeList = if (list.isEmpty()) listOf(InstalledAccessory()) else list
                     accessoriesAdapter.submitList(safeList)
                     currentAccessories = accessoriesAdapter.getCurrent()
+
+                    // ✅ forzar cálculo + auto toggle
+                    updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                     autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
-                    applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
-
-//                    // estado pago
-//                    when (installation.state) {
-//                        "PAGADO" -> tgPayment.check(btnPaid.id)
-//                        "ABONADO" -> tgPayment.check(btnPartiallyPaid.id)
-//                        else -> tgPayment.check(btnNotPaid.id)
-//                    }
-
-                    // ✅ aplicar regla UI según estado (pagado suma / no pagado 0 / abonado vacío)
-                    applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
                 }
             }
         }
@@ -338,22 +316,16 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 launch {
                     viewModel.headquarters.collect { list ->
                         val names = list.map { it.name ?: "" }
-                        val hqAdapter = android.widget.ArrayAdapter(
-                            requireContext(),
-                            android.R.layout.simple_list_item_1,
-                            names
+                        actHeadquarter.setAdapter(
+                            ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, names)
                         )
-                        actHeadquarter.setAdapter(hqAdapter)
 
                         actHeadquarter.setOnItemClickListener { _, _, idx, _ ->
                             val hq = list[idx]
                             viewModel.setHeadquarter(hq)
 
-                            // ✅ 1) Rellenar INMEDIATO con el incremento de la sede
                             val incHq = hq.increment ?: 0
                             setTextSafely(etIncrement, formatMoneyDots(incHq.toLong()))
-
-                            // ✅ 2) (Opcional) pedir al VM el último incremento usado en instalaciones
                             viewModel.loadIncrementForHeadquarter(hq.id ?: "", incHq)
 
                             hideKeyboardFrom(actHeadquarter)
@@ -364,14 +336,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                 launch {
                     viewModel.vehicles.collect { list ->
-                        android.util.Log.d("VEHICLES", "vehicles size = ${list.size}")
+                        Log.d("VEHICLES", "vehicles size = ${list.size}")
                         val labels = list.map { "${it.make} - ${it.model}" }
-                        val vAdapter = android.widget.ArrayAdapter(
-                            requireContext(),
-                            android.R.layout.simple_list_item_1,
-                            labels
+
+                        actVehicle.setAdapter(
+                            ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, labels)
                         )
-                        actVehicle.setAdapter(vAdapter)
 
                         actVehicle.setOnItemClickListener { _, _, idx, _ ->
                             viewModel.setVehicle(list[idx])
@@ -383,7 +353,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                 launch {
                     viewModel.accessories.collect { list ->
-                        // Convertir a options del adapter
                         val opts = list.map {
                             Accessory(
                                 id = it.id ?: "",
@@ -392,7 +361,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             )
                         }
 
-                        // mantener lo que ya estaba escrito
                         val current = accessoriesAdapter.getCurrent()
                         val safeCurrent = if (current.isEmpty()) listOf(InstalledAccessory()) else current
 
@@ -400,27 +368,25 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             currentAccessories = updated
                             viewModel.setAccessories(updated)
 
+                            updateTotalsUI(updated, etTotalWorked, etPaid, etUnpaid)
                             autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, updated)
-                            applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
                         }
+
                         rvAccessories.adapter = accessoriesAdapter
                         accessoriesAdapter.submitList(safeCurrent)
                         currentAccessories = accessoriesAdapter.getCurrent()
 
                         ensureAtLeastOneAccessoryRow()
 
-                        // ✅ si está en PAGADO, recalcular con las nuevas options/lista
-                        applyPaymentRule(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, etPaymentValue)
+                        updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
+                        autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
                     }
                 }
 
                 launch {
                     viewModel.suggestedIncrement.collect { inc ->
                         inc ?: return@collect
-
-                        // ✅ Si llega 0, ignorarlo (evita que pise el incremento real)
                         if (inc <= 0) return@collect
-
                         setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
                     }
                 }
@@ -428,9 +394,13 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         }
     }
 
-    /**
-     * ✅ Garantiza que el recycler tenga al menos 1 card.
-     */
+    private fun makeReadOnly(et: TextInputEditText) {
+        et.isFocusable = false
+        et.isFocusableInTouchMode = false
+        et.isClickable = false
+        et.isCursorVisible = false
+    }
+
     private fun ensureAtLeastOneAccessoryRow() {
         val current = accessoriesAdapter.getCurrent()
         if (current.isEmpty()) {
@@ -439,43 +409,53 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         }
     }
 
-    /**
-     * ✅ Total de accesorios (sumatoria precios)
-     */
-    private fun accessoriesTotal(): Long {
-        return currentAccessories.sumOf { it.price ?: 0L }
+    // ✅ Totales reales
+    private fun totalWorked(): Long = currentAccessories.sumOf { it.price ?: 0L }
+    private fun totalPaid(): Long = currentAccessories.filter { it.isPaid }.sumOf { it.price ?: 0L }
+    private fun totalUnpaid(): Long = totalWorked() - totalPaid()
+
+    private fun updateTotalsUI(
+        accessories: List<InstalledAccessory>,
+        etTotal: TextInputEditText,
+        etPaid: TextInputEditText,
+        etUnpaid: TextInputEditText
+    ) {
+        val total = accessories.sumOf { it.price ?: 0L }
+        val paid = accessories.filter { it.isPaid }.sumOf { it.price ?: 0L }
+        val unpaid = total - paid
+
+        setTextSafely(etTotal, formatMoneyDots(total))
+        setTextSafely(etPaid, formatMoneyDots(paid))
+        setTextSafely(etUnpaid, formatMoneyDots(unpaid))
     }
 
-    /**
-     * ✅ Regla UI del campo Total instalación
-     */
-    private fun applyPaymentRule(
-        tgPayment: MaterialButtonToggleGroup,
+    private fun autoSetPaymentToggle(
+        tg: MaterialButtonToggleGroup,
         btnPaid: MaterialButton,
         btnNotPaid: MaterialButton,
         btnPartiallyPaid: MaterialButton,
-        etPaymentValue: TextInputEditText
+        accessories: List<InstalledAccessory>
     ) {
-        when (tgPayment.checkedButtonId) {
-            btnPaid.id -> {
-                val total = accessoriesTotal()
-                setTextSafely(etPaymentValue, formatMoneyDots(total))
-            }
-
-            btnNotPaid.id -> {
-                setTextSafely(etPaymentValue, "0")
-            }
-
-            btnPartiallyPaid.id -> {
-                val paidTotal = paidAccessoriesTotal()
-                setTextSafely(etPaymentValue, formatMoneyDots(paidTotal))
-            }
-
-            else -> {
-                // si no hay nada seleccionado (por alguna razón), lo dejamos en 0
-                setTextSafely(etPaymentValue, "0")
-            }
+        val paidCount = accessories.count { it.isPaid }
+        val targetId = when {
+            accessories.isEmpty() || paidCount == 0 -> btnNotPaid.id
+            paidCount == accessories.size -> btnPaid.id
+            else -> btnPartiallyPaid.id
         }
+
+        if (tg.checkedButtonId == targetId) return
+
+        isAutoToggling = true
+        tg.check(targetId)
+        isAutoToggling = false
+
+        val state = when (targetId) {
+            btnPaid.id -> "PAGADO"
+            btnNotPaid.id -> "NO_PAGADO"
+            btnPartiallyPaid.id -> "ABONADO"
+            else -> null
+        }
+        viewModel.setPaymentState(state)
     }
 
     private fun setTitles(isEdit: Boolean) {
@@ -509,16 +489,13 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val d = cal.get(Calendar.DAY_OF_MONTH)
         val m = cal.get(Calendar.MONTH) + 1
         val y = cal.get(Calendar.YEAR)
-
         et.setText(String.format("%02d/%02d/%04d", d, m, y))
     }
 
-    private fun fromCalendarToTimestamp(cal: Calendar): Timestamp {
-        return Timestamp(cal.time)
-    }
+    private fun fromCalendarToTimestamp(cal: Calendar): Timestamp = Timestamp(cal.time)
 
     private fun hideKeyboard() {
-        val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(requireView().windowToken, 0)
     }
 
@@ -526,8 +503,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         super.onDestroyView()
         _binding = null
     }
-
-    /* ---------- Helpers UI ---------- */
 
     private fun formatMoneyDots(value: Long): String {
         val s = value.toString()
@@ -552,41 +527,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     }
 
     private fun hideKeyboardFrom(view: View) {
-        val imm = requireContext()
-            .getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
-
-    private fun autoSetPaymentToggle(
-        tg: MaterialButtonToggleGroup,
-        btnPaid: MaterialButton,
-        btnNotPaid: MaterialButton,
-        btnPartiallyPaid: MaterialButton,
-        accessories: List<InstalledAccessory>
-    ) {
-        if (accessories.isEmpty()) {
-            // si no hay accesorios, lo más lógico: NO
-            if (tg.checkedButtonId != btnNotPaid.id) tg.check(btnNotPaid.id)
-            return
-        }
-
-        val paidCount = accessories.count { it.isPaid }
-        val targetId = when {
-            paidCount == 0 -> btnNotPaid.id
-            paidCount == accessories.size -> btnPaid.id
-            else -> btnPartiallyPaid.id
-        }
-
-        // ✅ Evitar re-check innecesario (y loops)
-        if (tg.checkedButtonId != targetId) {
-            tg.check(targetId)
-        }
-    }
-
-    private fun paidAccessoriesTotal(): Long {
-        return currentAccessories
-            .filter { it.isPaid }
-            .sumOf { it.price ?: 0L }
-    }
-
 }

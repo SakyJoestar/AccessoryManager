@@ -190,7 +190,8 @@
             android:layout_marginStart="10dp"
             app:layout_constraintTop_toBottomOf="@id/tilDate"
             app:layout_constraintStart_toStartOf="@id/guidelineMid"
-            app:layout_constraintEnd_toStartOf="@id/guidelineEnd">
+            app:layout_constraintEnd_toStartOf="@id/guidelineEnd"
+            android:clickable="false">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etIncrement"
@@ -269,6 +270,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnAddAccessory" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddAccessory"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:icon="@drawable/ic_add_24"
+            android:text="@string/agregar_accesorio"
+            app:iconPadding="6dp"
+            android:layout_marginVertical="10dp"
+            android:layout_marginBottom="10dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/rvAccessories" />
+
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/tgPaymentStatus"
             android:layout_width="wrap_content"
@@ -285,63 +300,98 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Si" />
+                android:text="Si"
+                android:clickable="false"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnNotPaid"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="No" />
+                android:text="No"
+                android:clickable="false"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPartiallyPaid"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Incompleto" />
+                android:text="Incompleto"
+                android:clickable="false"/>
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
+
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilPaymentValue"
+            android:id="@+id/tilTotalWorked"
             style="@style/AppInputLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="@string/total_instalaci_n"
-            android:layout_marginTop="14dp"
-            app:layout_constraintTop_toBottomOf="@id/tgPaymentStatus"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintTop_toBottomOf="@+id/tgPaymentStatus"
+            android:layout_marginTop="12dp">
+
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etPaymentValue"
+                android:id="@+id/etTotalWorked"
+                style="@style/AppInputText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:clickable="false"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilPaid"
+            style="@style/AppInputLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Total Pagado"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tilTotalWorked"
+            android:layout_marginTop="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPaid"
                 style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilUnpaid"
+            style="@style/AppInputLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Total no Pagado"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tilPaid"
+            android:layout_marginTop="12dp"
+            android:clickable="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etUnpaid"
+                style="@style/AppInputText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Espaciador final -->
+
         <View
             android:layout_width="0dp"
             android:layout_height="24dp"
-            app:layout_constraintTop_toBottomOf="@id/tilPaymentValue"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAddAccessory"
-            style="@style/Widget.MaterialComponents.Button.Icon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:icon="@drawable/ic_add_24"
-            android:text="@string/agregar_accesorio"
-            app:iconPadding="6dp"
-            android:layout_marginVertical="10dp"
-            android:layout_marginBottom="10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/rvAccessories" />
+            app:layout_constraintTop_toBottomOf="@+id/tilUnpaid" />
+
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
