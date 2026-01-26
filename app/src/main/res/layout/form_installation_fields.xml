@@ -50,7 +50,8 @@
                 style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number" />
+                android:inputType="number"
+                android:maxLength="7" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -69,7 +70,8 @@
                 style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="text"
+                android:maxLength="8" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ========== FILA 2: Placa | Bodega ========== -->
@@ -90,7 +92,8 @@
                 style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapCharacters" />
+                android:inputType="textCapCharacters"
+                android:maxLength="6" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -110,7 +113,8 @@
                 style="@style/AppInputText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="number"
+                android:maxLength="4"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ========== FILA 3: Condición | Fecha ========== -->

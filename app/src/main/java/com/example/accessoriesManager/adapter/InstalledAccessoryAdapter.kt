@@ -116,12 +116,25 @@ class InstalledAccessoryAdapter(
         holder.priceWatcher = ThousandsSeparatorTextWatcher(binding.etPrice)
         binding.etPrice.addTextChangedListener(holder.priceWatcher)
 
+        val isAccessorySelected = !item.accessoryId.isNullOrBlank()
+
         /* ---------- Pagado ---------- */
         binding.chkPaid.setOnCheckedChangeListener(null)
-        binding.chkPaid.isChecked = item.isPaid
+
+        // ✅ habilitar solo si hay accesorio
+        binding.chkPaid.isEnabled = isAccessorySelected
+        binding.chkPaid.alpha = if (isAccessorySelected) 1f else 0.4f
+
+        // ✅ si NO hay accesorio, forzar a false
+        binding.chkPaid.isChecked = if (isAccessorySelected) item.isPaid else false
+
         binding.chkPaid.setOnCheckedChangeListener { _, checked ->
             val pos = holder.adapterPosition
             if (pos == RecyclerView.NO_POSITION) return@setOnCheckedChangeListener
+
+            // 🚫 seguridad extra
+            if (!isAccessorySelected) return@setOnCheckedChangeListener
+
             updateItem(pos, items[pos].copy(isPaid = checked))
         }
 
@@ -152,14 +165,14 @@ class InstalledAccessoryAdapter(
             val updated = items[pos].copy(
                 accessoryId = opt.id,
                 name = opt.name,
-                price = opt.price
+                price = opt.price,
+                isPaid = false // ✅ importante
             )
-            items[pos] = updated
 
-            setTextSafely(binding.etPrice, opt.price.toString())
+            items[pos] = updated
+            notifyItemChanged(pos)
             onChanged(items.toList())
 
-            // ✅ cerrar teclado al seleccionar
             hideKeyboard(binding.actAccessory)
             binding.actAccessory.clearFocus()
         }

@@ -9,6 +9,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -167,6 +168,17 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             accessoriesAdapter.addEmpty()
         }
 
+        //Mayusculas
+        etSerie.doAfterTextChanged {
+            val up = it?.toString()?.uppercase().orEmpty()
+            if (up != it.toString()) etSerie.setText(up).also { etSerie.setSelection(up.length) }
+        }
+
+        etPlate.doAfterTextChanged {
+            val up = it?.toString()?.uppercase().orEmpty()
+            if (up != it.toString()) etPlate.setText(up).also { etPlate.setSelection(up.length) }
+        }
+
         // ---------- Toggle: solo para guardar state ----------
         tgPayment.addOnButtonCheckedListener { _, _, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
@@ -266,11 +278,33 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             binding.btnSave.text = normalText
                         }
 
-                        else -> {}
+                        // ✅ AQUÍ VA TU BLOQUE
+                        is InstallationFormViewModel.UiState.FieldError -> {
+                            when (state.field) {
+                                "headquarter" -> actHeadquarter.error = state.msg
+                                "vehicle" -> actVehicle.error = state.msg
+                                "date" -> etDate.error = state.msg
+                                "order" -> etOrder.error = state.msg
+                                "serie" -> etSerie.error = state.msg
+                                "plate" -> etPlate.error = state.msg
+                                "warehouse" -> etWarehouse.error = state.msg
+
+                                "order_serie_plate" -> {
+                                    etOrder.error = state.msg
+                                    etSerie.error = state.msg
+                                    etPlate.error = state.msg
+                                }
+                            }
+
+                            // por si venías de Saving
+                            binding.btnSave.isEnabled = true
+                            binding.btnSave.text = normalText
+                        }
                     }
                 }
             }
         }
+
 
         // ---------- VM form: rellenar si edición ----------
         viewLifecycleOwner.lifecycleScope.launch {

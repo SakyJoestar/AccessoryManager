@@ -204,6 +204,59 @@ class InstallationFormViewModel @Inject constructor(
                     updatedAt = now
                 )
 
+                val orderStr = order?.toString().orEmpty().trim()
+                val serieClean = serie.trim().uppercase()
+                val plateClean = plate.trim().uppercase()
+                val warehouseClean = warehouse.trim()
+
+                // ✅ 1) Obligatorios
+                if (selectedHeadquarter == null) {
+                    _state.value = UiState.FieldError("headquarter", "La sede es obligatoria")
+                    return@launch
+                }
+                if (selectedVehicle == null) {
+                    _state.value = UiState.FieldError("vehicle", "El vehículo es obligatorio")
+                    return@launch
+                }
+                if (selectedDate == null) {
+                    _state.value = UiState.FieldError("date", "La fecha es obligatoria")
+                    return@launch
+                }
+
+                // ✅ 2) Al menos uno de los 3: orden / serie / placa
+                val hasOrder = orderStr.isNotBlank()
+                val hasSerie = serieClean.isNotBlank()
+                val hasPlate = plateClean.isNotBlank()
+
+                if (!hasOrder && !hasSerie && !hasPlate) {
+                    _state.value = UiState.FieldError("order_serie_plate", "Debes ingresar al menos: Orden, Serie o Placa")
+                    return@launch
+                }
+
+                // ✅ 3) Validaciones individuales SOLO si vienen llenas
+                if (hasOrder && orderStr.length > 7) {
+                    _state.value = UiState.FieldError("order", "Orden: máximo 7 caracteres")
+                    return@launch
+                }
+
+                val serieRegex = Regex("^[A-Z0-9]{1,8}$")
+                if (hasSerie && !serieRegex.matches(serieClean)) {
+                    _state.value = UiState.FieldError("serie", "Serie: solo mayúsculas y números (máx 8)")
+                    return@launch
+                }
+
+                val plateRegex = Regex("^[A-Z0-9]{6}$")
+                if (hasPlate && !plateRegex.matches(plateClean)) {
+                    _state.value = UiState.FieldError("plate", "Placa: debe tener exactamente 6 caracteres (A-Z y 0-9)")
+                    return@launch
+                }
+
+                val warehouseRegex = Regex("^\\d{1,4}$")
+                if (warehouseClean.isNotBlank() && !warehouseRegex.matches(warehouseClean)) {
+                    _state.value = UiState.FieldError("warehouse", "Bodega: solo números (máx 4)")
+                    return@launch
+                }
+
                 if (id.isNullOrBlank()) {
                     installationRepository.create(installation)
                     _state.value = UiState.Success("Instalación guardada")
