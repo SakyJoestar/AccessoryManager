@@ -64,6 +64,9 @@ class InstallationFormViewModel @Inject constructor(
     private var selectedAccessories: List<InstalledAccessory> = emptyList()
     private var paymentState: String? = "NO_PAGADO" // default
 
+    // ✅ NEW: comment draft
+    private var commentDraft: String = ""
+
     init {
         refreshOptions()
         startListeningVehicles()
@@ -88,6 +91,11 @@ class InstallationFormViewModel @Inject constructor(
     fun setAccessories(list: List<InstalledAccessory>) { selectedAccessories = list }
     fun setPaymentState(state: String?) { paymentState = state }
 
+    // ✅ NEW
+    fun setComment(value: String?) {
+        commentDraft = value.orEmpty()
+    }
+
     // -------------------- Load (edit mode) --------------------
     fun loadById(id: String) {
         viewModelScope.launch {
@@ -100,6 +108,9 @@ class InstallationFormViewModel @Inject constructor(
                 selectedVehicle = installation?.vehicle
                 selectedAccessories = installation?.accessories.orEmpty()
                 paymentState = installation?.state ?: "NO_PAGADO"
+
+                // ✅ NEW: cargar comentario guardado
+                commentDraft = installation?.comment.orEmpty()
 
                 // ✅ para que el fragment muestre el incremento guardado en esa instalación
                 _suggestedIncrement.value = (installation?.increment ?: 0L).toInt()
@@ -132,6 +143,10 @@ class InstallationFormViewModel @Inject constructor(
             val serieClean = serie.trim().uppercase()
             val plateClean = plate.trim().uppercase()
             val warehouseClean = warehouse.trim()
+
+            // ✅ NEW: normalizar comentario (opcional)
+            val commentClean = commentDraft.trim()
+            val commentToSave = commentClean.takeIf { it.isNotBlank() }
 
             val hasOrder = orderStr.isNotBlank()
             val hasSerie = serieClean.isNotBlank()
@@ -226,6 +241,10 @@ class InstallationFormViewModel @Inject constructor(
                     totalWorked = totalWorked,
                     totalPaid = totalPaid,
                     totalUnpaid = totalUnpaid,
+
+                    // ✅ NEW
+                    comment = commentToSave,
+
                     createdAt = current?.createdAt ?: now,
                     updatedAt = now
                 )

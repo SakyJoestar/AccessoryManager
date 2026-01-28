@@ -56,6 +56,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private lateinit var etTotalWorked: TextInputEditText
     private lateinit var etPaid: TextInputEditText
     private lateinit var etUnpaid: TextInputEditText
+    private lateinit var etComment: TextInputEditText
 
     private lateinit var tgPayment: MaterialButtonToggleGroup
     private lateinit var btnPaid: MaterialButton
@@ -112,6 +113,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         etTotalWorked = container.findViewById(R.id.etTotalWorked)
         etPaid = container.findViewById(R.id.etPaid)
         etUnpaid = container.findViewById(R.id.etUnpaid)
+
+        etComment = container.findViewById(R.id.etComment)
 
         // ✅ Solo lectura (no se editan a mano)
         makeReadOnly(etTotalWorked)
@@ -175,6 +178,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 etPlate.setText(upper)
                 etPlate.setSelection(upper.length)
             }
+        }
+
+        etComment.doAfterTextChanged {
+            viewModel.setComment(it?.toString())
         }
 
         // ---------- Condición ----------
@@ -303,6 +310,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 actHeadquarter.setText("", false)
                                 actVehicle.setText("", false)
                                 etIncrement.setText("0")
+                                etComment.setText("")
 
                                 accessoriesAdapter.submitList(listOf(InstalledAccessory()))
                                 currentAccessories = accessoriesAdapter.getCurrent()
@@ -358,6 +366,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     etPlate.setText(installation.plate.orEmpty())
                     etWarehouse.setText(installation.warehouse.orEmpty())
                     actCondition.setText(installation.condition.orEmpty(), false)
+                    etComment.setText(installation.comment.orEmpty())
+                    viewModel.setComment(installation.comment.orEmpty())
 
                     installation.date?.let { ts ->
                         val cal = Calendar.getInstance().apply { time = ts.toDate() }
@@ -507,7 +517,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         accessories: List<InstalledAccessory>,
         etTotal: TextInputEditText,
         etPaid: TextInputEditText,
-        etUnpaid: TextInputEditText
+        etUnpaid: TextInputEditText,
     ) {
         val inc = getIncrementValue()
         val selected = selectedAccessoriesOnly(accessories)

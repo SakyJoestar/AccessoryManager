@@ -21,6 +21,18 @@ class InstallationRepository @Inject constructor(
     private fun col() =
         firestore.collection("users").document(uid()).collection("installations")
 
+    // ✅ Normaliza comment: "" -> null, "   " -> null
+    private fun normalize(installation: Installation, now: Timestamp, keepCreatedAt: Boolean): Installation {
+        val normalizedComment = installation.comment?.trim()?.takeIf { it.isNotBlank() }
+
+        return installation.copy(
+            id = null, // 👈 no guardar el id como campo (id = docId)
+            comment = normalizedComment,
+            createdAt = if (keepCreatedAt) installation.createdAt ?: now else installation.createdAt,
+            updatedAt = now
+        )
+    }
+
     // -------------------- CRUD --------------------
 
     suspend fun getById(id: String): Installation? {
@@ -41,10 +53,10 @@ class InstallationRepository @Inject constructor(
             col().document(installation.id!!)
         }
 
-        val data = installation.copy(
-            id = null, // 👈 no guardar el id como campo (id = docId)
-            createdAt = installation.createdAt ?: now,
-            updatedAt = now
+        val data = normalize(
+            installation = installation,
+            now = now,
+            keepCreatedAt = true
         )
 
         docRef.set(data).await()
@@ -58,11 +70,10 @@ class InstallationRepository @Inject constructor(
     suspend fun update(id: String, installation: Installation) {
         val now = Timestamp.now()
 
-        // Mantén createdAt si ya viene en el objeto; si no, lo respetamos como está en Firestore
-        // (si quieres, aquí podríamos leer current y preservarlo)
-        val data = installation.copy(
-            id = null,
-            updatedAt = now
+        val data = normalize(
+            installation = installation,
+            now = now,
+            keepCreatedAt = false // en update respetamos lo que ya trae (normalmente viene desde VM)
         )
 
         col().document(id).set(data).await()
@@ -72,7 +83,7 @@ class InstallationRepository @Inject constructor(
         col().document(id).delete().await()
     }
 
-    // -------------------- LISTEN (opcional pero recomendado) --------------------
+    // -------------------- LISTEN --------------------
 
     fun listenAll(
         onChange: (List<Installation>) -> Unit,

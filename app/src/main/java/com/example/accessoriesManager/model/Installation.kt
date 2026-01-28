@@ -22,6 +22,7 @@ data class Installation(
     val totalWorked: Long? = null,
     val totalPaid: Long? = null,
     val totalUnpaid: Long? = null,
+    val comment: String? = null,
     var createdAt: Timestamp? = null,
     var updatedAt: Timestamp? = null
 )
