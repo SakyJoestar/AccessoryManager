@@ -111,4 +111,17 @@ class AccessoryRepository @Inject constructor(
 
         return snap.documents.any { it.id != excludeId }
     }
+
+    suspend fun getAll(): List<Accessory> {
+        val snap = accessoriesRef()
+            .orderBy("name")
+            .get()
+            .await()
+
+        return snap.documents.mapNotNull { doc ->
+            doc.toObject(Accessory::class.java)?.apply {
+                this.id = doc.id
+            }
+        }
+    }
 }

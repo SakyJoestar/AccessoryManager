@@ -51,4 +51,7 @@
     <string name="precio">Precio</string>
     <string name="_50_000">$ 50.000</string>
     <string name="alarma">Alarma</string>
+    <string name="sedes">Sedes</string>
+    <string name="agregar_accesorio">Agregar accesorio</string>
+    <string name="total_instalaci_n">Total Trabajado</string>
 </resources>
