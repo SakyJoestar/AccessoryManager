@@ -1,324 +1,289 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/cardInstallation"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="8dp"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="0dp"
-    app:strokeWidth="0dp"
-    app:cardBackgroundColor="@color/inst_paid_bg">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <data>
+
+    </data>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardInstallation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="14dp">
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginVertical="8dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp"
+        app:cardBackgroundColor="@color/inst_paid_bg">
 
-        <!-- ===== Columna izquierda (Orden/Serie/Placa: valor) ===== -->
-
-        <!-- Orden: valor -->
-        <LinearLayout
-            android:id="@+id/rowOrden"
-            android:layout_width="0dp"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/colRight"
-            app:layout_constraintTop_toTopOf="parent">
+            android:padding="14dp">
 
-            <TextView
-                android:id="@+id/tvOrdenLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Orden:"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:textColor="@android:color/white"
-                android:layout_marginEnd="6dp"/>
-
-            <TextView
-                android:id="@+id/tvOrdenValue"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="0001"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:textColor="@android:color/white"
-                android:maxLines="1"
-                android:ellipsize="end"/>
-        </LinearLayout>
-
-        <!-- Serie: valor -->
-        <LinearLayout
-            android:id="@+id/rowSerie"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="6dp"
-            app:layout_constraintStart_toStartOf="@id/rowOrden"
-            app:layout_constraintEnd_toEndOf="@id/rowOrden"
-            app:layout_constraintTop_toBottomOf="@id/rowOrden">
-
-            <TextView
-                android:id="@+id/tvSerieLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Serie:"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:textColor="@android:color/white"
-                android:layout_marginEnd="6dp"/>
-
-            <TextView
-                android:id="@+id/tvSerieValue"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="ABC123"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:textColor="@android:color/white"
-                android:maxLines="1"
-                android:ellipsize="end"/>
-        </LinearLayout>
-
-        <!-- Placa: valor -->
-        <LinearLayout
-            android:id="@+id/rowPlaca"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="6dp"
-            app:layout_constraintStart_toStartOf="@id/rowOrden"
-            app:layout_constraintEnd_toEndOf="@id/rowOrden"
-            app:layout_constraintTop_toBottomOf="@id/rowSerie">
-
-            <TextView
-                android:id="@+id/tvPlacaLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Placa:"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:textColor="@android:color/white"
-                android:layout_marginEnd="6dp"/>
-
-            <TextView
-                android:id="@+id/tvPlacaValue"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="XYZ987"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:textColor="@android:color/white"
-                android:maxLines="1"
-                android:ellipsize="end"/>
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvMarcaModelo"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Marca, Modelo"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/white"
-            android:layout_marginTop="10dp"
-            app:layout_constraintStart_toStartOf="@id/rowOrden"
-            app:layout_constraintEnd_toEndOf="@id/rowOrden"
-            app:layout_constraintTop_toBottomOf="@id/rowPlaca"/>
-
-        <!-- ===== Columna derecha (pagado/fecha/iconos) ===== -->
-        <LinearLayout
-            android:id="@+id/colRight"
-            android:layout_width="120dp"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            <!-- ===== Columna izquierda ===== -->
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/rowOrden"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/colRight"
+                app:layout_constraintTop_toTopOf="parent">
 
                 <TextView
-                    android:id="@+id/tvPagadoLabel"
+                    android:id="@+id/tvOrdenLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Pagado:"
+                    android:text="Orden:"
                     android:textStyle="bold"
-                    android:textColor="@android:color/white"
                     android:textSize="14sp"
-                    android:layout_marginEnd="6dp"/>
+                    android:textColor="@android:color/white"
+                    android:layout_marginEnd="6dp" />
 
                 <TextView
-                    android:id="@+id/tvPagadoValue"
+                    android:id="@+id/tvOrdenValue"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Sí"
                     android:textStyle="bold"
-                    android:textColor="@android:color/white"
                     android:textSize="14sp"
+                    android:textColor="@android:color/white"
                     android:maxLines="1"
-                    android:ellipsize="end"
-                    android:textAlignment="viewStart"/>
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rowSerie"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp"
+                app:layout_constraintStart_toStartOf="@id/rowOrden"
+                app:layout_constraintEnd_toEndOf="@id/rowOrden"
+                app:layout_constraintTop_toBottomOf="@id/rowOrden">
+
+                <TextView
+                    android:id="@+id/tvSerieLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Serie:"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tvSerieValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rowPlaca"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp"
+                app:layout_constraintStart_toStartOf="@id/rowOrden"
+                app:layout_constraintEnd_toEndOf="@id/rowOrden"
+                app:layout_constraintTop_toBottomOf="@id/rowSerie">
+
+                <TextView
+                    android:id="@+id/tvPlacaLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Placa:"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tvPlacaValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
             <TextView
-                android:id="@+id/tvFecha"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Fecha"
-                android:textStyle="bold"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:layout_marginTop="6dp"
-                android:textAlignment="viewEnd"/>
-
-            <!-- Botones -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="end"
-                android:layout_marginTop="10dp">
-
-                <ImageButton
-                    android:id="@+id/btnExpand"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@android:color/transparent"
-                    android:contentDescription="Expandir"
-                    app:srcCompat="@drawable/check_box_marked"
-                    app:tint="@android:color/white"/>
-
-                <ImageButton
-                    android:id="@+id/btnEdit"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@android:color/transparent"
-                    android:contentDescription="Editar"
-                    app:srcCompat="@drawable/ic_edit"
-                    app:tint="@android:color/white"/>
-
-                <ImageButton
-                    android:id="@+id/btnDelete"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@android:color/transparent"
-                    android:contentDescription="Eliminar"
-                    app:srcCompat="@drawable/ic_delete"
-                    app:tint="@android:color/white"/>
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- Footer totales -->
-        <LinearLayout
-            android:id="@+id/rowTotals"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="14dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvMarcaModelo">
-
-            <!-- TOTAL -->
-            <LinearLayout
+                android:id="@+id/tvMarcaModelo"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="@android:color/white"
+                android:layout_marginTop="10dp"
+                app:layout_constraintStart_toStartOf="@id/rowOrden"
+                app:layout_constraintEnd_toEndOf="@id/rowOrden"
+                app:layout_constraintTop_toBottomOf="@id/rowPlaca" />
+
+            <!-- ===== Columna derecha ===== -->
+
+            <LinearLayout
+                android:id="@+id/colRight"
+                android:layout_width="120dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:text="Pagado:"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="@android:color/white"
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/tvPagadoValue"
+                        android:layout_marginStart="6dp"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:textColor="@android:color/white"
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"/>
+                </LinearLayout>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvFecha"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Total:"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp"
                     android:textStyle="bold"
-                    android:layout_marginEnd="4dp"/>
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="6dp"
+                    android:textAlignment="viewEnd" />
+
+                <!-- Botones -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="end"
+                    android:layout_marginTop="10dp">
+
+                    <ImageButton
+                        android:id="@+id/btnExpand"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Expandir"
+                        app:srcCompat="@layout/item_installation_open"
+                        app:tint="@android:color/white" />
+
+                    <ImageButton
+                        android:id="@+id/btnEdit"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Editar"
+                        app:srcCompat="@drawable/ic_edit"
+                        app:tint="@android:color/white" />
+
+                    <ImageButton
+                        android:id="@+id/btnDelete"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Eliminar"
+                        app:srcCompat="@drawable/ic_delete"
+                        app:tint="@android:color/white" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ===== Totales ===== -->
+
+            <LinearLayout
+                android:id="@+id/rowTotals"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="14dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvMarcaModelo">
 
                 <TextView
                     android:id="@+id/tvTotalValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="$0"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
-                    android:textStyle="bold"/>
-            </LinearLayout>
-
-            <!-- PAGADO -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="6dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Pagado:"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp"
                     android:textStyle="bold"
-                    android:layout_marginEnd="4dp"/>
+                    android:textSize="12sp"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"/>
 
                 <TextView
                     android:id="@+id/tvTotalPagadoValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="$0"
+                    android:layout_marginStart="16dp"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
-                    android:textStyle="bold"/>
-            </LinearLayout>
-
-            <!-- NO PAGADO -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="6dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="No pagado:"
-                    android:textColor="@android:color/white"
-                    android:textSize="12sp"
                     android:textStyle="bold"
-                    android:layout_marginEnd="4dp"/>
+                    android:textSize="12sp"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"/>
 
                 <TextView
                     android:id="@+id/tvTotalNoPagadoValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="$0"
+                    android:layout_marginStart="16dp"
                     android:textColor="@android:color/white"
+                    android:textStyle="bold"
                     android:textSize="12sp"
-                    android:textStyle="bold"/>
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"/>
             </LinearLayout>
 
-        </LinearLayout>
+            <!-- ===== DETALLE EXPANDIBLE ===== -->
+            <LinearLayout
+                android:id="@+id/layoutDetails"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                app:layout_constraintTop_toBottomOf="@id/rowTotals"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</com.google.android.material.card.MaterialCardView>
+                <!-- Ejemplos de contenido expandido -->
+                <TextView
+                    android:id="@+id/tvWarehouse"
+                    android:text="Bodega: Principal"
+                    android:textColor="@android:color/white"
+                    android:textSize="13sp"
+                    android:layout_height="match_parent"
+                    android:layout_width="match_parent"/>
+
+                <TextView
+                    android:id="@+id/tvComment"
+                    android:layout_marginTop="6dp"
+                    android:text="Comentario..."
+                    android:textColor="@android:color/white"
+                    android:textSize="13sp"
+                    android:layout_height="match_parent"
+                    android:layout_width="match_parent"/>
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.card.MaterialCardView>
+</layout>
