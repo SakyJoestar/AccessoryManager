@@ -65,12 +65,14 @@ class InstallationsFragment : Fragment() {
             }
         )
 
+        binding.rvInstallations.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         binding.rvInstallations.adapter = adapter
         binding.rvInstallations.setHasFixedSize(true)
 
         setupFiltersUi()
 
         // 🔴 Igual que en AccessoriesFragment
+        android.util.Log.d("INSTALLATIONS_FRAG", "onViewCreated -> startListening()")
         viewModel.startListening()
 
         // ===== LISTA + EXPAND =====
@@ -79,6 +81,7 @@ class InstallationsFragment : Fragment() {
             combine(viewModel.items, viewModel.expandedIds) { list, expanded ->
                 list to expanded
             }.collect { (list, expanded) ->
+                android.util.Log.d("INSTALLATIONS_UI", "UI recibió ${list.size} items")
                 adapter.submitWithExpanded(list, expanded)
             }
         }

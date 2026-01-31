@@ -37,6 +37,7 @@ class InstallationAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
+        android.util.Log.d("INSTALLATIONS_ADAPTER", "bind pos=$position id=${getItem(position).id}")
         holder.bind(getItem(position))
     }
 
@@ -50,11 +51,6 @@ class InstallationAdapter(
 
             // Click en toda la card
             cardInstallation.setOnClickListener {
-                id?.let(onToggleExpand)
-            }
-
-            // Botón expand también (misma acción)
-            btnExpand.setOnClickListener {
                 id?.let(onToggleExpand)
             }
 

@@ -80,14 +80,15 @@ class InstallationViewModel @Inject constructor(
     fun startListening() {
         _error.value = null
         reg?.remove()
+
         reg = repo.listenAll(
             onChange = { list ->
+                android.util.Log.d("INSTALLATIONS_VM", "Firestore trajo ${list.size} instalaciones")
                 _all.value = list
-                val valid = list.mapNotNull { it.id }.toSet()
-                _expandedIds.update { it.intersect(valid) }
             },
             onError = { e ->
-                _error.value = e.message ?: "Error cargando instalaciones"
+                android.util.Log.e("INSTALLATIONS_VM", "Error Firestore", e)
+                _error.value = e.message
             }
         )
     }
@@ -178,11 +179,21 @@ private fun Installation.matchesState(filter: String?): Boolean {
     return state?.trim().equals(filter.trim(), ignoreCase = true)
 }
 
-private fun Installation.matchesDates(exact: LocalDate?, from: LocalDate?, to: LocalDate?): Boolean {
+private fun Installation.matchesDates(
+    exact: LocalDate?,
+    from: LocalDate?,
+    to: LocalDate?
+): Boolean {
+
+    // si NO hay filtros activos, no filtrar
+    if (exact == null && from == null && to == null) return true
+
     val d = date.toLocalDate() ?: return false
+
     if (exact != null) return d.isEqual(exact)
     if (from != null && d.isBefore(from)) return false
     if (to != null && d.isAfter(to)) return false
+
     return true
 }
 

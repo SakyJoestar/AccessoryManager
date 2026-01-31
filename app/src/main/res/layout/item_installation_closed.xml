@@ -186,15 +186,6 @@
                     android:layout_marginTop="10dp">
 
                     <ImageButton
-                        android:id="@+id/btnExpand"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:background="@android:color/transparent"
-                        android:contentDescription="Expandir"
-                        app:srcCompat="@layout/item_installation_open"
-                        app:tint="@android:color/white" />
-
-                    <ImageButton
                         android:id="@+id/btnEdit"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
