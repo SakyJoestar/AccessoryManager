@@ -3,40 +3,211 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <data>
-
-    </data>
+    <data />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <LinearLayout
-            xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+        <!-- Scroll para que no se corte en pantallas pequeñas -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scrollRoot"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:fillViewport="true"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Instalaciones"
-                android:textStyle="bold"
-                android:textSize="20sp"
-                android:padding="16dp"/>
+                android:orientation="vertical"
+                android:paddingBottom="12dp">
 
-            <!-- Fechas (fecha exacta + rango) -->
-            <!-- (Luego lo dejamos bonito con TextInputLayout y DatePicker) -->
+                <!-- Título -->
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Instalaciones"
+                    android:textStyle="bold"
+                    android:textSize="20sp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="10dp" />
 
-            <include
-                android:id="@+id/includeSummary"
-                layout="@layout/view_installations_summary"/>
+                <!-- Fecha exacta + Limpiar -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp">
 
-            <!-- Buscador + filtro -->
-            <!-- RecyclerView de cards verdes (con headers por fecha) -->
+                    <!-- Fecha exacta -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilDateExact"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Fecha exacta"
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@drawable/ic_calendar">
 
-        </LinearLayout>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etDateExact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none"
+                            tools:text="2026-01-28" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <Space
+                        android:layout_width="8dp"
+                        android:layout_height="1dp" />
+
+                    <!-- Limpiar filtros -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnClearDates"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="Limpiar"
+                        android:minHeight="48dp"
+                        android:paddingHorizontal="12dp"
+                        style="@style/Widget.Material3.Button.OutlinedButton" />
+                </LinearLayout>
+
+                <!-- ===== Filtros de fecha ===== -->
+                <LinearLayout
+                    android:id="@+id/rowDates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp">
+
+                    <!-- Rango -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilDateFrom"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Desde"
+                            app:endIconMode="custom"
+                            app:endIconDrawable="@drawable/ic_calendar">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etDateFrom"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:clickable="true"
+                                android:inputType="none"
+                                tools:text="2026-01-01" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <Space
+                            android:layout_width="10dp"
+                            android:layout_height="1dp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilDateTo"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Hasta"
+                            app:endIconMode="custom"
+                            app:endIconDrawable="@drawable/ic_calendar">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etDateTo"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:clickable="true"
+                                android:inputType="none"
+                                tools:text="2026-01-28" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- ===== Card azul resumen ===== -->
+                <include
+                    android:id="@+id/includeSummary"
+                    layout="@layout/view_installations_summary" />
+
+                <!-- ===== Buscador + filtro ===== -->
+                <LinearLayout
+                    android:id="@+id/rowSearchFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp"
+                    android:layout_marginTop="6dp">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilSearch"
+                        android:layout_width="0dp"
+                        android:layout_height="65dp"
+                        android:layout_weight="1"
+                        app:startIconDrawable="@drawable/ic_search">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etSearch"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:hint="Buscar"
+                            android:gravity="center_vertical"
+                            android:paddingVertical="12dp"
+                            android:inputType="text"
+                            tools:text="XYZ987" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <Space
+                        android:layout_width="10dp"
+                        android:layout_height="1dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilStatus"
+                        android:layout_width="140dp"
+                        android:layout_height="wrap_content"
+                        android:hint="Estado">
+
+                        <Spinner
+                            android:id="@+id/spinnerStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:spinnerMode="dropdown" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+
+                <!-- ===== Lista ===== -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvInstallations"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="16dp"
+                    android:clipToPadding="false"
+                    tools:listitem="@layout/item_installation_closed" />
+
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

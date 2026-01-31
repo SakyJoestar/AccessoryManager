@@ -334,6 +334,20 @@
 
         </androidx.gridlayout.widget.GridLayout>
 
+        <!-- Título sección accesorios -->
+        <TextView
+            android:id="@+id/tvAccesoriosTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Accesorios:"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:layout_marginTop="10dp"
+            app:layout_constraintTop_toBottomOf="@id/gridMeta"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
         <!-- CABECERA LISTA: Nombre / Precio / Pagado -->
         <androidx.gridlayout.widget.GridLayout
             android:id="@+id/gridHeader"
@@ -342,7 +356,7 @@
             android:layout_marginTop="10dp"
             app:columnCount="3"
             app:useDefaultMargins="true"
-            app:layout_constraintTop_toBottomOf="@id/gridMeta"
+            app:layout_constraintTop_toBottomOf="@id/tvAccesoriosTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
@@ -352,6 +366,8 @@
                 android:text="Nombre"
                 android:textColor="@android:color/white"
                 android:textStyle="bold"
+                android:textSize="11sp"
+                android:alpha="0.85"
                 android:textAlignment="center"
                 app:layout_columnWeight="1"/>
 
@@ -361,6 +377,8 @@
                 android:text="Precio"
                 android:textColor="@android:color/white"
                 android:textStyle="bold"
+                android:textSize="11sp"
+                android:alpha="0.85"
                 android:textAlignment="center"
                 app:layout_columnWeight="1"/>
 
@@ -370,20 +388,22 @@
                 android:text="Pagado"
                 android:textColor="@android:color/white"
                 android:textStyle="bold"
+                android:textSize="11sp"
+                android:alpha="0.85"
                 android:textAlignment="center"
                 app:layout_columnWeight="1"/>
         </androidx.gridlayout.widget.GridLayout>
 
         <!-- Lista de accesorios -->
-        <LinearLayout
-            android:id="@+id/containerAccessories"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvAccessories"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:layout_marginTop="6dp"
             app:layout_constraintTop_toBottomOf="@id/gridHeader"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:listitem="@layout/item_accessory_row_open"/>
 
         <!-- Footer totales (igual al cerrado) -->
         <LinearLayout
@@ -392,7 +412,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginTop="14dp"
-            app:layout_constraintTop_toBottomOf="@id/containerAccessories"
+            app:layout_constraintTop_toBottomOf="@id/rvAccessories"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
