@@ -9,10 +9,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/background"
-        android:paddingTop="?attr/actionBarSize">
-        >
+        android:paddingTop="?attr/actionBarSize"
+        android:paddingBottom="86dp">
 
-        <!-- Scroll para que no se corte en pantallas pequeñas -->
+        <!-- ✅ UN SOLO SCROLL PARA TODO -->
         <androidx.core.widget.NestedScrollView
             android:id="@+id/scrollRoot"
             android:layout_width="0dp"
@@ -49,7 +49,6 @@
                     android:gravity="center_vertical"
                     android:paddingHorizontal="16dp">
 
-                    <!-- Fecha exacta -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilDateExact"
                         android:layout_width="0dp"
@@ -73,7 +72,6 @@
                         android:layout_width="8dp"
                         android:layout_height="1dp" />
 
-                    <!-- Limpiar filtros -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnClearDates"
                         android:layout_width="wrap_content"
@@ -84,7 +82,7 @@
                         android:paddingHorizontal="12dp"/>
                 </LinearLayout>
 
-                <!-- ===== Filtros de fecha ===== -->
+                <!-- Rango -->
                 <LinearLayout
                     android:id="@+id/rowDates"
                     android:layout_width="match_parent"
@@ -92,7 +90,6 @@
                     android:orientation="vertical"
                     android:paddingHorizontal="16dp">
 
-                    <!-- Rango -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -145,12 +142,12 @@
 
                 </LinearLayout>
 
-                <!-- ===== Card azul resumen ===== -->
+                <!-- Resumen -->
                 <include
                     android:id="@+id/includeSummary"
                     layout="@layout/view_installations_summary" />
 
-                <!-- ===== Buscador + filtro ===== -->
+                <!-- Buscador + filtro -->
                 <LinearLayout
                     android:id="@+id/rowSearchFilter"
                     android:layout_width="match_parent"
@@ -158,7 +155,8 @@
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:paddingHorizontal="16dp"
-                    android:layout_marginTop="6dp">
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="10dp">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilSearch"
@@ -197,16 +195,16 @@
 
                 </LinearLayout>
 
-                <!-- ===== Lista ===== -->
+                <!-- ✅ RecyclerView DENTRO del scroll: se scrolléa -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvInstallations"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="16dp"
+                    android:nestedScrollingEnabled="false"
                     android:clipToPadding="false"
-                    tools:listitem="@layout/item_installation_closed"
-                    android:nestedScrollingEnabled="false"/>
+                    android:paddingTop="8dp"
+                    android:paddingBottom="96dp"
+                    tools:listitem="@layout/item_installation_closed" />
 
             </LinearLayout>
 

@@ -67,7 +67,7 @@ class InstallationsFragment : Fragment() {
 
         binding.rvInstallations.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         binding.rvInstallations.adapter = adapter
-        binding.rvInstallations.setHasFixedSize(true)
+        binding.rvInstallations.setHasFixedSize(false)
 
         setupFiltersUi()
 
