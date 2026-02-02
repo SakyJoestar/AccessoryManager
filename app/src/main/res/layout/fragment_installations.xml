@@ -35,11 +35,15 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Instalaciones"
+                    android:textSize="22sp"
+                    android:layout_marginTop="16dp"
+                    android:paddingBottom="12dp"
                     android:textStyle="bold"
-                    android:textSize="20sp"
-                    android:paddingHorizontal="16dp"
-                    android:paddingTop="16dp"
-                    android:paddingBottom="10dp" />
+                    android:textColor="@color/text_primary"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:textAlignment="center" />
 
                 <!-- Fecha exacta + Limpiar -->
                 <LinearLayout

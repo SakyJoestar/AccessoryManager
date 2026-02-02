@@ -165,7 +165,8 @@
                         android:textSize="14sp"
                         android:textColor="@android:color/white"
                         android:layout_height="wrap_content"
-                        android:layout_width="wrap_content"/>
+                        android:layout_width="wrap_content"
+                        android:textAlignment="center"/>
                 </LinearLayout>
 
                 <TextView
@@ -207,7 +208,6 @@
             </LinearLayout>
 
             <!-- ===== Totales ===== -->
-
             <LinearLayout
                 android:id="@+id/rowTotals"
                 android:layout_width="0dp"
@@ -218,31 +218,83 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tvMarcaModelo">
 
-                <TextView
-                    android:id="@+id/tvTotalValue"
-                    android:textColor="@android:color/white"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
+                <!-- TOTAL -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/tvTotalPagadoValue"
-                    android:layout_marginStart="16dp"
-                    android:textColor="@android:color/white"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="T:"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="4dp"/>
 
-                <TextView
-                    android:id="@+id/tvTotalNoPagadoValue"
-                    android:layout_marginStart="16dp"
-                    android:textColor="@android:color/white"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
+                    <TextView
+                        android:id="@+id/tvTotalValue"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- PAGADO -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginStart="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="P:"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tvTotalPagadoValue"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- NO PAGADO -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginStart="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NP:"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tvTotalNoPagadoValue"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
             </LinearLayout>
 
             <!-- ===== DETALLE EXPANDIBLE ===== -->
@@ -256,24 +308,6 @@
                 app:layout_constraintTop_toBottomOf="@id/rowTotals"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
-
-                <!-- Ejemplos de contenido expandido -->
-                <TextView
-                    android:id="@+id/tvWarehouse"
-                    android:text="Bodega: Principal"
-                    android:textColor="@android:color/white"
-                    android:textSize="13sp"
-                    android:layout_height="match_parent"
-                    android:layout_width="match_parent"/>
-
-                <TextView
-                    android:id="@+id/tvComment"
-                    android:layout_marginTop="6dp"
-                    android:text="Comentario..."
-                    android:textColor="@android:color/white"
-                    android:textSize="13sp"
-                    android:layout_height="match_parent"
-                    android:layout_width="match_parent"/>
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

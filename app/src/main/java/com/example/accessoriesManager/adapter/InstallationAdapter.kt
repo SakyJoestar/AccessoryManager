@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.accesorymanager.databinding.ItemInstallationClosedBinding
 import com.example.accessoriesManager.model.Installation
+import com.example.accessoriesManager.model.Vehicle
 import com.google.firebase.Timestamp
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -63,7 +64,7 @@ class InstallationAdapter(
             tvSerieValue.text = item.serie ?: "-"
             tvPlacaValue.text = item.plate ?: "-"
 
-            tvMarcaModelo.text = buildMarcaModelo(item)
+            tvMarcaModelo.text = item.vehicle?.displayName ?: "-"
 
             val unpaid = item.totalUnpaid ?: 0L
             tvPagadoValue.text = if (unpaid > 0L) "No" else "Sí"
