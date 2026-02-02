@@ -31,6 +31,6 @@
     <color name="summary_blue">#0D47A1</color>
 
     <color name="inst_paid_bg">#0E7A3B</color>
-    <color name="inst_incomplete_bg">#B26A00</color>
+    <color name="inst_incomplete_bg">#858585</color>
     <color name="inst_unpaid_bg">#8B1E1E</color>
 </resources>

@@ -1,11 +1,12 @@
 package com.example.accessoriesManager.adapter
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.ItemInstallationClosedBinding
 import com.example.accesorymanager.databinding.ItemInstallationOpenBinding
 import com.example.accessoriesManager.model.Installation
@@ -28,7 +29,6 @@ class InstallationAdapter(
         expandedIds = expanded
 
         submitList(list) {
-            // 🔥 cambia viewType (open/closed) => notifyItemChanged sin payload
             val changed = (old - expandedIds) + (expandedIds - old)
             changed.forEach { id ->
                 val pos = currentList.indexOfFirst { it.id == id }
@@ -45,13 +45,10 @@ class InstallationAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-
         return if (viewType == VT_OPEN) {
-            val b = ItemInstallationOpenBinding.inflate(inflater, parent, false)
-            OpenVH(b)
+            OpenVH(ItemInstallationOpenBinding.inflate(inflater, parent, false))
         } else {
-            val b = ItemInstallationClosedBinding.inflate(inflater, parent, false)
-            ClosedVH(b)
+            ClosedVH(ItemInstallationClosedBinding.inflate(inflater, parent, false))
         }
     }
 
@@ -65,6 +62,55 @@ class InstallationAdapter(
         }
     }
 
+    // -------------------- Estado / Color --------------------
+
+    private enum class PayState { PAID, INCOMPLETE, UNPAID }
+
+    private fun normalizePayState(item: Installation): PayState {
+        val s = item.state?.trim()?.lowercase().orEmpty()
+
+        return when (s) {
+            "paid", "pagado", "pago", "pagada", "pagado_total", "pagado_ok",
+            "pagado✅", "pagado_okay", "pagado " -> PayState.PAID
+
+            "incomplete", "incompleto", "abonado", "abono", "partial", "parcial",
+            "parcialmente_pagado", "abonado " -> PayState.INCOMPLETE
+
+            "unpaid", "no_pagado", "nopagado", "no pagado", "pendiente", "no_pagada" -> PayState.UNPAID
+
+            // Compatibilidad con tus toggles
+            "pagado" -> PayState.PAID
+            "no_pagado" -> PayState.UNPAID
+            "abonado" -> PayState.INCOMPLETE
+
+            else -> {
+                // Fallback por totales (tu UI ya se basa en totalUnpaid)
+                val total = item.totalWorked ?: 0L
+                val unpaid = item.totalUnpaid ?: 0L
+                val paid = item.totalPaid ?: 0L
+
+                when {
+                    total <= 0L -> PayState.UNPAID
+                    unpaid == 0L -> PayState.PAID
+                    paid == 0L -> PayState.UNPAID
+                    else -> PayState.INCOMPLETE
+                }
+            }
+        }
+    }
+
+    private fun payLabel(ps: PayState): String = when (ps) {
+        PayState.PAID -> "Sí"
+        PayState.INCOMPLETE -> "Incompleto"
+        PayState.UNPAID -> "No"
+    }
+
+    private fun bgColorRes(ps: PayState): Int = when (ps) {
+        PayState.PAID -> R.color.inst_paid_bg
+        PayState.INCOMPLETE -> R.color.inst_incomplete_bg
+        PayState.UNPAID -> R.color.inst_unpaid_bg
+    }
+
     // -------------------- CLOSED --------------------
 
     inner class ClosedVH(
@@ -72,12 +118,20 @@ class InstallationAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: Installation, expanded: Boolean) = with(binding) {
+            // Clicks
             cardInstallation.setOnClickListener { item.id?.let(onToggleExpand) }
-
             btnEdit.setOnClickListener { onEdit(item) }
             btnDelete.setOnClickListener { onDelete(item) }
-            btnCheck.setOnClickListener { onMark(item)}
+            btnCheck.setOnClickListener { onMark(item) }
 
+            // Estado + color
+            val ps = normalizePayState(item)
+            tvPagadoValue.text = payLabel(ps)
+            cardInstallation.setCardBackgroundColor(
+                ContextCompat.getColor(root.context, bgColorRes(ps))
+            )
+
+            // Textos
             tvOrdenValue.text = item.order?.toString() ?: "-"
             tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
             tvPlacaValue.text = item.plate.orEmpty().ifBlank { "-" }
@@ -88,9 +142,6 @@ class InstallationAdapter(
                 .filter { !it.isNullOrBlank() }
                 .joinToString(" ")
                 .ifEmpty { "-" }
-
-            val unpaid = item.totalUnpaid ?: 0L
-            tvPagadoValue.text = if (unpaid == 0L) "Sí" else "No"
 
             tvFecha.text = item.date?.toDate()
                 ?.toInstant()
@@ -113,13 +164,30 @@ class InstallationAdapter(
 
         private val accessoriesAdapter = OpenAccessoriesAdapter()
 
-        fun bind(item: Installation, expanded: Boolean) = with(binding) {
-            cardInstallation.setOnClickListener { item.id?.let(onToggleExpand) }
+        init {
+            // Evita recrear en cada bind
+            binding.rvAccessories.layoutManager =
+                androidx.recyclerview.widget.LinearLayoutManager(binding.root.context)
+            binding.rvAccessories.adapter = accessoriesAdapter
+            binding.rvAccessories.setHasFixedSize(false)
+            binding.rvAccessories.isNestedScrollingEnabled = false
+        }
 
+        fun bind(item: Installation, expanded: Boolean) = with(binding) {
+            // Clicks
+            cardInstallation.setOnClickListener { item.id?.let(onToggleExpand) }
             btnEdit.setOnClickListener { onEdit(item) }
             btnDelete.setOnClickListener { onDelete(item) }
-            btnCheck.setOnClickListener { onMark(item)}
+            btnCheck.setOnClickListener { onMark(item) }
 
+            // Estado + color
+            val ps = normalizePayState(item)
+            tvPagadoValue.text = payLabel(ps)
+            cardInstallation.setCardBackgroundColor(
+                ContextCompat.getColor(root.context, bgColorRes(ps))
+            )
+
+            // Textos
             tvOrdenValue.text = item.order?.toString() ?: "-"
             tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
             tvPlacaValue.text = item.plate.orEmpty().ifBlank { "-" }
@@ -131,15 +199,9 @@ class InstallationAdapter(
                 .joinToString(" ")
                 .ifEmpty { "-" }
 
-            // Condición (si está en tu modelo)
             tvCondicionValue.text = item.condition.orEmpty().ifBlank { "-" }
-
-            // Sede/Bodega (según lo que tengas realmente en tu modelo)
             tvSedeValue.text = item.headquarter?.name.orEmpty().ifBlank { "-" }
             tvBodegaValue.text = item.warehouse.orEmpty().ifBlank { "-" }
-
-            val unpaid = item.totalUnpaid ?: 0L
-            tvPagadoValue.text = if (unpaid == 0L) "Sí" else "No"
 
             tvFecha.text = item.date?.toDate()
                 ?.toInstant()
@@ -148,25 +210,11 @@ class InstallationAdapter(
                 ?.format(dateFormatter)
                 ?: "-"
 
-            // Totales footer del open
             tvTotalValue.text = money(item.totalWorked ?: 0L)
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
             tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
 
             // Accesorios
-
-            android.util.Log.d(
-                "OPEN_ACCESSORIES",
-                "id=${item.id} accessories=${item.accessories?.size ?: 0} data=${item.accessories}"
-            )
-
-            rvAccessories.layoutManager =
-                androidx.recyclerview.widget.LinearLayoutManager(root.context)
-
-            rvAccessories.adapter = accessoriesAdapter
-            rvAccessories.setHasFixedSize(false)
-            rvAccessories.isNestedScrollingEnabled = false
-
             accessoriesAdapter.submit(item.accessories)
         }
     }
