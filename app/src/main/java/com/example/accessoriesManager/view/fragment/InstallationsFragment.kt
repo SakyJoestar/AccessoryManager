@@ -81,7 +81,6 @@ class InstallationsFragment : Fragment() {
             combine(viewModel.items, viewModel.expandedIds) { list, expanded ->
                 list to expanded
             }.collect { (list, expanded) ->
-                android.util.Log.d("INSTALLATIONS_UI", "UI recibió ${list.size} items")
                 adapter.submitWithExpanded(list, expanded)
             }
         }

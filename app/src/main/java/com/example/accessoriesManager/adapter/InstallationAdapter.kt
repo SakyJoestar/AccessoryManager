@@ -7,112 +7,169 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.accesorymanager.databinding.ItemInstallationClosedBinding
+import com.example.accesorymanager.databinding.ItemInstallationOpenBinding
 import com.example.accessoriesManager.model.Installation
-import com.example.accessoriesManager.model.Vehicle
-import com.google.firebase.Timestamp
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class InstallationAdapter(
     private val onToggleExpand: (String) -> Unit,
     private val onEdit: (Installation) -> Unit,
-    private val onDelete: (Installation) -> Unit
-) : ListAdapter<Installation, InstallationAdapter.VH>(Diff) {
+    private val onDelete: (Installation) -> Unit,
+) : ListAdapter<Installation, RecyclerView.ViewHolder>(Diff) {
 
     private var expandedIds: Set<String> = emptySet()
 
-    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-
-
-
-    /** Llama esto desde el Fragment al colectar el state del VM */
     fun submitWithExpanded(list: List<Installation>, expanded: Set<String>) {
+        val old = expandedIds
         expandedIds = expanded
-        submitList(list)
-    }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val binding = ItemInstallationClosedBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
-        return VH(binding)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        android.util.Log.d("INSTALLATIONS_ADAPTER", "bind pos=$position id=${getItem(position).id}")
-        holder.bind(getItem(position))
-    }
-
-    inner class VH(
-        private val b: ItemInstallationClosedBinding
-    ) : RecyclerView.ViewHolder(b.root) {
-
-        fun bind(item: Installation) = with(b) {
-            val id = item.id
-            val expanded = id != null && expandedIds.contains(id)
-
-            // Click en toda la card
-            cardInstallation.setOnClickListener {
-                id?.let(onToggleExpand)
+        submitList(list) {
+            // 🔥 cambia viewType (open/closed) => notifyItemChanged sin payload
+            val changed = (old - expandedIds) + (expandedIds - old)
+            changed.forEach { id ->
+                val pos = currentList.indexOfFirst { it.id == id }
+                if (pos != -1) notifyItemChanged(pos)
             }
+        }
+    }
 
-            // Acciones siempre visibles
+    override fun getItemViewType(position: Int): Int {
+        val item = getItem(position)
+        val expanded = item.id != null && expandedIds.contains(item.id)
+        return if (expanded) VT_OPEN else VT_CLOSED
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+
+        return if (viewType == VT_OPEN) {
+            val b = ItemInstallationOpenBinding.inflate(inflater, parent, false)
+            OpenVH(b)
+        } else {
+            val b = ItemInstallationClosedBinding.inflate(inflater, parent, false)
+            ClosedVH(b)
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val item = getItem(position)
+        val expanded = item.id != null && expandedIds.contains(item.id)
+
+        when (holder) {
+            is ClosedVH -> holder.bind(item, expanded)
+            is OpenVH -> holder.bind(item, expanded)
+        }
+    }
+
+    // -------------------- CLOSED --------------------
+
+    inner class ClosedVH(
+        private val binding: ItemInstallationClosedBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(item: Installation, expanded: Boolean) = with(binding) {
+            cardInstallation.setOnClickListener { item.id?.let(onToggleExpand) }
+
             btnEdit.setOnClickListener { onEdit(item) }
             btnDelete.setOnClickListener { onDelete(item) }
 
-            // ====== Binds de texto ======
-            tvOrdenValue.text = item.order?.toString() ?: "-"
-            tvSerieValue.text = item.serie ?: "-"
-            tvPlacaValue.text = item.plate ?: "-"
+            // Si quieres que el icono "check" colapse/expanda:
+            btnCollapse.setOnClickListener { item.id?.let(onToggleExpand) }
 
-            tvMarcaModelo.text = item.vehicle?.displayName ?: "-"
+            tvOrdenValue.text = item.order?.toString() ?: "-"
+            tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
+            tvPlacaValue.text = item.plate.orEmpty().ifBlank { "-" }
+
+            val make = item.vehicle?.make?.trim()
+            val model = item.vehicle?.model?.trim()
+            tvMarcaModelo.text = listOf(make, model)
+                .filter { !it.isNullOrBlank() }
+                .joinToString(" ")
+                .ifEmpty { "-" }
 
             val unpaid = item.totalUnpaid ?: 0L
-            tvPagadoValue.text = if (unpaid > 0L) "No" else "Sí"
+            tvPagadoValue.text = if (unpaid == 0L) "Sí" else "No"
 
-            val formattedDate = item.date
-                ?.toDate()
+            tvFecha.text = item.date?.toDate()
                 ?.toInstant()
                 ?.atZone(ZoneId.systemDefault())
                 ?.toLocalDate()
-                ?.format(formatter)
+                ?.format(dateFormatter)
                 ?: "-"
-
-            tvFecha.text = formattedDate
 
             tvTotalValue.text = money(item.totalWorked ?: 0L)
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
             tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
-
-            // ====== Expand/Collapse visual ======
-            // Si agregas layoutDetails en el XML, aquí lo controlas:
-            if (hasDetailsContainer()) {
-                layoutDetails.visibility = if (expanded) View.VISIBLE else View.GONE
-            }
-
-            // Si quieres cambiar el icono del botón según expandido:
-            // (asumiendo que tienes dos drawables: ic_expand_more / ic_expand_less)
-            // btnExpand.setImageResource(if (expanded) R.drawable.ic_expand_less else R.drawable.ic_expand_more)
-        }
-
-        /** Evita crashear si aún no agregaste layoutDetails */
-        private fun hasDetailsContainer(): Boolean {
-            return try {
-                b.layoutDetails
-                true
-            } catch (_: Throwable) {
-                false
-            }
         }
     }
 
+    // -------------------- OPEN --------------------
+
+    inner class OpenVH(
+        private val binding: ItemInstallationOpenBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(item: Installation, expanded: Boolean) = with(binding) {
+            cardInstallation.setOnClickListener { item.id?.let(onToggleExpand) }
+
+            btnEdit.setOnClickListener { onEdit(item) }
+            btnDelete.setOnClickListener { onDelete(item) }
+            btnCollapse.setOnClickListener { item.id?.let(onToggleExpand) }
+
+            tvOrdenValue.text = item.order?.toString() ?: "-"
+            tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
+            tvPlacaValue.text = item.plate.orEmpty().ifBlank { "-" }
+
+            val make = item.vehicle?.make?.trim()
+            val model = item.vehicle?.model?.trim()
+            tvMarcaModelo.text = listOf(make, model)
+                .filter { !it.isNullOrBlank() }
+                .joinToString(" ")
+                .ifEmpty { "-" }
+
+            // Condición (si está en tu modelo)
+            tvCondicionValue.text = item.condition.orEmpty().ifBlank { "-" }
+
+            // Sede/Bodega (según lo que tengas realmente en tu modelo)
+            tvSedeValue.text = item.headquarter?.name.orEmpty().ifBlank { "-" }
+            tvBodegaValue.text = item.warehouse.orEmpty().ifBlank { "-" }
+
+            val unpaid = item.totalUnpaid ?: 0L
+            tvPagadoValue.text = if (unpaid == 0L) "Sí" else "No"
+
+            tvFecha.text = item.date?.toDate()
+                ?.toInstant()
+                ?.atZone(ZoneId.systemDefault())
+                ?.toLocalDate()
+                ?.format(dateFormatter)
+                ?: "-"
+
+            // Totales footer del open
+            tvTotalValue.text = money(item.totalWorked ?: 0L)
+            tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
+            tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
+
+            // ✅ Importante: tu open tiene un RV de accesorios
+            // Para que se vea completo dentro de una card (y dentro del scroll del fragment),
+            // se recomienda desactivar nestedScrolling:
+            rvAccessories.isNestedScrollingEnabled = false
+
+            // Aquí falta: setear adapter de accesorios si quieres listar accessory rows.
+            // Si todavía no tienes ese adapter, lo dejamos pendiente.
+            // rvAccessories.adapter = ...
+            // (y submitList a los accessories)
+        }
+    }
+
+    private fun money(value: Long): String = "$ ${numberFormatter.format(value)}"
+
     companion object {
+        private const val VT_CLOSED = 0
+        private const val VT_OPEN = 1
+
         private val Diff = object : DiffUtil.ItemCallback<Installation>() {
             override fun areItemsTheSame(oldItem: Installation, newItem: Installation): Boolean =
                 oldItem.id == newItem.id
@@ -121,28 +178,13 @@ class InstallationAdapter(
                 oldItem == newItem
         }
 
-        private val currency = NumberFormat
+        private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+        private val numberFormatter = NumberFormat
             .getNumberInstance(Locale("es", "CO"))
             .apply {
                 maximumFractionDigits = 0
                 minimumFractionDigits = 0
             }
-
-        private fun money(value: Long): String =
-            "$ ${currency.format(value)}"
-
-        private val df = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
-        private fun Timestamp?.formatShortDate(): String {
-            if (this == null) return "-"
-            return df.format(this.toDate())
-        }
-
-        private fun buildMarcaModelo(item: Installation): String {
-            // Ajusta según tu modelo real Vehicle
-            val v = item.vehicle ?: return "-"
-            // Si Vehicle tiene brand/model, cámbialo a esos campos
-            return v.toString()
-        }
     }
 }
