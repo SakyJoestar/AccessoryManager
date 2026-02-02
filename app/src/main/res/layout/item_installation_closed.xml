@@ -231,14 +231,14 @@
                         android:text="T:"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:layout_marginEnd="4dp"/>
 
                     <TextView
                         android:id="@+id/tvTotalValue"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
                 </LinearLayout>
@@ -257,14 +257,14 @@
                         android:text="P:"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:layout_marginEnd="4dp"/>
 
                     <TextView
                         android:id="@+id/tvTotalPagadoValue"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
                 </LinearLayout>
@@ -283,14 +283,14 @@
                         android:text="NP:"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:layout_marginEnd="4dp"/>
 
                     <TextView
                         android:id="@+id/tvTotalNoPagadoValue"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
                 </LinearLayout>

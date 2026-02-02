@@ -88,7 +88,7 @@ class InstallationAdapter(
 
             tvTotalValue.text = money(item.totalWorked ?: 0L)
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
-            tvTotalNoPagadoValue.text = money(unpaid)
+            tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
 
             // ====== Expand/Collapse visual ======
             // Si agregas layoutDetails en el XML, aquí lo controlas:
@@ -121,10 +121,15 @@ class InstallationAdapter(
                 oldItem == newItem
         }
 
-        private val currency: NumberFormat =
-            NumberFormat.getCurrencyInstance(Locale("es", "CO"))
+        private val currency = NumberFormat
+            .getNumberInstance(Locale("es", "CO"))
+            .apply {
+                maximumFractionDigits = 0
+                minimumFractionDigits = 0
+            }
 
-        private fun money(value: Long): String = currency.format(value)
+        private fun money(value: Long): String =
+            "$ ${currency.format(value)}"
 
         private val df = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
