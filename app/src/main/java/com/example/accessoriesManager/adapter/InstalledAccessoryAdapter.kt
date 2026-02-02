@@ -184,7 +184,7 @@ class InstalledAccessoryAdapter(
                 accessoryId = opt.id,
                 name = opt.name,
                 price = opt.price,
-                isPaid = false // ✅ importante
+//                isPaid = false // ✅ importante
             )
 
             items[pos] = updated

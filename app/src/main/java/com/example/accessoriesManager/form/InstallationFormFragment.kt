@@ -15,6 +15,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.accesorymanager.R
@@ -23,6 +24,7 @@ import com.example.accessoriesManager.adapter.InstalledAccessoryAdapter
 import com.example.accessoriesManager.model.Accessory
 import com.example.accessoriesManager.model.Headquarter
 import com.example.accessoriesManager.model.InstalledAccessory
+import com.example.accessoriesManager.model.Vehicle
 import com.example.accessoriesManager.ui.ThousandsSeparatorTextWatcher
 import com.example.accessoriesManager.ui.showSnack
 import com.example.accessoriesManager.viewmodel.InstallationFormViewModel
@@ -47,11 +49,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private lateinit var accessoriesAdapter: InstalledAccessoryAdapter
 
     private var isAutoToggling = false
-
-    // Mantener accesorios actuales (los del adapter)
     private var currentAccessories: List<InstalledAccessory> = emptyList()
 
-    // refs para recalcular fácil
+    // ✅ NEW: mantener seleccion real (no solo texto)
+    private var selectedHq: Headquarter? = null
+    private var selectedVehicle: Vehicle? = null
+
     private lateinit var etIncrement: TextInputEditText
     private lateinit var etTotalWorked: TextInputEditText
     private lateinit var etPaid: TextInputEditText
@@ -116,12 +119,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         etComment = container.findViewById(R.id.etComment)
 
-        // ✅ Solo lectura (no se editan a mano)
+        // ✅ Solo lectura
         makeReadOnly(etTotalWorked)
         makeReadOnly(etPaid)
         makeReadOnly(etUnpaid)
 
-        // ✅ El usuario NO debería tocar el toggle (se maneja automático)
+        // ✅ Toggle se maneja automático
         btnPaid.isClickable = false
         btnNotPaid.isClickable = false
         btnPartiallyPaid.isClickable = false
@@ -139,7 +142,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         etIncrement.setText("0")
         etIncrement.addTextChangedListener(ThousandsSeparatorTextWatcher(etIncrement))
 
-        // ✅ Cuando cambia incremento (por sede o manual), recalcular totales
         etIncrement.doAfterTextChanged {
             updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
             autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
@@ -209,10 +211,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 currentAccessories = list
                 viewModel.setAccessories(list)
 
-                // ✅ Totales con incremento
                 updateTotalsUI(list, etTotalWorked, etPaid, etUnpaid)
-
-                // ✅ Auto-toggle según checkboxes
                 autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, list)
             }
         )
@@ -226,17 +225,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         btnAddAccessory.setOnClickListener { accessoriesAdapter.addEmpty() }
 
-        // ---------- Mayúsculas ----------
-        etSerie.doAfterTextChanged {
-            val up = it?.toString()?.uppercase().orEmpty()
-            if (up != it.toString()) etSerie.setText(up).also { etSerie.setSelection(up.length) }
-        }
-
-        etPlate.doAfterTextChanged {
-            val up = it?.toString()?.uppercase().orEmpty()
-            if (up != it.toString()) etPlate.setText(up).also { etPlate.setSelection(up.length) }
-        }
-
         // ---------- Toggle: solo para guardar state ----------
         tgPayment.addOnButtonCheckedListener { _, _, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
@@ -245,15 +233,34 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             val state = when (tgPayment.checkedButtonId) {
                 btnPaid.id -> "PAGADO"
                 btnNotPaid.id -> "NO_PAGADO"
-                btnPartiallyPaid.id -> "ABONADO"
+                btnPartiallyPaid.id -> "PARCIAL"
                 else -> null
             }
             viewModel.setPaymentState(state)
         }
 
+        // ✅ NEW: si borran texto, limpiar selección del VM
+        actHeadquarter.doAfterTextChanged {
+            if (it.isNullOrBlank()) {
+                selectedHq = null
+                viewModel.setHeadquarter(null)
+            }
+        }
+        actVehicle.doAfterTextChanged {
+            if (it.isNullOrBlank()) {
+                selectedVehicle = null
+                viewModel.setVehicle(null)
+            }
+        }
+
         // ---------- Save ----------
         binding.btnSave.setOnClickListener {
             tilOrder.error = null; tilSerie.error = null; tilPlate.error = null
+
+            // ✅ NEW: asegurar que el VM tenga los objetos seleccionados (no solo texto)
+            selectedHq?.let { viewModel.setHeadquarter(it) }
+            selectedVehicle?.let { viewModel.setVehicle(it) }
+            viewModel.setComment(etComment.text?.toString())
 
             val order = etOrder.text?.toString()?.toIntOrNull()
             val serie = etSerie.text?.toString().orEmpty()
@@ -262,10 +269,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
             val increment = getIncrementValue().toInt()
 
-            // ✅ Totales calculados en UI (con incremento)
             val total = totalWorked()
             val paidValue = totalPaid()
             val unPaidValue = totalUnpaid()
+
+            showSnack("Guardando")
 
             viewModel.save(
                 id = editId,
@@ -274,7 +282,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 plate = plate,
                 warehouse = warehouse,
                 condition = actCondition.text?.toString(),
-                increment = increment, // fallback
+                increment = increment,
                 paymentValueRaw = paidValue.toString(),
                 total = total,
                 paidValue = paidValue,
@@ -312,34 +320,60 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 etIncrement.setText("0")
                                 etComment.setText("")
 
+                                // limpiar selección también
+                                selectedHq = null
+                                selectedVehicle = null
+                                viewModel.setHeadquarter(null)
+                                viewModel.setVehicle(null)
+
                                 accessoriesAdapter.submitList(listOf(InstalledAccessory()))
                                 currentAccessories = accessoriesAdapter.getCurrent()
 
                                 updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
 
                                 setDateText(etDate, Calendar.getInstance())
+                                viewModel.setDate(fromCalendarToTimestamp(Calendar.getInstance()))
                                 etOrder.requestFocus()
                             }
 
-                            binding.btnSave.isEnabled = true
-                            binding.btnSave.text = normalText
+                            // ✅ cerrar SIEMPRE (crear o editar)
+                            findNavController().popBackStack()
+                            return@collect
                         }
 
                         is InstallationFormViewModel.UiState.Error -> {
+                            Log.e("INSTALL_SAVE", "Error: ${state.msg}")
                             showSnack(state.msg)
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
                         is InstallationFormViewModel.UiState.FieldError -> {
+                            Log.e("INSTALL_SAVE", "FieldError field=${state.field} msg=${state.msg}")
                             clearError(tilOrder); clearError(tilSerie); clearError(tilPlate)
                             clearError(tilDate); clearError(tilHeadquarter); clearError(tilVehicle)
 
                             when (state.field) {
-                                "order_serie_plate" -> setGroupErrorNoText(state.msg, tilOrder, tilSerie, tilPlate)
-                                "date" -> markError(tilDate, state.msg)
-                                "headquarter" -> markError(tilHeadquarter, state.msg)
-                                "vehicle" -> markError(tilVehicle, state.msg)
+                                "order_serie_plate" ->
+                                    setGroupErrorNoText(state.msg, tilOrder, tilSerie, tilPlate)
+
+                                "order" ->
+                                    markError(tilOrder, state.msg)
+
+                                "serie" ->
+                                    markError(tilSerie, state.msg)
+
+                                "plate" ->
+                                    markError(tilPlate, state.msg)
+                                "date" ->
+                                    markError(tilDate, state.msg)
+
+                                "headquarter" ->
+                                    markError(tilHeadquarter, state.msg)
+
+                                "vehicle" ->
+                                    markError(tilVehicle, state.msg)
+
                                 "accessories" -> {
                                     showSnack(state.msg)
                                     accessoriesAdapter.showAccessoryRequiredErrorOnFirstRow()
@@ -375,15 +409,26 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         viewModel.setDate(ts)
                     }
 
-                    actHeadquarter.setText(installation.headquarter?.name.orEmpty(), false)
+                    // ✅ FIX: no solo texto, también setear el objeto en el VM + variables locales
+                    installation.headquarter?.let { hq ->
+                        actHeadquarter.setText(hq.name.orEmpty(), false)
+                        selectedHq = hq
+                        viewModel.setHeadquarter(hq)
+                    }
 
-                    // ✅ usa el increment guardado en la instalación (histórico)
                     val inc = installation.increment ?: 0L
                     setTextSafely(etIncrement, formatMoneyDots(inc))
 
-                    val mk = installation.vehicle?.make.orEmpty()
-                    val md = installation.vehicle?.model.orEmpty()
-                    actVehicle.setText(if (mk.isNotBlank() && md.isNotBlank()) "$mk - $md" else md, false)
+                    installation.vehicle?.let { v ->
+                        val mk = v.make.orEmpty()
+                        val md = v.model.orEmpty()
+                        actVehicle.setText(
+                            if (mk.isNotBlank() && md.isNotBlank()) "$mk - $md" else md,
+                            false
+                        )
+                        selectedVehicle = v
+                        viewModel.setVehicle(v)
+                    }
 
                     val list = installation.accessories.orEmpty()
                     val safeList = if (list.isEmpty()) listOf(InstalledAccessory()) else list
@@ -409,12 +454,14 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                         actHeadquarter.setOnItemClickListener { _, _, idx, _ ->
                             val hq = list[idx]
+
+                            // ✅ FIX: guardar selección real
+                            selectedHq = hq
                             viewModel.setHeadquarter(hq)
 
                             val incHq = (hq.increment ?: 0).toLong()
                             setTextSafely(etIncrement, formatMoneyDots(incHq))
 
-                            // ✅ recalcular por si cambia la sede/incremento
                             updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                             autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
 
@@ -434,7 +481,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         )
 
                         actVehicle.setOnItemClickListener { _, _, idx, _ ->
-                            viewModel.setVehicle(list[idx])
+                            val v = list[idx]
+
+                            // ✅ FIX: guardar selección real
+                            selectedVehicle = v
+                            viewModel.setVehicle(v)
+
                             hideKeyboardFrom(actVehicle)
                             actVehicle.clearFocus()
                         }
@@ -479,8 +531,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         if (inc <= 0) return@collect
 
                         setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
-
-                        // ✅ recalcular porque cambió el incremento
                         updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                         autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
                     }
@@ -555,13 +605,20 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         btnPartiallyPaid: MaterialButton,
         accessories: List<InstalledAccessory>
     ) {
-        val selected = accessories.filter { !it.accessoryId.isNullOrBlank() }
-        val paidCount = selected.count { it.isPaid }
+        val selected = accessories.filter {
+            !it.accessoryId.isNullOrBlank() && it.accessoryId!!.trim().isNotEmpty()
+        }
+
+        val inc = getIncrementValue()
+        val total = selected.sumOf { it.price + inc }
+        val paid = selected.filter { it.isPaid }.sumOf { it.price + inc }
+        val unpaid = total - paid
 
         val targetId = when {
-            selected.isEmpty() || paidCount == 0 -> btnNotPaid.id
-            paidCount == selected.size -> btnPaid.id
-            else -> btnPartiallyPaid.id
+            selected.isEmpty() || total <= 0L -> btnNotPaid.id
+            paid <= 0L -> btnNotPaid.id          // ✅ 0 pagado => NO_PAGADO
+            unpaid <= 0L -> btnPaid.id           // ✅ 0 pendiente => PAGADO
+            else -> btnPartiallyPaid.id          // ✅ si hay pagado y pendiente => PARCIAL
         }
 
         if (tg.checkedButtonId == targetId) return
@@ -573,11 +630,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val state = when (targetId) {
             btnPaid.id -> "PAGADO"
             btnNotPaid.id -> "NO_PAGADO"
-            btnPartiallyPaid.id -> "ABONADO"
+            btnPartiallyPaid.id -> "PARCIAL"
             else -> null
         }
         viewModel.setPaymentState(state)
     }
+
 
     private fun setTitles(isEdit: Boolean) {
         binding.tvFormTitle.text = if (isEdit) "Editar instalación" else "Nueva instalación"
@@ -668,3 +726,4 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         til.isErrorEnabled = false
     }
 }
+

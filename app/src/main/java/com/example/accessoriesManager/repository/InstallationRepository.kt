@@ -15,18 +15,35 @@ class InstallationRepository @Inject constructor(
     private val auth: FirebaseAuth
 ) {
 
+    // -------------------- helpers --------------------
+
     private fun uid(): String =
         auth.currentUser?.uid ?: throw IllegalStateException("Usuario no autenticado")
 
-    private fun col() =
-        firestore.collection("users").document(uid()).collection("installations")
+    private fun installationsCol() =
+        firestore.collection("users")
+            .document(uid())
+            .collection("installations")
 
-    // ✅ Normaliza comment: "" -> null, "   " -> null
-    private fun normalize(installation: Installation, now: Timestamp, keepCreatedAt: Boolean): Installation {
-        val normalizedComment = installation.comment?.trim()?.takeIf { it.isNotBlank() }
+    private fun installedAccessoriesCol(installationId: String) =
+        installationsCol()
+            .document(installationId)
+            .collection("installedAccessories")
+
+    // -------------------- normalización --------------------
+
+    // "" o "   " -> null, timestamps controlados acá
+    private fun normalize(
+        installation: Installation,
+        now: Timestamp,
+        keepCreatedAt: Boolean
+    ): Installation {
+        val normalizedComment = installation.comment
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
 
         return installation.copy(
-            id = null, // 👈 no guardar el id como campo (id = docId)
+            id = null, // 👈 el id SIEMPRE es el docId
             comment = normalizedComment,
             createdAt = if (keepCreatedAt) installation.createdAt ?: now else installation.createdAt,
             updatedAt = now
@@ -36,21 +53,17 @@ class InstallationRepository @Inject constructor(
     // -------------------- CRUD --------------------
 
     suspend fun getById(id: String): Installation? {
-        val snap = col().document(id).get().await()
+        val snap = installationsCol().document(id).get().await()
         return snap.toObject(Installation::class.java)?.copy(id = snap.id)
     }
 
-    /**
-     * Crea un nuevo documento. Si installation.id viene null, Firestore genera uno.
-     * createdAt/updatedAt se setean aquí si vienen null.
-     */
     suspend fun create(installation: Installation): String {
         val now = Timestamp.now()
 
         val docRef = if (installation.id.isNullOrBlank()) {
-            col().document() // auto-id
+            installationsCol().document() // auto-id
         } else {
-            col().document(installation.id!!)
+            installationsCol().document(installation.id!!)
         }
 
         val data = normalize(
@@ -63,24 +76,41 @@ class InstallationRepository @Inject constructor(
         return docRef.id
     }
 
-    /**
-     * Actualiza un documento existente por id.
-     * updatedAt se refresca automáticamente.
-     */
     suspend fun update(id: String, installation: Installation) {
         val now = Timestamp.now()
 
+        val inc = installation.increment ?: 0L
+        val selected = installation.accessories.orEmpty()
+            .filter { !it.accessoryId.isNullOrBlank() }
+
+        val totalWorked = selected.sumOf { it.price + inc }
+        val totalPaid = selected.filter { it.isPaid }.sumOf { it.price + inc }
+        val totalUnpaid = totalWorked - totalPaid
+
+        val newState = when {
+            selected.isEmpty() || totalWorked == 0L -> "NO_PAGADO"
+            totalPaid == 0L -> "NO_PAGADO"      // ✅ FIX
+            totalUnpaid == 0L -> "PAGADO"
+            else -> "PARCIAL"
+        }
+
+
         val data = normalize(
-            installation = installation,
+            installation = installation.copy(
+                totalWorked = totalWorked,
+                totalPaid = totalPaid,
+                totalUnpaid = totalUnpaid,
+                state = newState
+            ),
             now = now,
-            keepCreatedAt = false // en update respetamos lo que ya trae (normalmente viene desde VM)
+            keepCreatedAt = false
         )
 
-        col().document(id).set(data).await()
+        installationsCol().document(id).set(data).await()
     }
 
     suspend fun delete(id: String) {
-        col().document(id).delete().await()
+        installationsCol().document(id).delete().await()
     }
 
     // -------------------- LISTEN --------------------
@@ -89,18 +119,86 @@ class InstallationRepository @Inject constructor(
         onChange: (List<Installation>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
-        return col()
-            .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+        return installationsCol()
+            .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .addSnapshotListener { snap, e ->
                 if (e != null) {
                     onError(e)
                     return@addSnapshotListener
                 }
-                val list = snap?.documents?.mapNotNull { doc ->
-                    doc.toObject(Installation::class.java)?.copy(id = doc.id)
-                }.orEmpty()
+
+                val list = snap?.documents
+                    ?.mapNotNull { doc ->
+                        doc.toObject(Installation::class.java)?.copy(id = doc.id)
+                    }
+                    .orEmpty()
 
                 onChange(list)
             }
     }
+
+    // -------------------- ACCESORIOS / ESTADO --------------------
+
+    /**
+     * Marca TODOS los accesorios de una instalación como pagados / no pagados
+     */
+    suspend fun markAllAccessoriesPaidAndUpdateInstallation(
+        installationId: String,
+        paid: Boolean
+    ) {
+        val now = Timestamp.now()
+        val instRef = installationsCol().document(installationId)
+
+        val snap = instRef.get().await()
+        val inst = snap.toObject(Installation::class.java)
+            ?: throw IllegalStateException("Instalación no existe: $installationId")
+
+        val increment = inst.increment ?: 0L
+        val current = inst.accessories.orEmpty()
+
+        // ✅ Actualiza SOLO el campo real de Firestore: "paid"
+        val updatedAccessories: List<Map<String, Any?>> = current.map { acc ->
+            mapOf(
+                "accessoryId" to acc.accessoryId,
+                "name" to acc.name,
+                "price" to acc.price,   // precio base (NO sumes increment aquí)
+                "paid" to paid          // 🔥 clave
+            )
+        }
+
+        fun finalPrice(base: Long) = base + increment
+
+        // ✅ Totales usando precio final = base + increment por cada accesorio
+        val totalWorked = current.sumOf { finalPrice(it.price) }
+
+        // ✅ totalPaid basado en flags reales (aquí todos quedan paid=true/false)
+        val totalPaid = if (paid) totalWorked else 0L
+        val totalUnpaid = totalWorked - totalPaid
+
+        // ✅ Estado consistente con el resto de tu app
+        val newState = when {
+            totalWorked <= 0L -> "NO_PAGADO"
+            totalPaid <= 0L -> "NO_PAGADO"       // ✅ tu caso: 1 accesorio no pagado
+            totalUnpaid <= 0L -> "PAGADO"
+            else -> "PARCIAL"
+        }
+
+        android.util.Log.d(
+            "INSTALL_MARK",
+            "id=$installationId paid=$paid inc=$increment acc=${updatedAccessories.size} " +
+                    "total=$totalWorked paidTotal=$totalPaid unpaid=$totalUnpaid state=$newState"
+        )
+
+        instRef.update(
+            mapOf(
+                "accessories" to updatedAccessories,
+                "totalWorked" to totalWorked,
+                "totalPaid" to totalPaid,
+                "totalUnpaid" to totalUnpaid,
+                "state" to newState,
+                "updatedAt" to now
+            )
+        ).await()
+    }
+
 }
