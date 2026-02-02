@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -42,35 +43,107 @@ class InstallationViewModel @Inject constructor(
     private val _expandedIds = MutableStateFlow<Set<String>>(emptySet())
     val expandedIds: StateFlow<Set<String>> = _expandedIds.asStateFlow()
 
-    // ----- Items filtrados -----
+    // ----- Items filtrados para la lista -----
     private val _items = MutableStateFlow<List<Installation>>(emptyList())
     val items: StateFlow<List<Installation>> = _items.asStateFlow()
+
+    // ----- Summary -----
+    data class SummaryUi(
+        val title: String,
+        val totalWorked: Long,
+        val totalPaid: Long,
+        val totalUnpaid: Long,
+        val paidCount: Int,
+        val partialCount: Int,
+        val unpaidCount: Int
+    )
+
+    private val _summary = MutableStateFlow(
+        SummaryUi(
+            title = "Últimos 7 días",
+            totalWorked = 0L,
+            totalPaid = 0L,
+            totalUnpaid = 0L,
+            paidCount = 0,
+            partialCount = 0,
+            unpaidCount = 0
+        )
+    )
+    val summary: StateFlow<SummaryUi> = _summary.asStateFlow()
 
     private var reg: ListenerRegistration? = null
     private var filterJob: Job? = null
 
+    private val zone: ZoneId = ZoneId.systemDefault()
+    private val fmt: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
     init {
+        // ✅ Por defecto: últimos 7 días (hoy - 6 ... hoy)
+        setDefaultLast7Days()
+
         filterJob = viewModelScope.launch {
-            // pipeline por etapas como tú lo tienes
+            // ---- LISTA: aplica query + status + fechas ----
             val f1 = _all.combine(_query) { all, q -> all to q }
             val f2 = f1.combine(_statusFilter) { (all, q), status -> Triple(all, q, status) }
             val f3 = f2.combine(_dateExact) { t, exact -> Quad(t.first, t.second, t.third, exact) }
             val f4 = f3.combine(_dateFrom) { qd, from -> Quint(qd.a, qd.b, qd.c, qd.d, from) }
             val f5 = f4.combine(_dateTo) { qi, to -> Sext(qi.a, qi.b, qi.c, qi.d, qi.e, to) }
 
-            f5.collect { data ->
-                val all = data.a
-                val q = data.b
-                val status = data.c
-                val exact = data.d
-                val from = data.e
-                val to = data.f
+            // ---- SUMMARY: solo depende de _all + fechas ----
+            val s1 = _all.combine(_dateExact) { all, exact -> all to exact }
+            val s2 = s1.combine(_dateFrom) { (all, exact), from -> Triple(all, exact, from) }
+            val s3 = s2.combine(_dateTo) { (all, exact, from), to -> Triple3(all, exact, from, to) }
 
-                _items.value = all.asSequence()
-                    .filter { it.matchesQuery(q) }
-                    .filter { it.matchesStatus(status) }          // ✅ nuevo
-                    .filter { it.matchesDates(exact, from, to) }
-                    .toList()
+            // collector lista
+            launch {
+                f5.collect { data ->
+                    val all = data.a
+                    val q = data.b
+                    val status = data.c
+                    val exact = data.d
+                    val from = data.e
+                    val to = data.f
+
+                    _items.value = all.asSequence()
+                        .filter { it.matchesQuery(q) }
+                        .filter { it.matchesStatus(status) }
+                        .filter { it.matchesDates(exact, from, to) }
+                        .toList()
+                }
+            }
+
+            // collector summary
+            launch {
+                s3.collect { data ->
+                    val all = data.all
+                    val exact = data.exact
+                    val from = data.from
+                    val to = data.to
+
+                    val inDate = all.asSequence()
+                        .filter { it.matchesDates(exact, from, to) }
+                        .toList()
+
+                    val title = buildSummaryTitle(exact, from, to)
+
+                    val totalWorked = inDate.sumOf { it.totalWorked ?: 0L }
+                    val totalPaid = inDate.sumOf { it.totalPaid ?: 0L }
+                    val totalUnpaid = inDate.sumOf { it.totalUnpaid ?: 0L }
+
+                    val paidCount = inDate.count { it.isPaidState() }
+                    val unpaidCount = inDate.count { it.isUnpaidState() }
+                    val partialCount = inDate.count { it.isPartialState() }
+
+                    _summary.value = SummaryUi(
+                        title = title,
+                        totalWorked = totalWorked,
+                        totalPaid = totalPaid,
+                        totalUnpaid = totalUnpaid,
+                        paidCount = paidCount,
+                        partialCount = partialCount,
+                        unpaidCount = unpaidCount
+                    )
+                }
             }
         }
     }
@@ -121,7 +194,6 @@ class InstallationViewModel @Inject constructor(
 
     fun onQueryChanged(q: String) { _query.value = q }
 
-    /** Spinner: "Todos", "Pagado", "No Pagado", "Parcial" */
     fun onStatusFilterChanged(value: String) { _statusFilter.value = value }
 
     fun setDateExact(d: LocalDate?) {
@@ -136,14 +208,23 @@ class InstallationViewModel @Inject constructor(
         _dateExact.value = null
     }
 
+    /**
+     * ✅ Te recomiendo que "Limpiar filtros de fecha" vuelva a últimos 7 días,
+     * porque tú quieres que ese sea el default del app.
+     */
     fun clearDates() {
-        _dateExact.value = null
-        _dateFrom.value = null
-        _dateTo.value = null
+        setDefaultLast7Days()
     }
 
     fun currentDateFrom(): LocalDate? = _dateFrom.value
     fun currentDateTo(): LocalDate? = _dateTo.value
+
+    private fun setDefaultLast7Days() {
+        val today = LocalDate.now(zone)
+        _dateExact.value = null
+        _dateFrom.value = today.minusDays(6) // incluye hoy: 7 días
+        _dateTo.value = today
+    }
 
     // ------------- Mark paid/unpaid -------------
 
@@ -167,12 +248,33 @@ class InstallationViewModel @Inject constructor(
         stopListening()
         filterJob?.cancel()
     }
+
+    // -------------------- Summary title --------------------
+
+    private fun buildSummaryTitle(exact: LocalDate?, from: LocalDate?, to: LocalDate?): String {
+        val today = LocalDate.now(zone)
+        val defaultFrom = today.minusDays(6)
+        val defaultTo = today
+
+        val isDefaultLast7 =
+            exact == null && from == defaultFrom && to == defaultTo
+
+        return when {
+            isDefaultLast7 -> "Últimos 7 días"
+            exact != null -> "Fecha: ${exact.format(fmt)}"
+            from != null && to != null -> "${from.format(fmt)} - ${to.format(fmt)}"
+            from != null -> "Desde: ${from.format(fmt)}"
+            to != null -> "Hasta: ${to.format(fmt)}"
+            else -> "Resumen" // (no debería pasar con default last7)
+        }
+    }
 }
 
-/* ======= Pequeñas clases para transportar datos ======= */
+/* ======= Clases para transportar datos ======= */
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 private data class Quint<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)
 private data class Sext<A, B, C, D, E, F>(val a: A, val b: B, val c: C, val d: D, val e: E, val f: F)
+private data class Triple3<A, B, C, D>(val all: A, val exact: B, val from: C, val to: D)
 
 /* ================= Helpers ================= */
 
@@ -185,20 +287,20 @@ private fun Installation.matchesQuery(q: String): Boolean {
     fun contains(value: String?): Boolean =
         value?.trim()?.lowercase()?.contains(qLower) == true
 
-    // -------- Campos directos --------
+    // directos
     if (order?.toString()?.contains(query, ignoreCase = true) == true) return true
     if (contains(plate)) return true
     if (contains(serie)) return true
 
-    // -------- Vehículo --------
+    // vehículo
     if (contains(vehicle?.make)) return true
     if (contains(vehicle?.model)) return true
     if (contains(vehicle?.displayName)) return true
 
-    // -------- Sede --------
+    // sede
     if (contains(headquarter?.name)) return true
 
-    // -------- Accesorios --------
+    // accesorios
     val acc = accessories.orEmpty()
     if (acc.any { contains(it.name) }) return true
     if (acc.any { contains(it.accessoryId) }) return true // opcional
@@ -206,14 +308,6 @@ private fun Installation.matchesQuery(q: String): Boolean {
     return false
 }
 
-
-/**
- * Spinner:
- *  - "Todos" => true
- *  - "Pagado" => state == PAGADO (o "Pagado")
- *  - "No Pagado" => state == NO_PAGADO (o "No pagado")
- *  - "Parcial" => state == PARCIAL (o "Parcial")
- */
 private fun Installation.matchesStatus(statusUi: String): Boolean {
     val s = state?.trim().orEmpty()
 
@@ -242,6 +336,21 @@ private fun Installation.matchesDates(
     if (to != null && d.isAfter(to)) return false
 
     return true
+}
+
+private fun Installation.isPaidState(): Boolean {
+    val s = state?.trim().orEmpty()
+    return s.equals("PAGADO", true) || s.equals("paid", true) || s.equals("Pagado", true)
+}
+
+private fun Installation.isUnpaidState(): Boolean {
+    val s = state?.trim().orEmpty()
+    return s.equals("NO_PAGADO", true) || s.equals("unpaid", true) || s.equals("No pagado", true)
+}
+
+private fun Installation.isPartialState(): Boolean {
+    val s = state?.trim().orEmpty()
+    return s.equals("PARCIAL", true) || s.equals("incompleto", true) || s.equals("incomplete", true)
 }
 
 private fun Timestamp?.toLocalDate(zone: ZoneId = ZoneId.systemDefault()): LocalDate? {

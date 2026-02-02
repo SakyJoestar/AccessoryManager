@@ -19,9 +19,11 @@ import com.example.accessoriesManager.viewmodel.InstallationViewModel
 import com.google.android.material.datepicker.MaterialDatePicker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
+import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Locale
 
 @AndroidEntryPoint
 class InstallationsFragment : Fragment() {
@@ -33,6 +35,13 @@ class InstallationsFragment : Fragment() {
     private lateinit var adapter: InstallationAdapter
 
     private val statusOptions = listOf("Todos", "Pagado", "No Pagado", "Parcial")
+
+    private val moneyFmt = NumberFormat.getNumberInstance(Locale("es","CO")).apply {
+        maximumFractionDigits = 0
+        minimumFractionDigits = 0
+    }
+
+    private fun money(v: Long) = "$ ${moneyFmt.format(v)}"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -91,6 +100,20 @@ class InstallationsFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.error.collect { msg ->
                 msg?.let { showSnack(it) }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.summary.collect { s ->
+                binding.includeSummary.tvSummaryTitle.text = s.title
+
+                binding.includeSummary.tvTotalTrabajadoValue.text = money(s.totalWorked)
+                binding.includeSummary.tvPagadoValue.text = money(s.totalPaid)
+                binding.includeSummary.tvNoPagadoValue.text = money(s.totalUnpaid)
+
+                binding.includeSummary.tvPagadasCount.text = s.paidCount.toString()
+                binding.includeSummary.tvIncompletasCount.text = s.partialCount.toString()
+                binding.includeSummary.tvNoPagadasCount.text = s.unpaidCount.toString()
             }
         }
     }
