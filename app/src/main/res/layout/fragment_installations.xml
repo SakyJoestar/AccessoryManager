@@ -55,6 +55,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilDateExact"
+                        style="@style/AppInputLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -64,10 +65,11 @@
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etDateExact"
+                            style="@style/AppInputText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:focusable="false"
                             android:clickable="true"
+                            android:focusable="false"
                             android:inputType="none"
                             tools:text="2026-01-28" />
                     </com.google.android.material.textfield.TextInputLayout>
@@ -89,6 +91,7 @@
                 <!-- Rango -->
                 <LinearLayout
                     android:id="@+id/rowDates"
+                    style="@style/AppInputText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
@@ -102,6 +105,7 @@
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/tilDateFrom"
+                            style="@style/AppInputLayout"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -111,6 +115,7 @@
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etDateFrom"
+                                style="@style/AppInputText"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:focusable="false"
@@ -125,6 +130,7 @@
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/tilDateTo"
+                            style="@style/AppInputLayout"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -134,6 +140,7 @@
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etDateTo"
+                                style="@style/AppInputText"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:focusable="false"
@@ -164,18 +171,19 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilSearch"
+                        style="@style/AppInputLayout"
                         android:layout_width="0dp"
-                        android:layout_height="65dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        app:startIconDrawable="@drawable/ic_search">
+                        android:layout_marginEnd="10dp">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etSearch"
+                            style="@style/AppInputText"
+                            android:layout_gravity="center_vertical"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:hint="Buscar"
-                            android:gravity="center_vertical"
-                            android:paddingVertical="12dp"
                             android:inputType="text"
                             tools:text="XYZ987" />
                     </com.google.android.material.textfield.TextInputLayout>
@@ -187,13 +195,13 @@
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilStatus"
                         android:layout_width="140dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="48dp"
                         android:hint="Estado">
 
                         <Spinner
                             android:id="@+id/spinnerStatus"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="match_parent"
                             android:spinnerMode="dropdown" />
                     </com.google.android.material.textfield.TextInputLayout>
 
