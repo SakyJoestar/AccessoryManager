@@ -27,13 +27,13 @@ class InstallationViewModel @Inject constructor(
     // ----- Fuente raw desde Firestore -----
     private val _all = MutableStateFlow<List<Installation>>(emptyList())
 
-    // ----- Error estilo Accessories -----
+    // ----- Error -----
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
     // ----- Filtros -----
     private val _query = MutableStateFlow("")
-    private val _stateFilter = MutableStateFlow<String?>(null) // null = Todos
+    private val _statusFilter = MutableStateFlow("Todos") // Todos / Pagado / No Pagado / Parcial
     private val _dateExact = MutableStateFlow<LocalDate?>(null)
     private val _dateFrom = MutableStateFlow<LocalDate?>(null)
     private val _dateTo = MutableStateFlow<LocalDate?>(null)
@@ -42,7 +42,7 @@ class InstallationViewModel @Inject constructor(
     private val _expandedIds = MutableStateFlow<Set<String>>(emptySet())
     val expandedIds: StateFlow<Set<String>> = _expandedIds.asStateFlow()
 
-    // ✅ Items estilo Accessories
+    // ----- Items filtrados -----
     private val _items = MutableStateFlow<List<Installation>>(emptyList())
     val items: StateFlow<List<Installation>> = _items.asStateFlow()
 
@@ -50,10 +50,10 @@ class InstallationViewModel @Inject constructor(
     private var filterJob: Job? = null
 
     init {
-        // Combina por etapas para evitar el combine de 6 params
         filterJob = viewModelScope.launch {
-            val f1 = _all.combine(_query) { all, q -> all to q }                           // Pair<List, String>
-            val f2 = f1.combine(_stateFilter) { (all, q), state -> Triple(all, q, state) } // Triple<List, String, String?>
+            // pipeline por etapas como tú lo tienes
+            val f1 = _all.combine(_query) { all, q -> all to q }
+            val f2 = f1.combine(_statusFilter) { (all, q), status -> Triple(all, q, status) }
             val f3 = f2.combine(_dateExact) { t, exact -> Quad(t.first, t.second, t.third, exact) }
             val f4 = f3.combine(_dateFrom) { qd, from -> Quint(qd.a, qd.b, qd.c, qd.d, from) }
             val f5 = f4.combine(_dateTo) { qi, to -> Sext(qi.a, qi.b, qi.c, qi.d, qi.e, to) }
@@ -61,21 +61,21 @@ class InstallationViewModel @Inject constructor(
             f5.collect { data ->
                 val all = data.a
                 val q = data.b
-                val state = data.c
+                val status = data.c
                 val exact = data.d
                 val from = data.e
                 val to = data.f
 
                 _items.value = all.asSequence()
                     .filter { it.matchesQuery(q) }
-                    .filter { it.matchesState(state) }
+                    .filter { it.matchesStatus(status) }          // ✅ nuevo
                     .filter { it.matchesDates(exact, from, to) }
                     .toList()
             }
         }
     }
 
-    // ------------- Listening (estilo Accessories) -------------
+    // ------------- Listening -------------
 
     fun startListening() {
         _error.value = null
@@ -121,7 +121,8 @@ class InstallationViewModel @Inject constructor(
 
     fun onQueryChanged(q: String) { _query.value = q }
 
-    fun onStateFilterChanged(state: String?) { _stateFilter.value = state }
+    /** Spinner: "Todos", "Pagado", "No Pagado", "Parcial" */
+    fun onStatusFilterChanged(value: String) { _statusFilter.value = value }
 
     fun setDateExact(d: LocalDate?) {
         _dateExact.value = d
@@ -144,19 +145,16 @@ class InstallationViewModel @Inject constructor(
     fun currentDateFrom(): LocalDate? = _dateFrom.value
     fun currentDateTo(): LocalDate? = _dateTo.value
 
-    fun stateOptions(): List<String> {
-        val states = _all.value.mapNotNull { it.state?.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
-        return listOf("Todos") + states
-    }
+    // ------------- Mark paid/unpaid -------------
 
     fun markAllAccessoriesPaid(installationId: String, paid: Boolean) {
         viewModelScope.launch {
             try {
                 repo.markAllAccessoriesPaidAndUpdateInstallation(installationId, paid)
-                _error.emit(if (paid) "Accesorios marcados como pagados ✅" else "Accesorios marcados como NO pagados ✅")
+                _error.emit(
+                    if (paid) "Accesorios marcados como pagados ✅"
+                    else "Accesorios marcados como NO pagados ✅"
+                )
             } catch (e: Exception) {
                 android.util.Log.e("INSTALL_MARK", "Error marcando", e)
                 _error.emit("Error: ${e.message}")
@@ -171,7 +169,7 @@ class InstallationViewModel @Inject constructor(
     }
 }
 
-/* ======= Pequeñas clases para transportar datos sin Pair nesting infinito ======= */
+/* ======= Pequeñas clases para transportar datos ======= */
 private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 private data class Quint<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)
 private data class Sext<A, B, C, D, E, F>(val a: A, val b: B, val c: C, val d: D, val e: E, val f: F)
@@ -186,9 +184,25 @@ private fun Installation.matchesQuery(q: String): Boolean {
             (plate.orEmpty().contains(query, true))
 }
 
-private fun Installation.matchesState(filter: String?): Boolean {
-    if (filter.isNullOrBlank()) return true
-    return state?.trim().equals(filter.trim(), ignoreCase = true)
+/**
+ * Spinner:
+ *  - "Todos" => true
+ *  - "Pagado" => state == PAGADO (o "Pagado")
+ *  - "No Pagado" => state == NO_PAGADO (o "No pagado")
+ *  - "Parcial" => state == PARCIAL (o "Parcial")
+ */
+private fun Installation.matchesStatus(statusUi: String): Boolean {
+    val s = state?.trim().orEmpty()
+
+    fun eq(vararg values: String): Boolean =
+        values.any { it.equals(s, ignoreCase = true) }
+
+    return when (statusUi.trim()) {
+        "Pagado" -> eq("PAGADO", "Pagado", "PAID", "paid")
+        "No Pagado" -> eq("NO_PAGADO", "No pagado", "NO PAGADO", "UNPAID", "unpaid")
+        "Parcial" -> eq("PARCIAL", "Parcial", "INCOMPLETO", "Incompleto")
+        else -> true // "Todos"
+    }
 }
 
 private fun Installation.matchesDates(
@@ -196,8 +210,6 @@ private fun Installation.matchesDates(
     from: LocalDate?,
     to: LocalDate?
 ): Boolean {
-
-    // si NO hay filtros activos, no filtrar
     if (exact == null && from == null && to == null) return true
 
     val d = date.toLocalDate() ?: return false
@@ -215,5 +227,3 @@ private fun Timestamp?.toLocalDate(zone: ZoneId = ZoneId.systemDefault()): Local
         .atZone(zone)
         .toLocalDate()
 }
-
-

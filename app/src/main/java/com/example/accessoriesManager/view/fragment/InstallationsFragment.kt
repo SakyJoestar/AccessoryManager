@@ -32,7 +32,7 @@ class InstallationsFragment : Fragment() {
     private val viewModel: InstallationViewModel by viewModels()
     private lateinit var adapter: InstallationAdapter
 
-    private var spinnerOptions: List<String> = listOf("Todos")
+    private val statusOptions = listOf("Todos", "Pagado", "No Pagado", "Parcial")
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -110,18 +110,19 @@ class InstallationsFragment : Fragment() {
         }
 
         // Spinner
+// Spinner (Estado)
         val spinnerAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            spinnerOptions
+            statusOptions
         ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         binding.spinnerStatus.adapter = spinnerAdapter
 
         binding.spinnerStatus.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val selected = spinnerOptions.getOrNull(position) ?: "Todos"
-                viewModel.onStateFilterChanged(if (selected == "Todos") null else selected)
+                val selected = statusOptions.getOrNull(position) ?: "Todos"
+                viewModel.onStatusFilterChanged(selected)
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
@@ -158,20 +159,11 @@ class InstallationsFragment : Fragment() {
             binding.etDateExact.setText("")
             binding.etDateFrom.setText("")
             binding.etDateTo.setText("")
-        }
-    }
+            binding.etSearch.setText("")
 
-    private fun refreshSpinnerOptions(list: List<com.example.accessoriesManager.model.Installation>) {
-        val states = list.mapNotNull { it.state?.trim() }.filter { it.isNotBlank() }.distinct().sorted()
-        val newOptions = listOf("Todos") + states
-        if (newOptions == spinnerOptions) return
-
-        spinnerOptions = newOptions
-        @Suppress("UNCHECKED_CAST")
-        (binding.spinnerStatus.adapter as? ArrayAdapter<String>)?.apply {
-            clear()
-            addAll(spinnerOptions)
-            notifyDataSetChanged()
+            // ✅ Reset de spinner a "Todos"
+            binding.spinnerStatus.setSelection(0)
+            viewModel.onStatusFilterChanged("Todos")
         }
     }
 
