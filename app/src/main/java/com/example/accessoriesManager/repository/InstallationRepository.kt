@@ -120,7 +120,7 @@ class InstallationRepository @Inject constructor(
         onError: (Exception) -> Unit
     ): ListenerRegistration {
         return installationsCol()
-            .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .orderBy("date", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .addSnapshotListener { snap, e ->
                 if (e != null) {
                     onError(e)
