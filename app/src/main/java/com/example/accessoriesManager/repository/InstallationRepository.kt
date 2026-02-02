@@ -89,9 +89,11 @@ class InstallationRepository @Inject constructor(
 
         val newState = when {
             selected.isEmpty() || totalWorked == 0L -> "NO_PAGADO"
+            totalPaid == 0L -> "NO_PAGADO"      // ✅ FIX
             totalUnpaid == 0L -> "PAGADO"
-            else -> "ABONADO"
+            else -> "PARCIAL"
         }
+
 
         val data = normalize(
             installation = installation.copy(
@@ -151,32 +153,40 @@ class InstallationRepository @Inject constructor(
         val inst = snap.toObject(Installation::class.java)
             ?: throw IllegalStateException("Instalación no existe: $installationId")
 
+        val increment = inst.increment ?: 0L
         val current = inst.accessories.orEmpty()
 
-        // 🚨 IMPORTANTE:
-        // NO usamos copy(isPaid = ...) porque Firestore puede mapear isPaid -> paid
-        // Escribimos el campo explícito
-        val updatedAccessories = current.map { acc ->
+        // ✅ Actualiza SOLO el campo real de Firestore: "paid"
+        val updatedAccessories: List<Map<String, Any?>> = current.map { acc ->
             mapOf(
                 "accessoryId" to acc.accessoryId,
                 "name" to acc.name,
-                "price" to acc.price,
-                // escribimos AMBOS por compatibilidad
-                "paid" to paid,
-                "isPaid" to paid
+                "price" to acc.price,   // precio base (NO sumes increment aquí)
+                "paid" to paid          // 🔥 clave
             )
         }
 
-        val totalWorked = current.sumOf { it.price }
+        fun finalPrice(base: Long) = base + increment
+
+        // ✅ Totales usando precio final = base + increment por cada accesorio
+        val totalWorked = current.sumOf { finalPrice(it.price) }
+
+        // ✅ totalPaid basado en flags reales (aquí todos quedan paid=true/false)
         val totalPaid = if (paid) totalWorked else 0L
         val totalUnpaid = totalWorked - totalPaid
 
-        val newState = if (totalUnpaid == 0L) "Pagado" else "No pagado"
+        // ✅ Estado consistente con el resto de tu app
+        val newState = when {
+            totalWorked <= 0L -> "NO_PAGADO"
+            totalPaid <= 0L -> "NO_PAGADO"       // ✅ tu caso: 1 accesorio no pagado
+            totalUnpaid <= 0L -> "PAGADO"
+            else -> "PARCIAL"
+        }
 
         android.util.Log.d(
             "INSTALL_MARK",
-            "id=$installationId paid=$paid acc=${updatedAccessories.size} " +
-                    "total=$totalWorked paidTotal=$totalPaid unpaid=$totalUnpaid"
+            "id=$installationId paid=$paid inc=$increment acc=${updatedAccessories.size} " +
+                    "total=$totalWorked paidTotal=$totalPaid unpaid=$totalUnpaid state=$newState"
         )
 
         instRef.update(

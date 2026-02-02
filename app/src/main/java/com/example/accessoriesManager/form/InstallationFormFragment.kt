@@ -233,7 +233,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             val state = when (tgPayment.checkedButtonId) {
                 btnPaid.id -> "PAGADO"
                 btnNotPaid.id -> "NO_PAGADO"
-                btnPartiallyPaid.id -> "ABONADO"
+                btnPartiallyPaid.id -> "PARCIAL"
                 else -> null
             }
             viewModel.setPaymentState(state)
@@ -605,13 +605,20 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         btnPartiallyPaid: MaterialButton,
         accessories: List<InstalledAccessory>
     ) {
-        val selected = accessories.filter { !it.accessoryId.isNullOrBlank() }
-        val paidCount = selected.count { it.isPaid }
+        val selected = accessories.filter {
+            !it.accessoryId.isNullOrBlank() && it.accessoryId!!.trim().isNotEmpty()
+        }
+
+        val inc = getIncrementValue()
+        val total = selected.sumOf { it.price + inc }
+        val paid = selected.filter { it.isPaid }.sumOf { it.price + inc }
+        val unpaid = total - paid
 
         val targetId = when {
-            selected.isEmpty() || paidCount == 0 -> btnNotPaid.id
-            paidCount == selected.size -> btnPaid.id
-            else -> btnPartiallyPaid.id
+            selected.isEmpty() || total <= 0L -> btnNotPaid.id
+            paid <= 0L -> btnNotPaid.id          // ✅ 0 pagado => NO_PAGADO
+            unpaid <= 0L -> btnPaid.id           // ✅ 0 pendiente => PAGADO
+            else -> btnPartiallyPaid.id          // ✅ si hay pagado y pendiente => PARCIAL
         }
 
         if (tg.checkedButtonId == targetId) return
@@ -623,11 +630,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val state = when (targetId) {
             btnPaid.id -> "PAGADO"
             btnNotPaid.id -> "NO_PAGADO"
-            btnPartiallyPaid.id -> "ABONADO"
+            btnPartiallyPaid.id -> "PARCIAL"
             else -> null
         }
         viewModel.setPaymentState(state)
     }
+
 
     private fun setTitles(isEdit: Boolean) {
         binding.tvFormTitle.text = if (isEdit) "Editar instalación" else "Nueva instalación"

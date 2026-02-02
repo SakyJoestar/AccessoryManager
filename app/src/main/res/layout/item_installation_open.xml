@@ -142,39 +142,6 @@
                 app:layout_constraintEnd_toEndOf="@id/rowOrden"
                 app:layout_constraintTop_toBottomOf="@id/rowPlaca" />
 
-            <!-- CONDICIÓN -->
-            <LinearLayout
-                android:id="@+id/rowCondicion"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/tvMarcaModelo"
-                android:layout_marginTop="6dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="4dp"
-                    android:text="Condición:"
-                    android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvCondicionValue"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="Completa"
-                    android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
 
             <!-- ===== Columna derecha (pagado/fecha/iconos) ===== -->
             <LinearLayout
@@ -263,6 +230,79 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- ===== GRID META: Condición / Bodega (misma fila) ===== -->
+            <androidx.gridlayout.widget.GridLayout
+                android:id="@+id/gridMeta2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                app:columnCount="2"
+                app:useDefaultMargins="true"
+                app:layout_constraintTop_toBottomOf="@id/tvMarcaModelo"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <!-- CONDICIÓN -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    app:layout_columnWeight="1">
+
+                    <TextView
+                        android:text="Condición:"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="4dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/tvCondicionValue"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"/>
+                </LinearLayout>
+
+                <!-- BODEGA -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    app:layout_columnWeight="1">
+
+                    <TextView
+                        android:text="Bodega:"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="4dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/tvBodegaValue"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"/>
+                </LinearLayout>
+
+            </androidx.gridlayout.widget.GridLayout>
+
+
 
             <!-- FILA EXTRA: Condición / Sede / Bodega (Label + Valor horizontal) -->
             <androidx.gridlayout.widget.GridLayout
@@ -272,7 +312,7 @@
                 android:layout_marginTop="6dp"
                 app:columnCount="2"
                 app:useDefaultMargins="true"
-                app:layout_constraintTop_toBottomOf="@id/rowCondicion"
+                app:layout_constraintTop_toBottomOf="@id/gridMeta2"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
@@ -291,22 +331,22 @@
                         android:textStyle="bold"
                         android:layout_marginEnd="4dp"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"/>
 
                     <TextView
                         android:id="@+id/tvSedeValue"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Principal"
+
                         android:textColor="@android:color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:maxLines="1"
-                        android:ellipsize="end" />
+                        android:ellipsize="end"/>
                 </LinearLayout>
 
-                <!-- BODEGA -->
+                <!-- INCREMENTO -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -315,27 +355,25 @@
                     app:layout_columnWeight="1">
 
                     <TextView
-                        android:text="Bodega:"
+                        android:text="Inc:"
                         android:textColor="@android:color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:layout_marginEnd="4dp"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"/>
 
                     <TextView
-                        android:id="@+id/tvBodegaValue"
+                        android:id="@+id/tvIncrementValue"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Central"
                         android:textColor="@android:color/white"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:maxLines="1"
-                        android:ellipsize="end" />
+                        android:ellipsize="end"/>
                 </LinearLayout>
-
             </androidx.gridlayout.widget.GridLayout>
 
             <!-- Título sección accesorios -->

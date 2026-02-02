@@ -81,7 +81,7 @@ class InstallationAdapter(
             // Compatibilidad con tus toggles
             "pagado" -> PayState.PAID
             "no_pagado" -> PayState.UNPAID
-            "abonado" -> PayState.INCOMPLETE
+            "parcial" -> PayState.INCOMPLETE
 
             else -> {
                 // Fallback por totales (tu UI ya se basa en totalUnpaid)
@@ -201,6 +201,7 @@ class InstallationAdapter(
 
             tvCondicionValue.text = item.condition.orEmpty().ifBlank { "-" }
             tvSedeValue.text = item.headquarter?.name.orEmpty().ifBlank { "-" }
+            tvIncrementValue.text = money(item.increment ?: 0L)
             tvBodegaValue.text = item.warehouse.orEmpty().ifBlank { "-" }
 
             tvFecha.text = item.date?.toDate()
