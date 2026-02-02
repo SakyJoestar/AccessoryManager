@@ -101,7 +101,7 @@ class InstallationAdapter(
 
     private fun payLabel(ps: PayState): String = when (ps) {
         PayState.PAID -> "Sí"
-        PayState.INCOMPLETE -> "Incompleto"
+        PayState.INCOMPLETE -> "Parcial"
         PayState.UNPAID -> "No"
     }
 
