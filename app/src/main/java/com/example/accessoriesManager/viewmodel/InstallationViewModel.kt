@@ -179,10 +179,33 @@ private data class Sext<A, B, C, D, E, F>(val a: A, val b: B, val c: C, val d: D
 private fun Installation.matchesQuery(q: String): Boolean {
     val query = q.trim()
     if (query.isEmpty()) return true
-    return (order?.toString().orEmpty().contains(query, true)) ||
-            (serie.orEmpty().contains(query, true)) ||
-            (plate.orEmpty().contains(query, true))
+
+    val qLower = query.lowercase()
+
+    fun contains(value: String?): Boolean =
+        value?.trim()?.lowercase()?.contains(qLower) == true
+
+    // -------- Campos directos --------
+    if (order?.toString()?.contains(query, ignoreCase = true) == true) return true
+    if (contains(plate)) return true
+    if (contains(serie)) return true
+
+    // -------- Vehículo --------
+    if (contains(vehicle?.make)) return true
+    if (contains(vehicle?.model)) return true
+    if (contains(vehicle?.displayName)) return true
+
+    // -------- Sede --------
+    if (contains(headquarter?.name)) return true
+
+    // -------- Accesorios --------
+    val acc = accessories.orEmpty()
+    if (acc.any { contains(it.name) }) return true
+    if (acc.any { contains(it.accessoryId) }) return true // opcional
+
+    return false
 }
+
 
 /**
  * Spinner:
