@@ -15,6 +15,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.accesorymanager.R
@@ -319,7 +320,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 etIncrement.setText("0")
                                 etComment.setText("")
 
-                                // ✅ limpiar selección también
+                                // limpiar selección también
                                 selectedHq = null
                                 selectedVehicle = null
                                 viewModel.setHeadquarter(null)
@@ -335,8 +336,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 etOrder.requestFocus()
                             }
 
-                            binding.btnSave.isEnabled = true
-                            binding.btnSave.text = normalText
+                            // ✅ cerrar SIEMPRE (crear o editar)
+                            findNavController().popBackStack()
+                            return@collect
                         }
 
                         is InstallationFormViewModel.UiState.Error -> {

@@ -62,6 +62,9 @@ class InstallationsFragment : Fragment() {
             onDelete = { installation ->
                 val id = installation.id.orEmpty()
                 if (id.isNotBlank()) showDeleteDialog(id)
+            },
+            onMark = { installation ->
+                showMarkAllDialog(installation) // ✅ nuevo
             }
         )
 
@@ -199,4 +202,31 @@ class InstallationsFragment : Fragment() {
             .setNegativeButton("No", null)
             .show()
     }
+
+    private fun showMarkAllDialog(installation: com.example.accessoriesManager.model.Installation) {
+        val id = installation.id.orEmpty()
+        if (id.isBlank()) return
+
+        // Decide si vamos a marcar como pagados o no pagados
+        val state = installation.state?.trim()?.lowercase().orEmpty()
+        val isPaid = (installation.totalUnpaid ?: 0L) == 0L
+        val targetPaid = !isPaid
+
+        val title = if (targetPaid) "Marcar como pagados" else "Marcar como NO pagados"
+        val message = if (targetPaid) {
+            "¿Desea marcar como pagados todos los accesorios de esta instalación?"
+        } else {
+            "¿Desea marcar como NO pagados todos los accesorios de esta instalación?"
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("Sí") { _, _ ->
+                viewModel.markAllAccessoriesPaid(installationId = id, paid = targetPaid)
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
 }

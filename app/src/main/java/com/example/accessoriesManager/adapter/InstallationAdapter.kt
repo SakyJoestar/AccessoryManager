@@ -18,6 +18,7 @@ class InstallationAdapter(
     private val onToggleExpand: (String) -> Unit,
     private val onEdit: (Installation) -> Unit,
     private val onDelete: (Installation) -> Unit,
+    private val onMark: (Installation) -> Unit,
 ) : ListAdapter<Installation, RecyclerView.ViewHolder>(Diff) {
 
     private var expandedIds: Set<String> = emptySet()
@@ -75,9 +76,7 @@ class InstallationAdapter(
 
             btnEdit.setOnClickListener { onEdit(item) }
             btnDelete.setOnClickListener { onDelete(item) }
-
-            // Si quieres que el icono "check" colapse/expanda:
-            btnCollapse.setOnClickListener { item.id?.let(onToggleExpand) }
+            btnCheck.setOnClickListener { onMark(item)}
 
             tvOrdenValue.text = item.order?.toString() ?: "-"
             tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
@@ -119,7 +118,7 @@ class InstallationAdapter(
 
             btnEdit.setOnClickListener { onEdit(item) }
             btnDelete.setOnClickListener { onDelete(item) }
-            btnCollapse.setOnClickListener { item.id?.let(onToggleExpand) }
+            btnCheck.setOnClickListener { onMark(item)}
 
             tvOrdenValue.text = item.order?.toString() ?: "-"
             tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }

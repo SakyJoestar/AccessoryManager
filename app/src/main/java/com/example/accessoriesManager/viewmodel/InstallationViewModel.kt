@@ -152,6 +152,18 @@ class InstallationViewModel @Inject constructor(
         return listOf("Todos") + states
     }
 
+    fun markAllAccessoriesPaid(installationId: String, paid: Boolean) {
+        viewModelScope.launch {
+            try {
+                repo.markAllAccessoriesPaidAndUpdateInstallation(installationId, paid)
+                _error.emit(if (paid) "Accesorios marcados como pagados ✅" else "Accesorios marcados como NO pagados ✅")
+            } catch (e: Exception) {
+                android.util.Log.e("INSTALL_MARK", "Error marcando", e)
+                _error.emit("Error: ${e.message}")
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         stopListening()
@@ -203,3 +215,5 @@ private fun Timestamp?.toLocalDate(zone: ZoneId = ZoneId.systemDefault()): Local
         .atZone(zone)
         .toLocalDate()
 }
+
+
