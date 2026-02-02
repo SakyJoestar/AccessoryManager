@@ -191,8 +191,8 @@
                         android:id="@+id/btnCollapse"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
-                        android:background="@android:color/transparent"
-                        android:contentDescription="Contraer"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Marcar/desmarcar"
                         app:srcCompat="@drawable/check_box_marked"
                         app:tint="@android:color/white"/>
 
@@ -200,7 +200,7 @@
                         android:id="@+id/btnEdit"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
-                        android:background="@android:color/transparent"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Editar"
                         app:srcCompat="@drawable/ic_edit"
                         app:tint="@android:color/white" />
@@ -209,7 +209,7 @@
                         android:id="@+id/btnDelete"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
-                        android:background="@android:color/transparent"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Eliminar"
                         app:srcCompat="@drawable/ic_delete"
                         app:tint="@android:color/white" />
