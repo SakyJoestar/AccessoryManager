@@ -220,8 +220,9 @@
 
                 <!-- TOTAL -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
 
@@ -236,20 +237,21 @@
 
                     <TextView
                         android:id="@+id/tvTotalValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:textSize="14sp"/>
                 </LinearLayout>
 
                 <!-- PAGADO -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginStart="16dp">
+                    android:paddingStart="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -262,20 +264,21 @@
 
                     <TextView
                         android:id="@+id/tvTotalPagadoValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:textSize="14sp"/>
                 </LinearLayout>
 
                 <!-- NO PAGADO -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginStart="16dp">
+                    android:paddingStart="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -288,14 +291,15 @@
 
                     <TextView
                         android:id="@+id/tvTotalNoPagadoValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:textColor="@android:color/white"
                         android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:textSize="14sp"/>
                 </LinearLayout>
 
             </LinearLayout>
+
 
             <!-- ===== DETALLE EXPANDIBLE ===== -->
             <LinearLayout

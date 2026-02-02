@@ -429,7 +429,7 @@
                     android:layout_height="wrap_content"
                     android:text="Total:"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:layout_marginEnd="4dp"/>
 
@@ -439,7 +439,7 @@
                     android:layout_height="wrap_content"
                     android:text="$0"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"/>
             </LinearLayout>
 
@@ -455,9 +455,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Pagado:"
+                    android:text="P:"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:layout_marginEnd="4dp"/>
 
@@ -467,7 +467,7 @@
                     android:layout_height="wrap_content"
                     android:text="$0"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"/>
             </LinearLayout>
 
@@ -483,9 +483,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="No pagado:"
+                    android:text="NP:"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:layout_marginEnd="4dp"/>
 
@@ -495,7 +495,7 @@
                     android:layout_height="wrap_content"
                     android:text="$0"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"/>
             </LinearLayout>
 
