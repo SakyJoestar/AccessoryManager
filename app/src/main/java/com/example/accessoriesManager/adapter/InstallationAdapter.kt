@@ -13,6 +13,9 @@ import com.google.firebase.Timestamp
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class InstallationAdapter(
     private val onToggleExpand: (String) -> Unit,
@@ -21,6 +24,10 @@ class InstallationAdapter(
 ) : ListAdapter<Installation, InstallationAdapter.VH>(Diff) {
 
     private var expandedIds: Set<String> = emptySet()
+
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+
 
     /** Llama esto desde el Fragment al colectar el state del VM */
     fun submitWithExpanded(list: List<Installation>, expanded: Set<String>) {
@@ -69,7 +76,15 @@ class InstallationAdapter(
             val unpaid = item.totalUnpaid ?: 0L
             tvPagadoValue.text = if (unpaid > 0L) "No" else "Sí"
 
-            tvFecha.text = item.date.formatShortDate()
+            val formattedDate = item.date
+                ?.toDate()
+                ?.toInstant()
+                ?.atZone(ZoneId.systemDefault())
+                ?.toLocalDate()
+                ?.format(formatter)
+                ?: "-"
+
+            tvFecha.text = formattedDate
 
             tvTotalValue.text = money(item.totalWorked ?: 0L)
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
