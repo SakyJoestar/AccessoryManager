@@ -160,7 +160,7 @@
                     android:layout_marginEnd="4dp"
                     android:text="Condición:"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -172,7 +172,7 @@
                     android:maxLines="1"
                     android:text="Completa"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -287,7 +287,7 @@
                     <TextView
                         android:text="Sede:"
                         android:textColor="@android:color/white"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:textStyle="bold"
                         android:layout_marginEnd="4dp"
                         android:layout_width="wrap_content"
@@ -300,7 +300,7 @@
                         android:layout_weight="1"
                         android:text="Principal"
                         android:textColor="@android:color/white"
-                        android:textSize="13sp"
+                        android:textSize="14sp"
                         android:textStyle="bold"
                         android:maxLines="1"
                         android:ellipsize="end" />
@@ -317,7 +317,7 @@
                     <TextView
                         android:text="Bodega:"
                         android:textColor="@android:color/white"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:textStyle="bold"
                         android:layout_marginEnd="4dp"
                         android:layout_width="wrap_content"
@@ -330,7 +330,7 @@
                         android:layout_weight="1"
                         android:text="Central"
                         android:textColor="@android:color/white"
-                        android:textSize="13sp"
+                        android:textSize="14sp"
                         android:textStyle="bold"
                         android:maxLines="1"
                         android:ellipsize="end" />
@@ -353,50 +353,66 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 android:gravity="center" />
 
-            <!-- CABECERA LISTA: Nombre / Precio / Pagado -->
+            <!-- CABECERA LISTA: # / Nombre / Precio / Pagado -->
             <androidx.gridlayout.widget.GridLayout
                 android:id="@+id/gridHeader"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                app:columnCount="3"
+                app:columnCount="4"
                 app:useDefaultMargins="true"
+                android:paddingVertical="2dp"
                 app:layout_constraintTop_toBottomOf="@id/tvAccesoriosTitle"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
+                <!-- # -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="#"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:alpha="0.85"
+                    android:gravity="center"
+                    app:layout_columnWeight="0.4"/>
+
+                <!-- Nombre -->
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="Nombre"
                     android:textColor="@android:color/white"
                     android:textStyle="bold"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:alpha="0.85"
-                    android:textAlignment="center"
-                    app:layout_columnWeight="1" />
+                    android:gravity="center"
+                    app:layout_columnWeight="1.6"/>
 
+                <!-- Precio -->
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="Precio"
                     android:textColor="@android:color/white"
                     android:textStyle="bold"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:alpha="0.85"
-                    android:textAlignment="center"
-                    app:layout_columnWeight="1" />
+                    android:gravity="center"
+                    app:layout_columnWeight="1"/>
 
+                <!-- Pagado -->
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="Pagado"
                     android:textColor="@android:color/white"
                     android:textStyle="bold"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:alpha="0.85"
-                    android:textAlignment="center"
-                    app:layout_columnWeight="1" />
+                    android:gravity="center"
+                    app:layout_columnWeight="1"/>
             </androidx.gridlayout.widget.GridLayout>
 
             <!-- Lista de accesorios -->
@@ -408,7 +424,8 @@
                 app:layout_constraintTop_toBottomOf="@id/gridHeader"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                tools:listitem="@layout/item_accessory_row_open" />
+                tools:listitem="@layout/item_accessory_row_open"
+                android:nestedScrollingEnabled="false"/>
 
             <!-- Footer totales (igual al cerrado) -->
             <LinearLayout

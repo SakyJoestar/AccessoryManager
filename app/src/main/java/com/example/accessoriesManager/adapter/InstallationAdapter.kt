@@ -112,6 +112,8 @@ class InstallationAdapter(
         private val binding: ItemInstallationOpenBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
+        private val accessoriesAdapter = OpenAccessoriesAdapter()
+
         fun bind(item: Installation, expanded: Boolean) = with(binding) {
             cardInstallation.setOnClickListener { item.id?.let(onToggleExpand) }
 
@@ -152,15 +154,21 @@ class InstallationAdapter(
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
             tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
 
-            // ✅ Importante: tu open tiene un RV de accesorios
-            // Para que se vea completo dentro de una card (y dentro del scroll del fragment),
-            // se recomienda desactivar nestedScrolling:
+            // Accesorios
+
+            android.util.Log.d(
+                "OPEN_ACCESSORIES",
+                "id=${item.id} accessories=${item.accessories?.size ?: 0} data=${item.accessories}"
+            )
+
+            rvAccessories.layoutManager =
+                androidx.recyclerview.widget.LinearLayoutManager(root.context)
+
+            rvAccessories.adapter = accessoriesAdapter
+            rvAccessories.setHasFixedSize(false)
             rvAccessories.isNestedScrollingEnabled = false
 
-            // Aquí falta: setear adapter de accesorios si quieres listar accessory rows.
-            // Si todavía no tienes ese adapter, lo dejamos pendiente.
-            // rvAccessories.adapter = ...
-            // (y submitList a los accessories)
+            accessoriesAdapter.submit(item.accessories)
         }
     }
 
