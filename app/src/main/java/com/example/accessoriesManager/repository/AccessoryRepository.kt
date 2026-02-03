@@ -33,17 +33,16 @@ class AccessoryRepository @Inject constructor(
         return !snap.isEmpty
     }
 
-    suspend fun add(accessory: Accessory) {
+    suspend fun add(accessory: Accessory): String {
         val data = hashMapOf(
             "name" to accessory.name,
-            "price" to accessory.price, // Long
+            "price" to accessory.price,
             "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        accessoriesRef()
-            .add(data)
-            .await()
+        val ref = accessoriesRef().add(data).await()
+        return ref.id
     }
 
     suspend fun update(id: String, accessory: Accessory) {

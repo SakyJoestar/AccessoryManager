@@ -37,7 +37,7 @@ class VehicleRepository @Inject constructor(
     }
 
     // ✅ Crear vehículo
-    suspend fun add(vehicle: Vehicle) {
+    suspend fun add(vehicle: Vehicle): String {
         val data = hashMapOf(
             "make" to vehicle.make,
             "model" to vehicle.model,
@@ -45,9 +45,8 @@ class VehicleRepository @Inject constructor(
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        vehiclesRef()
-            .add(data)
-            .await()
+        val ref = vehiclesRef().add(data).await()
+        return ref.id
     }
 
     // ✅ Actualizar vehículo

@@ -34,7 +34,7 @@ class HeadquarterRepository @Inject constructor(
         return !snap.isEmpty
     }
 
-    suspend fun add(headquarter: Headquarter) {
+    suspend fun add(headquarter: Headquarter): String {
         val data = hashMapOf(
             "name" to headquarter.name,
             "increment" to headquarter.increment,
@@ -42,9 +42,8 @@ class HeadquarterRepository @Inject constructor(
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        headquartersRef()
-            .add(data)
-            .await()
+        val ref = headquartersRef().add(data).await()
+        return ref.id
     }
 
     suspend fun update(id: String, headquarter: Headquarter) {
