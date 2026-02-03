@@ -1,5 +1,6 @@
 package com.example.accessoriesManager.view.fragment
 
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -23,7 +24,11 @@ import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 @AndroidEntryPoint
 class InstallationsFragment : Fragment() {
@@ -42,6 +47,13 @@ class InstallationsFragment : Fragment() {
     }
 
     private fun money(v: Long) = "$ ${moneyFmt.format(v)}"
+
+    private val dateFormatter =
+        DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+
+    private fun LocalDate.formatUi(): String {
+        return this.format(dateFormatter)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -150,28 +162,33 @@ class InstallationsFragment : Fragment() {
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        // Date pickers
         binding.etDateExact.setOnClickListener {
             showDatePicker("Fecha exacta") { date ->
                 viewModel.setDateExact(date)
-                binding.etDateExact.setText(date.toString())
+
+                binding.etDateExact.setText(date.formatUi())
                 binding.etDateFrom.setText("")
                 binding.etDateTo.setText("")
             }
         }
 
+
         binding.etDateFrom.setOnClickListener {
             showDatePicker("Desde") { date ->
-                viewModel.setDateRange(from = date, to = viewModel.currentDateTo())
-                binding.etDateFrom.setText(date.toString())
+                val to = viewModel.currentDateTo() ?: date
+                viewModel.setDateRange(from = date, to = to)
+
+                binding.etDateFrom.setText(date.formatUi())
                 binding.etDateExact.setText("")
             }
         }
 
         binding.etDateTo.setOnClickListener {
             showDatePicker("Hasta") { date ->
-                viewModel.setDateRange(from = viewModel.currentDateFrom(), to = date)
-                binding.etDateTo.setText(date.toString())
+                val from = viewModel.currentDateFrom() ?: date
+                viewModel.setDateRange(from = from, to = date)
+
+                binding.etDateTo.setText(date.formatUi())
                 binding.etDateExact.setText("")
             }
         }
@@ -190,20 +207,58 @@ class InstallationsFragment : Fragment() {
         }
     }
 
-    private fun showDatePicker(title: String, onSelected: (LocalDate) -> Unit) {
-        val zone = ZoneId.systemDefault()
-        val picker = MaterialDatePicker.Builder.datePicker()
-            .setTitleText(title)
-            .build()
-
-        picker.addOnPositiveButtonClickListener { utcMillis ->
-            val date = Instant.ofEpochMilli(utcMillis).atZone(zone).toLocalDate()
-            onSelected(date)
-        }
-
-        picker.show(parentFragmentManager, "date_picker_$title")
+    private fun formatDate(date: Date): String {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        sdf.timeZone = java.util.TimeZone.getTimeZone("America/Bogota")
+        return sdf.format(date)
     }
 
+    private fun startOfDay(date: Date): Date {
+        val tz = java.util.TimeZone.getTimeZone("America/Bogota")
+        return java.util.Calendar.getInstance(tz).apply {
+            time = date
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.time
+    }
+
+    private fun endOfDay(date: Date): Date {
+        val tz = java.util.TimeZone.getTimeZone("America/Bogota")
+        return java.util.Calendar.getInstance(tz).apply {
+            time = date
+            set(java.util.Calendar.HOUR_OF_DAY, 23)
+            set(java.util.Calendar.MINUTE, 59)
+            set(java.util.Calendar.SECOND, 59)
+            set(java.util.Calendar.MILLISECOND, 999)
+        }.time
+    }
+
+    // 👇 DatePicker que devuelve fecha "segura" (12:00) para que no se corra al día anterior
+    private fun showDatePicker(
+        title: String,
+        onSelected: (LocalDate) -> Unit
+    ) {
+        val today = LocalDate.now()
+
+        DatePickerDialog(
+            requireContext(),
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(
+                    year,
+                    month + 1, // DatePicker usa 0-based
+                    dayOfMonth
+                )
+                onSelected(picked)
+            },
+            today.year,
+            today.monthValue - 1,
+            today.dayOfMonth
+        ).apply {
+            setTitle(title)
+        }.show()
+    }
     // -------------------- Delete dialog --------------------
 
     private fun showDeleteDialog(id: String) {

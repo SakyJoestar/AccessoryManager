@@ -18,12 +18,15 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
 class InstallationViewModel @Inject constructor(
     private val repo: InstallationRepository
 ) : ViewModel() {
+
+    lateinit var dateExact: Date
 
     // ----- Fuente raw desde Firestore -----
     private val _all = MutableStateFlow<List<Installation>>(emptyList())
