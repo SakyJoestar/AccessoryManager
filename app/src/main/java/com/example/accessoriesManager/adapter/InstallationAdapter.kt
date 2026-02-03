@@ -126,10 +126,15 @@ class InstallationAdapter(
 
             // Estado + color
             val ps = normalizePayState(item)
+
             tvPagadoValue.text = payLabel(ps)
-            cardInstallation.setCardBackgroundColor(
-                ContextCompat.getColor(root.context, bgColorRes(ps))
+
+            val color = ContextCompat.getColor(
+                root.context,
+                bgColorRes(ps)
             )
+
+            viewStatusBar.setBackgroundColor(color)
 
             // Textos
             tvOrdenValue.text = item.order?.toString() ?: "-"
@@ -177,10 +182,15 @@ class InstallationAdapter(
 
             // Estado + color
             val ps = normalizePayState(item)
+
             tvPagadoValue.text = payLabel(ps)
-            cardInstallation.setCardBackgroundColor(
-                ContextCompat.getColor(root.context, bgColorRes(ps))
+
+            val color = ContextCompat.getColor(
+                root.context,
+                bgColorRes(ps)
             )
+
+            viewStatusBar.setBackgroundColor(color)
 
             // Textos
             tvOrdenValue.text = item.order?.toString() ?: "-"

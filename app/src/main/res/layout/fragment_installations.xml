@@ -12,7 +12,6 @@
         android:paddingTop="?attr/actionBarSize"
         android:paddingBottom="86dp">
 
-        <!-- ✅ UN SOLO SCROLL PARA TODO -->
         <androidx.core.widget.NestedScrollView
             android:id="@+id/scrollRoot"
             android:layout_width="0dp"
@@ -44,6 +43,11 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     android:textAlignment="center" />
+
+                <!-- Resumen -->
+                <include
+                    android:id="@+id/includeSummary"
+                    layout="@layout/view_installations_summary" />
 
                 <!-- Fecha exacta + Limpiar -->
                 <LinearLayout
@@ -91,7 +95,6 @@
                 <!-- Rango -->
                 <LinearLayout
                     android:id="@+id/rowDates"
-                    style="@style/AppInputText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
@@ -100,7 +103,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginTop="0dp">
+                        android:layout_marginTop="0dp"
+                        android:paddingHorizontal="16dp">
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/tilDateFrom"
@@ -151,11 +155,6 @@
                     </LinearLayout>
 
                 </LinearLayout>
-
-                <!-- Resumen -->
-                <include
-                    android:id="@+id/includeSummary"
-                    layout="@layout/view_installations_summary" />
 
                 <!-- Buscador + filtro -->
                 <LinearLayout

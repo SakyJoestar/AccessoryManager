@@ -174,7 +174,6 @@ class InstalledAccessoryAdapter(
                 if (updated == items[pos]) return
 
                 items[pos] = updated
-                notifyItemChanged(pos)
                 onChanged(items.toList())
 
                 val enabled = !updated.accessoryId.isNullOrBlank() || !updated.name.isNullOrBlank()
