@@ -1,6 +1,7 @@
 package com.example.accessoriesManager.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
@@ -153,6 +154,7 @@ class InstallationAdapter(
             tvTotalValue.text = money(item.totalWorked ?: 0L)
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
             tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
+
         }
     }
 
@@ -214,6 +216,15 @@ class InstallationAdapter(
             tvTotalValue.text = money(item.totalWorked ?: 0L)
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
             tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
+
+            val comment = item.comment.orEmpty().trim()
+
+            if (comment.isBlank()) {
+                tvComment.visibility = View.GONE
+            } else {
+                tvComment.visibility = View.VISIBLE
+                tvComment.text = "Comentario: $comment"
+            }
 
             // Accesorios
             accessoriesAdapter.submit(item.accessories)

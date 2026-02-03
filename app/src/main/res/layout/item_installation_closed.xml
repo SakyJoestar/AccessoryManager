@@ -221,17 +221,16 @@
                 android:id="@+id/rowTotals"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:layout_marginTop="14dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tvMarcaModelo">
 
-                <!-- TOTAL -->
+                <!-- FILA 1: TOTAL -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
 
@@ -253,61 +252,70 @@
                         android:textSize="14sp"/>
                 </LinearLayout>
 
-                <!-- PAGADO -->
+                <!-- FILA 2: PAGADO / NO PAGADO -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:baselineAligned="false"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="6dp">
+                    android:layout_marginTop="6dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <!-- PAGADO -->
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="P:"
-                        android:textColor="@android:color/white"
-                        android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:layout_marginEnd="4dp"/>
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-                    <TextView
-                        android:id="@+id/tvTotalPagadoValue"
-                        android:layout_width="wrap_content"
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="P:"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginEnd="4dp"/>
+
+                        <TextView
+                            android:id="@+id/tvTotalPagadoValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold"
+                            android:textSize="14sp"/>
+                    </LinearLayout>
+
+                    <!-- NO PAGADO -->
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:textColor="@android:color/white"
-                        android:textStyle="bold"
-                        android:textSize="14sp"/>
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="NP:"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:layout_marginEnd="4dp"/>
+
+                        <TextView
+                            android:id="@+id/tvTotalNoPagadoValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold"
+                            android:textSize="14sp"/>
+                    </LinearLayout>
+
                 </LinearLayout>
-
-                <!-- NO PAGADO -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingStart="6dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="NP:"
-                        android:textColor="@android:color/white"
-                        android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:layout_marginEnd="4dp"/>
-
-                    <TextView
-                        android:id="@+id/tvTotalNoPagadoValue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/white"
-                        android:textStyle="bold"
-                        android:textSize="14sp"/>
-                </LinearLayout>
-
             </LinearLayout>
+
 
 
             <!-- ===== DETALLE EXPANDIBLE ===== -->
