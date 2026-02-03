@@ -1,11 +1,12 @@
 package com.example.accessoriesManager.adapter
 
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
-import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.RecyclerView
 import com.example.accesorymanager.databinding.ItemAccessoryRowBinding
 import com.example.accessoriesManager.model.Accessory
@@ -18,17 +19,15 @@ class InstalledAccessoryAdapter(
     private val onChanged: (List<InstalledAccessory>) -> Unit
 ) : RecyclerView.Adapter<InstalledAccessoryAdapter.VH>() {
 
-    // ✅ AHORA ES MUTABLE (para refrescar)
     private var options: List<Accessory> = options
+    private var isProgrammaticAccessoryTextChange = false
 
     fun updateOptions(newOptions: List<Accessory>) {
         options = newOptions
         notifyDataSetChanged()
     }
 
-
     private val items = mutableListOf<InstalledAccessory>()
-
     private var showAccessoryRequiredErrorOnFirstRow = false
 
     fun showAccessoryRequiredErrorOnFirstRow() {
@@ -46,9 +45,7 @@ class InstalledAccessoryAdapter(
         items.clear()
         items.addAll(list)
 
-        if (items.isEmpty()) {
-            items.add(InstalledAccessory(price = 0L, isPaid = false))
-        }
+        if (items.isEmpty()) items.add(InstalledAccessory(price = 0L, isPaid = false))
 
         notifyDataSetChanged()
         onChanged(items.toList())
@@ -72,9 +69,10 @@ class InstalledAccessoryAdapter(
         onChanged(items.toList())
     }
 
-    inner class VH(val binding: ItemAccessoryRowBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+    inner class VH(val binding: ItemAccessoryRowBinding) : RecyclerView.ViewHolder(binding.root) {
         var priceWatcher: ThousandsSeparatorTextWatcher? = null
+        var priceTextWatcher: TextWatcher? = null
+        var accessoryTextWatcher: TextWatcher? = null
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -93,14 +91,18 @@ class InstalledAccessoryAdapter(
         val item = items[position]
 
         val cantRemove = position == 0
-        val isAccessorySelected = !item.accessoryId.isNullOrBlank()
 
+        val isAccessorySelected =
+            !item.accessoryId.isNullOrBlank() || !item.name.isNullOrBlank()
+
+        // ---------- Error primer row ----------
         binding.tilAccessory?.let { til ->
             val showError = (position == 0) && showAccessoryRequiredErrorOnFirstRow && !isAccessorySelected
             til.isErrorEnabled = showError
             til.error = if (showError) "Selecciona un accesorio" else null
         }
 
+        // ---------- Remove ----------
         binding.btnRemove.apply {
             isEnabled = !cantRemove
             alpha = if (cantRemove) 0.3f else 1f
@@ -112,62 +114,142 @@ class InstalledAccessoryAdapter(
             }
         }
 
-        /* ---------- Dropdown Accesorio ---------- */
+        // ---------- Dropdown ----------
         val names = options.map { it.name.orEmpty() }
-        val dropdownAdapter = ArrayAdapter(
-            binding.root.context,
-            android.R.layout.simple_list_item_1,
-            names
+        binding.actAccessory.setAdapter(
+            ArrayAdapter(binding.root.context, android.R.layout.simple_list_item_1, names)
         )
-        binding.actAccessory.setAdapter(dropdownAdapter)
-        binding.actAccessory.setText(item.name.orEmpty(), false)
 
-        /* ---------- Precio (watcher) ---------- */
+        // quitar watcher previo (por reciclaje)
+        holder.accessoryTextWatcher?.let { binding.actAccessory.removeTextChangedListener(it) }
+
+        isProgrammaticAccessoryTextChange = true
+        binding.actAccessory.setText(item.name.orEmpty(), false)
+        isProgrammaticAccessoryTextChange = false
+
+        // ✅ watcher texto libre (1 solo por VH)
+        val accessoryWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(editable: Editable?) {
+                if (isProgrammaticAccessoryTextChange) return
+                val pos = holder.adapterPosition
+                if (pos == RecyclerView.NO_POSITION) return
+
+                val typed = editable?.toString()?.trim().orEmpty()
+
+                if (typed.isBlank()) {
+                    val updated = items[pos].copy(
+                        accessoryId = null,
+                        name = null,
+                        price = 0L,
+                        isPaid = false
+                    )
+                    if (updated != items[pos]) {
+                        items[pos] = updated
+                        notifyItemChanged(pos)
+                        onChanged(items.toList())
+                    }
+                    updateEnabledState(binding, false)
+                    return
+                }
+
+                val match = options.firstOrNull { it.name.orEmpty().equals(typed, ignoreCase = true) }
+
+                val updated = if (match != null) {
+                    items[pos].copy(
+                        accessoryId = match.id,
+                        name = match.name,
+                        price = match.price
+                    )
+                } else {
+                    // texto libre: id null, name typed, no borres el precio
+                    items[pos].copy(
+                        accessoryId = null,
+                        name = typed
+                    )
+                }
+
+                if (updated == items[pos]) return
+
+                items[pos] = updated
+                notifyItemChanged(pos)
+                onChanged(items.toList())
+
+                val enabled = !updated.accessoryId.isNullOrBlank() || !updated.name.isNullOrBlank()
+                updateEnabledState(binding, enabled)
+                if (enabled) clearAccessoryRequiredError()
+            }
+        }
+
+        holder.accessoryTextWatcher = accessoryWatcher
+        binding.actAccessory.addTextChangedListener(accessoryWatcher)
+
+        // ---------- Precio (watcher puntos) ----------
         holder.priceWatcher?.let { binding.etPrice.removeTextChangedListener(it) }
         holder.priceWatcher = ThousandsSeparatorTextWatcher(binding.etPrice)
         binding.etPrice.addTextChangedListener(holder.priceWatcher)
 
+        // quitar watcher previo de lógica
+        holder.priceTextWatcher?.let { binding.etPrice.removeTextChangedListener(it) }
+
         setTextSafely(binding.etPrice, item.price.toString())
 
-        /* ---------- Estado Pagado ---------- */
-        binding.chkPaid.setOnCheckedChangeListener(null)
-        binding.chkPaid.isChecked = if (isAccessorySelected) item.isPaid else false
+        // ✅ watcher precio (1 por VH)
+        val priceLogicWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
-        updateEnabledState(binding, isAccessorySelected)
+            override fun afterTextChanged(s: Editable?) {
+                val pos = holder.adapterPosition
+                if (pos == RecyclerView.NO_POSITION) return
 
-        binding.chkPaid.setOnCheckedChangeListener { _, checked ->
-            val pos = holder.adapterPosition
-            if (pos == RecyclerView.NO_POSITION) return@setOnCheckedChangeListener
-            if (items[pos].accessoryId.isNullOrBlank()) return@setOnCheckedChangeListener
+                val canEdit = !items[pos].accessoryId.isNullOrBlank() || !items[pos].name.isNullOrBlank()
+                if (!canEdit) return
 
-            updateItem(pos, items[pos].copy(isPaid = checked))
+                val price = parseLongClean(binding.etPrice.text?.toString())
+                if (price == items[pos].price) return
+
+                updateItem(pos, items[pos].copy(price = price))
+            }
         }
-
-        binding.etPrice.doAfterTextChanged {
-            val pos = holder.adapterPosition
-            if (pos == RecyclerView.NO_POSITION) return@doAfterTextChanged
-            if (items[pos].accessoryId.isNullOrBlank()) return@doAfterTextChanged
-
-            val price = parseLongClean(binding.etPrice.text?.toString())
-            if (price == items[pos].price) return@doAfterTextChanged
-
-            updateItem(pos, items[pos].copy(price = price))
-        }
+        holder.priceTextWatcher = priceLogicWatcher
+        binding.etPrice.addTextChangedListener(priceLogicWatcher)
 
         binding.etPrice.setOnFocusChangeListener { v, hasFocus ->
             if (!hasFocus) {
                 val pos = holder.adapterPosition
-                if (pos != RecyclerView.NO_POSITION && !items[pos].accessoryId.isNullOrBlank()) {
-                    val raw = binding.etPrice.text?.toString().orEmpty().replace(".", "").trim()
-                    if (raw.isBlank()) {
-                        setTextSafely(binding.etPrice, "0")
-                        updateItem(pos, items[pos].copy(price = 0L))
+                if (pos != RecyclerView.NO_POSITION) {
+                    val canEdit = !items[pos].accessoryId.isNullOrBlank() || !items[pos].name.isNullOrBlank()
+                    if (canEdit) {
+                        val raw = binding.etPrice.text?.toString().orEmpty().replace(".", "").trim()
+                        if (raw.isBlank()) {
+                            setTextSafely(binding.etPrice, "0")
+                            updateItem(pos, items[pos].copy(price = 0L))
+                        }
                     }
                 }
                 hideKeyboard(v)
             }
         }
 
+        // ---------- Pagado ----------
+        binding.chkPaid.setOnCheckedChangeListener(null)
+        binding.chkPaid.isChecked = if (isAccessorySelected) item.isPaid else false
+        updateEnabledState(binding, isAccessorySelected)
+
+        binding.chkPaid.setOnCheckedChangeListener { _, checked ->
+            val pos = holder.adapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@setOnCheckedChangeListener
+
+            val canEdit = !items[pos].accessoryId.isNullOrBlank() || !items[pos].name.isNullOrBlank()
+            if (!canEdit) return@setOnCheckedChangeListener
+
+            updateItem(pos, items[pos].copy(isPaid = checked))
+        }
+
+        // ---------- Selección catálogo ----------
         binding.actAccessory.setOnItemClickListener { _, _, idx, _ ->
             val pos = holder.adapterPosition
             if (pos == RecyclerView.NO_POSITION) return@setOnItemClickListener
@@ -179,6 +261,7 @@ class InstalledAccessoryAdapter(
                 accessoryId = opt.id,
                 name = opt.name,
                 price = opt.price,
+                isPaid = false // ✅ recomendado para evitar arrastrar estado
             )
 
             items[pos] = updated

@@ -85,7 +85,6 @@ class InstallationAdapter(
             "parcial" -> PayState.INCOMPLETE
 
             else -> {
-                // Fallback por totales (tu UI ya se basa en totalUnpaid)
                 val total = item.totalWorked ?: 0L
                 val unpaid = item.totalUnpaid ?: 0L
                 val paid = item.totalPaid ?: 0L
@@ -137,12 +136,8 @@ class InstallationAdapter(
             tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
             tvPlacaValue.text = item.plate.orEmpty().ifBlank { "-" }
 
-            val make = item.vehicle?.make?.trim()
-            val model = item.vehicle?.model?.trim()
-            tvMarcaModelo.text = listOf(make, model)
-                .filter { !it.isNullOrBlank() }
-                .joinToString(" ")
-                .ifEmpty { "-" }
+            // ✅ vehicle retrocompatible (String o Map)
+            tvMarcaModelo.text = item.vehicleLabel().ifBlank { "-" }
 
             tvFecha.text = item.date?.toDate()
                 ?.toInstant()
@@ -154,7 +149,6 @@ class InstallationAdapter(
             tvTotalValue.text = money(item.totalWorked ?: 0L)
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
             tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
-
         }
     }
 
@@ -167,7 +161,6 @@ class InstallationAdapter(
         private val accessoriesAdapter = OpenAccessoriesAdapter()
 
         init {
-            // Evita recrear en cada bind
             binding.rvAccessories.layoutManager =
                 androidx.recyclerview.widget.LinearLayoutManager(binding.root.context)
             binding.rvAccessories.adapter = accessoriesAdapter
@@ -194,15 +187,14 @@ class InstallationAdapter(
             tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
             tvPlacaValue.text = item.plate.orEmpty().ifBlank { "-" }
 
-            val make = item.vehicle?.make?.trim()
-            val model = item.vehicle?.model?.trim()
-            tvMarcaModelo.text = listOf(make, model)
-                .filter { !it.isNullOrBlank() }
-                .joinToString(" ")
-                .ifEmpty { "-" }
+            // ✅ vehicle retrocompatible
+            tvMarcaModelo.text = item.vehicleLabel().ifBlank { "-" }
 
             tvCondicionValue.text = item.condition.orEmpty().ifBlank { "-" }
-            tvSedeValue.text = item.headquarter?.name.orEmpty().ifBlank { "-" }
+
+            // ✅ headquarter retrocompatible
+            tvSedeValue.text = item.headquarterLabel().ifBlank { "-" }
+
             tvIncrementValue.text = money(item.increment ?: 0L)
             tvBodegaValue.text = item.warehouse.orEmpty().ifBlank { "-" }
 
@@ -218,7 +210,6 @@ class InstallationAdapter(
             tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
 
             val comment = item.comment.orEmpty().trim()
-
             if (comment.isBlank()) {
                 tvComment.visibility = View.GONE
             } else {
@@ -226,12 +217,37 @@ class InstallationAdapter(
                 tvComment.text = "Comentario: $comment"
             }
 
-            // Accesorios
             accessoriesAdapter.submit(item.accessories)
         }
     }
 
     private fun money(value: Long): String = "$ ${numberFormatter.format(value)}"
+
+    // -------------------- Retro helpers (NO crashea con HashMap) --------------------
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Installation.vehicleLabel(): String {
+        val v = this.vehicle ?: return ""
+        return when (v) {
+            is String -> v.trim()
+            is Map<*, *> -> {
+                val make = (v["make"] as? String).orEmpty().trim()
+                val model = (v["model"] as? String).orEmpty().trim()
+                listOf(make, model).filter { it.isNotBlank() }.joinToString(" - ").trim()
+            }
+            else -> v.toString().trim()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Installation.headquarterLabel(): String {
+        val h = this.headquarter ?: return ""
+        return when (h) {
+            is String -> h.trim()
+            is Map<*, *> -> ((h["name"] as? String).orEmpty()).trim()
+            else -> h.toString().trim()
+        }
+    }
 
     companion object {
         private const val VT_CLOSED = 0

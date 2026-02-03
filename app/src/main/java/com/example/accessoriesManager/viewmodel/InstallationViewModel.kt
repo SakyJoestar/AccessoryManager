@@ -18,15 +18,12 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
 class InstallationViewModel @Inject constructor(
     private val repo: InstallationRepository
 ) : ViewModel() {
-
-    lateinit var dateExact: Date
 
     // ----- Fuente raw desde Firestore -----
     private val _all = MutableStateFlow<List<Installation>>(emptyList())
@@ -79,6 +76,7 @@ class InstallationViewModel @Inject constructor(
 
     private val zone: ZoneId = ZoneId.systemDefault()
     private val fmt: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
 
     init {
         // ✅ Por defecto: últimos 7 días (hoy - 6 ... hoy)
@@ -211,10 +209,6 @@ class InstallationViewModel @Inject constructor(
         _dateExact.value = null
     }
 
-    /**
-     * ✅ Te recomiendo que "Limpiar filtros de fecha" vuelva a últimos 7 días,
-     * porque tú quieres que ese sea el default del app.
-     */
     fun clearDates() {
         setDefaultLast7Days()
     }
@@ -225,7 +219,7 @@ class InstallationViewModel @Inject constructor(
     private fun setDefaultLast7Days() {
         val today = LocalDate.now(zone)
         _dateExact.value = null
-        _dateFrom.value = today.minusDays(6) // incluye hoy: 7 días
+        _dateFrom.value = today.minusDays(6)
         _dateTo.value = today
     }
 
@@ -259,8 +253,7 @@ class InstallationViewModel @Inject constructor(
         val defaultFrom = today.minusDays(6)
         val defaultTo = today
 
-        val isDefaultLast7 =
-            exact == null && from == defaultFrom && to == defaultTo
+        val isDefaultLast7 = exact == null && from == defaultFrom && to == defaultTo
 
         return when {
             isDefaultLast7 -> "Últimos 7 días"
@@ -268,7 +261,7 @@ class InstallationViewModel @Inject constructor(
             from != null && to != null -> "${from.format(fmt)} - ${to.format(fmt)}"
             from != null -> "Desde: ${from.format(fmt)}"
             to != null -> "Hasta: ${to.format(fmt)}"
-            else -> "Resumen" // (no debería pasar con default last7)
+            else -> "Resumen"
         }
     }
 }
@@ -295,18 +288,14 @@ private fun Installation.matchesQuery(q: String): Boolean {
     if (contains(plate)) return true
     if (contains(serie)) return true
 
-    // vehículo
-    if (contains(vehicle?.make)) return true
-    if (contains(vehicle?.model)) return true
-    if (contains(vehicle?.displayName)) return true
-
-    // sede
-    if (contains(headquarter?.name)) return true
+    // ✅ vehicle/headquarter retrocompatibles (String o Map)
+    if (contains(vehicleLabelFromAny(vehicle))) return true
+    if (contains(headquarterLabelFromAny(headquarter))) return true
 
     // accesorios
     val acc = accessories.orEmpty()
     if (acc.any { contains(it.name) }) return true
-    if (acc.any { contains(it.accessoryId) }) return true // opcional
+    if (acc.any { contains(it.accessoryId) }) return true
 
     return false
 }
@@ -320,8 +309,8 @@ private fun Installation.matchesStatus(statusUi: String): Boolean {
     return when (statusUi.trim()) {
         "Pagado" -> eq("PAGADO", "Pagado", "PAID", "paid")
         "No Pagado" -> eq("NO_PAGADO", "No pagado", "NO PAGADO", "UNPAID", "unpaid")
-        "Parcial" -> eq("PARCIAL", "Parcial", "INCOMPLETO", "Incompleto")
-        else -> true // "Todos"
+        "Parcial" -> eq("PARCIAL", "Parcial", "INCOMPLETO", "Incompleto", "INCOMPLETE", "incomplete")
+        else -> true
     }
 }
 
@@ -361,4 +350,30 @@ private fun Timestamp?.toLocalDate(zone: ZoneId = ZoneId.systemDefault()): Local
     return Instant.ofEpochSecond(seconds, nanoseconds.toLong())
         .atZone(zone)
         .toLocalDate()
+}
+
+/* ================= Retro label helpers ================= */
+
+@Suppress("UNCHECKED_CAST")
+private fun vehicleLabelFromAny(v: Any?): String {
+    if (v == null) return ""
+    return when (v) {
+        is String -> v.trim()
+        is Map<*, *> -> {
+            val make = (v["make"] as? String).orEmpty().trim()
+            val model = (v["model"] as? String).orEmpty().trim()
+            listOf(make, model).filter { it.isNotBlank() }.joinToString(" - ").trim()
+        }
+        else -> v.toString().trim()
+    }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun headquarterLabelFromAny(h: Any?): String {
+    if (h == null) return ""
+    return when (h) {
+        is String -> h.trim()
+        is Map<*, *> -> ((h["name"] as? String).orEmpty()).trim()
+        else -> h.toString().trim()
+    }
 }
