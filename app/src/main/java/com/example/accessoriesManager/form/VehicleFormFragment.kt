@@ -9,6 +9,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentFormBaseBinding
 import com.example.accessoriesManager.ui.showSnack
@@ -143,6 +144,15 @@ class VehicleFormFragment : Fragment(R.layout.fragment_form_base) {
                         etMake.setText(it.make)
                         etModel.setText(it.model)
                     }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.closeScreen.collect {
+                    hideKeyboard()
+                    findNavController().popBackStack()
                 }
             }
         }
