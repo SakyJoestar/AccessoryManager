@@ -360,7 +360,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 etOrder.requestFocus()
                             }
 
+                            if (editId.isNullOrBlank()) {
+                                findNavController().previousBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
+                            }
                             findNavController().popBackStack()
+
                             return@collect
                         }
 

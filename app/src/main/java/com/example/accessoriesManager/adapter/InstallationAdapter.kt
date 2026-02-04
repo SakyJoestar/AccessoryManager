@@ -25,7 +25,11 @@ class InstallationAdapter(
 
     private var expandedIds: Set<String> = emptySet()
 
-    fun submitWithExpanded(list: List<Installation>, expanded: Set<String>) {
+    fun submitWithExpanded(
+        list: List<Installation>,
+        expanded: Set<String>,
+        onCommitted: (() -> Unit)? = null
+    ) {
         val old = expandedIds
         expandedIds = expanded
 
@@ -35,6 +39,8 @@ class InstallationAdapter(
                 val pos = currentList.indexOfFirst { it.id == id }
                 if (pos != -1) notifyItemChanged(pos)
             }
+
+            onCommitted?.invoke() // ✅ aquí ya puedes scrollear seguro
         }
     }
 

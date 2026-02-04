@@ -10,25 +10,23 @@ import android.widget.ArrayAdapter
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentInstallationsBinding
-import com.example.accessoriesManager.ui.showSnack
 import com.example.accessoriesManager.adapter.InstallationAdapter
+import com.example.accessoriesManager.ui.showSnack
 import com.example.accessoriesManager.viewmodel.InstallationViewModel
-import com.google.android.material.datepicker.MaterialDatePicker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 @AndroidEntryPoint
 class InstallationsFragment : Fragment() {
@@ -41,7 +39,7 @@ class InstallationsFragment : Fragment() {
 
     private val statusOptions = listOf("Todos", "Pagado", "No Pagado", "Parcial")
 
-    private val moneyFmt = NumberFormat.getNumberInstance(Locale("es","CO")).apply {
+    private val moneyFmt = NumberFormat.getNumberInstance(Locale("es", "CO")).apply {
         maximumFractionDigits = 0
         minimumFractionDigits = 0
     }
@@ -51,9 +49,10 @@ class InstallationsFragment : Fragment() {
     private val dateFormatter =
         DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
 
-    private fun LocalDate.formatUi(): String {
-        return this.format(dateFormatter)
-    }
+    private fun LocalDate.formatUi(): String = this.format(dateFormatter)
+
+    // ✅ Se activa cuando volvemos del formulario y queremos ir al primer item
+    private var pendingScrollToTop = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -70,8 +69,6 @@ class InstallationsFragment : Fragment() {
         adapter = InstallationAdapter(
             onToggleExpand = { id ->
                 viewModel.toggleExpanded(id)
-                // opcional si tu adapter tiene notifyExpandChanged(id)
-                // adapter.notifyExpandChanged(id)
             },
             onEdit = { installation ->
                 val bundle = Bundle().apply { putString("installationId", installation.id) }
@@ -85,47 +82,75 @@ class InstallationsFragment : Fragment() {
                 if (id.isNotBlank()) showDeleteDialog(id)
             },
             onMark = { installation ->
-                showMarkAllDialog(installation) // ✅ nuevo
+                showMarkAllDialog(installation)
             }
         )
 
-        binding.rvInstallations.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        binding.rvInstallations.layoutManager =
+            androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         binding.rvInstallations.adapter = adapter
         binding.rvInstallations.setHasFixedSize(false)
 
         setupFiltersUi()
 
-        // 🔴 Igual que en AccessoriesFragment
+        // Listener realtime
         android.util.Log.d("INSTALLATIONS_FRAG", "onViewCreated -> startListening()")
         viewModel.startListening()
 
-        // ===== LISTA + EXPAND =====
-        // Opción 1 (RECOMENDADA): items + expandedIds (si tu VM expone expandedIds)
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            combine(viewModel.items, viewModel.expandedIds) { list, expanded ->
-                list to expanded
-            }.collect { (list, expanded) ->
-                adapter.submitWithExpanded(list, expanded)
+        // ✅ Escuchar el flag que manda el formulario (scroll al primer item)
+        val navController = findNavController()
+        navController.currentBackStackEntry
+            ?.savedStateHandle
+            ?.getLiveData<Boolean>("scrollToTop")
+            ?.observe(viewLifecycleOwner) { shouldScroll ->
+                if (shouldScroll == true) {
+                    pendingScrollToTop = true
+                    navController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<Boolean>("scrollToTop")
+                }
+            }
+
+        // ===== LISTA + EXPAND + SCROLL =====
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(viewModel.items, viewModel.expandedIds) { list, expanded ->
+                    list to expanded
+                }.collect { (list, expanded) ->
+
+                    // ✅ OJO: aquí estabas mandando emptySet(). Debe ser "expanded".
+                    adapter.submitWithExpanded(list, expanded) {
+                        if (pendingScrollToTop) {
+                            pendingScrollToTop = false
+                            binding.rvInstallations.scrollToPosition(0)
+                        }
+                    }
+                }
             }
         }
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.error.collect { msg ->
-                msg?.let { showSnack(it) }
+        // Errores
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.error.collect { msg ->
+                    msg?.let { showSnack(it) }
+                }
             }
         }
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            viewModel.summary.collect { s ->
-                binding.includeSummary.tvSummaryTitle.text = s.title
+        // Summary
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.summary.collect { s ->
+                    binding.includeSummary.tvSummaryTitle.text = s.title
+                    binding.includeSummary.tvTotalTrabajadoValue.text = money(s.totalWorked)
+                    binding.includeSummary.tvPagadoValue.text = money(s.totalPaid)
+                    binding.includeSummary.tvNoPagadoValue.text = money(s.totalUnpaid)
 
-                binding.includeSummary.tvTotalTrabajadoValue.text = money(s.totalWorked)
-                binding.includeSummary.tvPagadoValue.text = money(s.totalPaid)
-                binding.includeSummary.tvNoPagadoValue.text = money(s.totalUnpaid)
-
-                binding.includeSummary.tvPagadasCount.text = s.paidCount.toString()
-                binding.includeSummary.tvIncompletasCount.text = s.partialCount.toString()
-                binding.includeSummary.tvNoPagadasCount.text = s.unpaidCount.toString()
+                    binding.includeSummary.tvPagadasCount.text = s.paidCount.toString()
+                    binding.includeSummary.tvIncompletasCount.text = s.partialCount.toString()
+                    binding.includeSummary.tvNoPagadasCount.text = s.unpaidCount.toString()
+                }
             }
         }
     }
@@ -144,8 +169,7 @@ class InstallationsFragment : Fragment() {
             viewModel.onQueryChanged(it?.toString().orEmpty())
         }
 
-        // Spinner
-// Spinner (Estado)
+        // Spinner (Estado)
         val spinnerAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
@@ -159,25 +183,23 @@ class InstallationsFragment : Fragment() {
                 val selected = statusOptions.getOrNull(position) ?: "Todos"
                 viewModel.onStatusFilterChanged(selected)
             }
+
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
         binding.etDateExact.setOnClickListener {
             showDatePicker("Fecha exacta") { date ->
                 viewModel.setDateExact(date)
-
                 binding.etDateExact.setText(date.formatUi())
                 binding.etDateFrom.setText("")
                 binding.etDateTo.setText("")
             }
         }
 
-
         binding.etDateFrom.setOnClickListener {
             showDatePicker("Desde") { date ->
                 val to = viewModel.currentDateTo() ?: date
                 viewModel.setDateRange(from = date, to = to)
-
                 binding.etDateFrom.setText(date.formatUi())
                 binding.etDateExact.setText("")
             }
@@ -187,7 +209,6 @@ class InstallationsFragment : Fragment() {
             showDatePicker("Hasta") { date ->
                 val from = viewModel.currentDateFrom() ?: date
                 viewModel.setDateRange(from = from, to = date)
-
                 binding.etDateTo.setText(date.formatUi())
                 binding.etDateExact.setText("")
             }
@@ -201,41 +222,12 @@ class InstallationsFragment : Fragment() {
             binding.etDateTo.setText("")
             binding.etSearch.setText("")
 
-            // ✅ Reset de spinner a "Todos"
             binding.spinnerStatus.setSelection(0)
             viewModel.onStatusFilterChanged("Todos")
         }
     }
 
-    private fun formatDate(date: Date): String {
-        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-        sdf.timeZone = java.util.TimeZone.getTimeZone("America/Bogota")
-        return sdf.format(date)
-    }
-
-    private fun startOfDay(date: Date): Date {
-        val tz = java.util.TimeZone.getTimeZone("America/Bogota")
-        return java.util.Calendar.getInstance(tz).apply {
-            time = date
-            set(java.util.Calendar.HOUR_OF_DAY, 0)
-            set(java.util.Calendar.MINUTE, 0)
-            set(java.util.Calendar.SECOND, 0)
-            set(java.util.Calendar.MILLISECOND, 0)
-        }.time
-    }
-
-    private fun endOfDay(date: Date): Date {
-        val tz = java.util.TimeZone.getTimeZone("America/Bogota")
-        return java.util.Calendar.getInstance(tz).apply {
-            time = date
-            set(java.util.Calendar.HOUR_OF_DAY, 23)
-            set(java.util.Calendar.MINUTE, 59)
-            set(java.util.Calendar.SECOND, 59)
-            set(java.util.Calendar.MILLISECOND, 999)
-        }.time
-    }
-
-    // 👇 DatePicker que devuelve fecha "segura" (12:00) para que no se corra al día anterior
+    // DatePicker (LocalDate)
     private fun showDatePicker(
         title: String,
         onSelected: (LocalDate) -> Unit
@@ -245,11 +237,7 @@ class InstallationsFragment : Fragment() {
         DatePickerDialog(
             requireContext(),
             { _, year, month, dayOfMonth ->
-                val picked = LocalDate.of(
-                    year,
-                    month + 1, // DatePicker usa 0-based
-                    dayOfMonth
-                )
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
                 onSelected(picked)
             },
             today.year,
@@ -259,6 +247,7 @@ class InstallationsFragment : Fragment() {
             setTitle(title)
         }.show()
     }
+
     // -------------------- Delete dialog --------------------
 
     private fun showDeleteDialog(id: String) {
@@ -277,8 +266,6 @@ class InstallationsFragment : Fragment() {
         val id = installation.id.orEmpty()
         if (id.isBlank()) return
 
-        // Decide si vamos a marcar como pagados o no pagados
-        val state = installation.state?.trim()?.lowercase().orEmpty()
         val isPaid = (installation.totalUnpaid ?: 0L) == 0L
         val targetPaid = !isPaid
 
@@ -298,5 +285,4 @@ class InstallationsFragment : Fragment() {
             .setNegativeButton("No", null)
             .show()
     }
-
 }
