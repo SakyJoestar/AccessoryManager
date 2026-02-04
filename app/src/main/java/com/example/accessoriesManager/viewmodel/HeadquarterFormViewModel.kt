@@ -5,8 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.accessoriesManager.model.Headquarter
 import com.example.accessoriesManager.repository.HeadquarterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,19 +26,35 @@ class HeadquarterFormViewModel @Inject constructor(
         data object Idle : UiState()
         data object Checking : UiState()
         data object Saving : UiState()
+
         data class NameError(val msg: String) : UiState()
-        data class Success(val msg: String = "Sede guardada correctamente ✅") : UiState()
+        data class IncrementError(val msg: String) : UiState()
+
+        data class Success(val msg: String) : UiState()
         data class Error(val msg: String) : UiState()
     }
 
     private val _state = MutableStateFlow<UiState>(UiState.Idle)
     val state: StateFlow<UiState> = _state
 
+    // ✅ Evento para cerrar pantalla
+    private val _closeScreen = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val closeScreen: SharedFlow<Unit> = _closeScreen.asSharedFlow()
+
     fun save(id: String?, nameRaw: String, incrementRaw: String?) {
         val name = nameRaw.trim()
-        val increment = incrementRaw?.trim().orEmpty().toIntOrNull() ?: 0
 
-        if (name.isEmpty()) {
+        val increment = incrementRaw?.trim()?.toIntOrNull()
+        if (increment == null) {
+            _state.value = UiState.IncrementError("Incremento inválido")
+            return
+        }
+        if (increment < 0) {
+            _state.value = UiState.IncrementError("Debe ser >= 0")
+            return
+        }
+
+        if (name.isBlank()) {
             _state.value = UiState.NameError("Obligatorio")
             return
         }
@@ -43,7 +63,7 @@ class HeadquarterFormViewModel @Inject constructor(
             try {
                 _state.value = UiState.Checking
 
-                val conflict = if (id == null) {
+                val conflict = if (id.isNullOrBlank()) {
                     repo.existsByName(name)
                 } else {
                     repo.existsByNameExcludingId(name, id)
@@ -56,17 +76,31 @@ class HeadquarterFormViewModel @Inject constructor(
 
                 _state.value = UiState.Saving
 
-                val hq = Headquarter(name = name, increment = increment)
+                val hq = Headquarter(
+                    name = name,
+                    increment = increment
+                )
 
-                if (id == null) repo.add(hq) else repo.update(id, hq)
+                if (id.isNullOrBlank()) {
+                    repo.add(hq)
+                } else {
+                    repo.update(id, hq)
+                }
 
                 _state.value = UiState.Success(
-                    if (id == null) "Sede guardada correctamente ✅" else "Sede actualizada ✅"
+                    if (id.isNullOrBlank())
+                        "Sede guardada correctamente ✅"
+                    else
+                        "Sede actualizada ✅"
                 )
-                _state.value = UiState.Idle
+
+                delay(300) // 👈 demora suave
+                _closeScreen.tryEmit(Unit)
+
             } catch (e: Exception) {
-                _state.value = UiState.Error("Error: ${e.message ?: "algo salió mal"} 😢")
-                _state.value = UiState.Idle
+                _state.value = UiState.Error(
+                    e.message ?: "Error guardando sede"
+                )
             }
         }
     }
@@ -74,16 +108,19 @@ class HeadquarterFormViewModel @Inject constructor(
     fun loadById(id: String) = viewModelScope.launch {
         try {
             _state.value = UiState.Checking
-            val hq = repo.getById(id)  // <-- este también lo creas en el repo
+            val hq = repo.getById(id)
             if (hq != null) {
-                _form.value = hq       // o como guardes los datos del formulario
+                _form.value = hq
                 _state.value = UiState.Idle
             } else {
                 _state.value = UiState.Error("No se encontró la sede")
             }
-
         } catch (e: Exception) {
             _state.value = UiState.Error("Error cargando sede")
         }
+    }
+
+    fun resetState() {
+        _state.value = UiState.Idle
     }
 }

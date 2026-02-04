@@ -12,4 +12,9 @@ data class Vehicle(
     var make: String? = null,
     var createdAt: Timestamp? = null,
     var updatedAt: Timestamp? = null
-)
+){
+    val displayName: String
+        get() = listOf(make, model)
+            .filter { !it.isNullOrBlank() }
+            .joinToString(" - ")
+}

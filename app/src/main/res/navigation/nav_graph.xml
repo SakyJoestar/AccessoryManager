@@ -11,8 +11,8 @@
         android:label="LoginFragment"
         tools:layout="@layout/fragment_login">
         <action
-            android:id="@+id/action_loginFragment_to_RecordFragments"
-            app:destination="@id/recordsFragment" />
+            android:id="@+id/action_loginFragment_to_installationsFragment"
+            app:destination="@id/installationsFragment" />
     </fragment>
     <fragment
         android:id="@+id/accessoriesFragment"
@@ -35,14 +35,6 @@
         <action
             android:id="@+id/action_headquartersFragment_to_headquarterFormFragment"
             app:destination="@id/headquarterFormFragment" />
-    <fragment
-        android:id="@+id/recordsFragment"
-        android:name="com.example.accessoriesManager.view.fragment.RecordsFragment"
-        android:label="RecordsFragment"
-        tools:layout="@layout/fragment_records"/>
-        <action
-            android:id="@+id/action_recordsFragment_to_recordFormFragment"
-            app:destination="@id/recordsFragment"/>
     <fragment
         android:id="@+id/vehiclesFragment"
         android:name="com.example.accessoriesManager.view.fragment.VehiclesFragment"
@@ -73,4 +65,18 @@
         android:name="com.example.accessoriesManager.form.AccessoryFormFragment"
         android:label="AccessoryFormFragment"
         tools:layout="@layout/form_accessory_fields"/>
+    <fragment
+        android:id="@+id/installationsFragment"
+        android:name="com.example.accessoriesManager.view.fragment.InstallationsFragment"
+        android:label="InstallationsFragment"
+        tools:layout="@layout/fragment_installations">
+        <action
+            android:id="@+id/action_installationsFragment_to_installationFormFragment"
+            app:destination="@id/installationFormFragment"  />
+    </fragment>
+    <fragment
+        android:id="@+id/installationFormFragment"
+        android:name="com.example.accessoriesManager.form.InstallationFormFragment"
+        android:label="InstallationFormFragment"
+        tools:layout="@layout/form_installation_fields"/>
 </navigation>

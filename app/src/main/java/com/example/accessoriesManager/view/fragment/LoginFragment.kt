@@ -279,7 +279,7 @@ class LoginFragment : Fragment() {
 
         // ✅ Ajusta aquí tu destino real
         findNavController().navigate(
-            R.id.action_loginFragment_to_RecordFragments,
+            R.id.action_loginFragment_to_installationsFragment,
             null,
             navOptions
         )

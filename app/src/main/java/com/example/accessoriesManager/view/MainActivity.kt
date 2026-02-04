@@ -30,9 +30,9 @@ class MainActivity : AppCompatActivity() {
     private var quickMenuDialog: AlertDialog? = null
 
     private val rootDestinations = setOf(
+        R.id.installationsFragment,
         R.id.accessoriesFragment,
         R.id.headquartersFragment,
-        R.id.recordsFragment,
         R.id.vehiclesFragment
     )
 
@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
             val navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
             navGraph.setStartDestination(
                 if (auth.currentUser != null)
-                    R.id.accessoriesFragment
+                    R.id.installationsFragment
                 else
                     R.id.loginFragment
             )
@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
                     navController.navigate(R.id.accessoryFormFragment)
                 },
                 onInstallationClick = {
-//                    navController.navigate(R.id.recordFormFragment)
+                    navController.navigate(R.id.installationFormFragment)
                 }
             ).apply {
                 setOnDismissListener {
@@ -134,6 +134,7 @@ class MainActivity : AppCompatActivity() {
                     binding.appBar.visibility = View.VISIBLE
                     supportActionBar?.title = "Nueva Sede"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    setToolbarActionsEnabled(false)
                 }
 
                 R.id.vehicleFormFragment -> {
@@ -141,6 +142,7 @@ class MainActivity : AppCompatActivity() {
                     binding.appBar.visibility = View.VISIBLE
                     supportActionBar?.title = "Nuevo Vehiculo"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    setToolbarActionsEnabled(false)
                 }
 
                 R.id.accessoryFormFragment -> {
@@ -148,6 +150,15 @@ class MainActivity : AppCompatActivity() {
                     binding.appBar.visibility = View.VISIBLE
                     supportActionBar?.title = "Nuevo Accesorio"
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    setToolbarActionsEnabled(false)
+                }
+
+                R.id.installationFormFragment -> {
+                    hideMainUi()
+                    binding.appBar.visibility = View.VISIBLE
+                    supportActionBar?.title = "Nueva Instalación"
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                    setToolbarActionsEnabled(false)
                 }
 
 
@@ -156,6 +167,7 @@ class MainActivity : AppCompatActivity() {
                     content.bottomNav.visibility = View.VISIBLE
                     content.bottomAppBar.visibility = View.VISIBLE
                     content.fabAdd.visibility = View.VISIBLE
+                    setToolbarActionsEnabled(true)
 
                     supportActionBar?.title = "Car Facility Tracker"
                     supportActionBar?.setDisplayHomeAsUpEnabled(
@@ -255,4 +267,9 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun setToolbarActionsEnabled(enabled: Boolean) {
+        binding.btnTheme.visibility = if (enabled) View.VISIBLE else View.GONE
+        binding.btnLogout.visibility = if (enabled) View.VISIBLE else View.GONE
+
+    }
 }

@@ -9,6 +9,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentFormBaseBinding
 import com.example.accessoriesManager.ui.ThousandsSeparatorTextWatcher
@@ -155,6 +156,14 @@ class AccessoryFormFragment : Fragment(R.layout.fragment_form_base) {
                         // ✅ setea el precio y el watcher lo formatea solo
                         etPrice.setText(it.price.toString())
                     }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.closeScreen.collect {
+                    findNavController().popBackStack()
                 }
             }
         }

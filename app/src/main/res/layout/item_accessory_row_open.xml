@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+
+    </data>
+
+    <androidx.gridlayout.widget.GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:columnCount="4"
+        app:useDefaultMargins="true"
+        android:paddingVertical="2dp"
+        >
+
+        <!-- # -->
+        <TextView
+            android:id="@+id/tvIndex"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="1"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:textAlignment="center"
+            app:layout_columnWeight="0.4"
+            android:gravity="center"/>
+
+        <!-- Nombre -->
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:text="Polarizado"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            app:layout_columnWeight="1.6"
+            android:gravity="center"/>
+
+        <!-- Precio -->
+        <TextView
+            android:id="@+id/tvPrice"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="$120.000"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:textAlignment="center"
+            app:layout_columnWeight="1"
+            android:gravity="center"
+            />
+
+        <!-- Pagado -->
+        <TextView
+            android:id="@+id/tvPaid"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Sí"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:textAlignment="center"
+            app:layout_columnWeight="1"
+            android:gravity="center"
+            />
+    </androidx.gridlayout.widget.GridLayout>
+</layout>
