@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
+import java.text.Collator
+import java.util.Locale
 import javax.inject.Inject
 
 class VehicleRepository @Inject constructor(
@@ -63,13 +65,13 @@ class VehicleRepository @Inject constructor(
             .await()
     }
 
-    // ✅ Listener en tiempo real
     fun listenVehicles(
         onChange: (List<Vehicle>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
+        val collator = Collator.getInstance(Locale("es", "ES"))
+
         return vehiclesRef()
-            .orderBy("make")
             .orderBy("model")
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
@@ -80,13 +82,15 @@ class VehicleRepository @Inject constructor(
                 val list = snapshot
                     ?.documents
                     ?.mapNotNull { doc ->
-                        doc.toObject(Vehicle::class.java)?.apply {
-                            this.id = doc.id
-                        }
+                        doc.toObject(Vehicle::class.java)?.apply { this.id = doc.id }
                     }
                     .orEmpty()
 
-                onChange(list)
+                val sorted = list.sortedWith { a, b ->
+                    collator.compare(a.model?.trim(), b.model?.trim())
+                }
+
+                onChange(sorted)
             }
     }
 

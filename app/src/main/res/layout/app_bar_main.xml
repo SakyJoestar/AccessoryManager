@@ -17,12 +17,14 @@
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
+                android:layout_height="52dp"
                 android:background="?attr/colorPrimary"
                 android:gravity="center_vertical"
-                app:titleTextColor="@color/on_primary"
+                app:contentInsetEnd="16dp"
                 app:contentInsetStart="16dp"
-                app:contentInsetEnd="16dp">
+                app:layout_anchor="@+id/appBar"
+                app:layout_anchorGravity="top|center"
+                app:titleTextColor="@color/on_primary">
 
                 <!-- BACK custom (centrado verticalmente sí o sí) -->
                 <ImageButton
@@ -31,11 +33,11 @@
                     android:layout_height="40dp"
                     android:layout_gravity="start|center_vertical"
                     android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/back"
                     android:padding="8dp"
                     android:src="@drawable/ic_arrow_back"
-                    app:tint="@color/on_primary"
-                    android:contentDescription="@string/back"
-                    android:visibility="gone"/>
+                    android:visibility="gone"
+                    app:tint="@color/on_primary" />
 
                 <!-- Acciones a la derecha -->
                 <LinearLayout
@@ -43,31 +45,31 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_gravity="end|center_vertical"
+                    android:dividerPadding="8dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:dividerPadding="8dp"
                     android:showDividers="middle">
 
                     <ImageButton
                         android:id="@+id/btnTheme"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/toggle_theme"
                         android:padding="8dp"
                         android:src="@drawable/ic_dark_mode"
-                        app:tint="@color/on_primary"
-                        android:contentDescription="@string/toggle_theme" />
+                        app:tint="@color/on_primary" />
 
                     <ImageButton
                         android:id="@+id/btnLogout"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_marginStart="12dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/logout"
                         android:padding="8dp"
                         android:src="@drawable/exit_to_app"
-                        app:tint="@color/on_primary"
-                        android:contentDescription="@string/logout" />
+                        app:tint="@color/on_primary" />
                 </LinearLayout>
 
             </com.google.android.material.appbar.MaterialToolbar>

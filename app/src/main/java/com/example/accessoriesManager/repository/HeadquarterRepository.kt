@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
+import java.text.Collator
+import java.util.Locale
 import javax.inject.Inject
 import kotlin.text.get
 
@@ -63,6 +65,9 @@ class HeadquarterRepository @Inject constructor(
         onChange: (List<Headquarter>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
+
+        val collator = Collator.getInstance(Locale("es", "ES"))
+
         return headquartersRef()
             .orderBy("name")
             .addSnapshotListener { snapshot, e ->
@@ -71,7 +76,6 @@ class HeadquarterRepository @Inject constructor(
                     return@addSnapshotListener
                 }
 
-                // ✅ Para que cada item tenga su id
                 val list = snapshot
                     ?.documents
                     ?.mapNotNull { doc ->
@@ -81,7 +85,11 @@ class HeadquarterRepository @Inject constructor(
                     }
                     .orEmpty()
 
-                onChange(list)
+                val sorted = list.sortedWith { a, b ->
+                    collator.compare(a.name?.trim(), b.name?.trim())
+                }
+
+                onChange(sorted)
             }
     }
 

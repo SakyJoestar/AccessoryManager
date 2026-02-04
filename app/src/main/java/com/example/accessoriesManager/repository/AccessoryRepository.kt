@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
+import java.text.Collator
+import java.util.Locale
 import javax.inject.Inject
 
 class AccessoryRepository @Inject constructor(
@@ -62,6 +64,9 @@ class AccessoryRepository @Inject constructor(
         onChange: (List<Accessory>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
+
+        val collator = Collator.getInstance(Locale("es", "ES"))
+
         return accessoriesRef()
             .orderBy("name")
             .addSnapshotListener { snapshot, e ->
@@ -79,7 +84,11 @@ class AccessoryRepository @Inject constructor(
                     }
                     .orEmpty()
 
-                onChange(list)
+                val sorted = list.sortedWith { a, b ->
+                    collator.compare(a.name.trim(), b.name.trim())
+                }
+
+                onChange(sorted)
             }
     }
 
