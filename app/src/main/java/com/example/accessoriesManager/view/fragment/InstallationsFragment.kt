@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -14,6 +15,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import android.transition.AutoTransition
+import android.transition.TransitionManager
 import com.example.accesorymanager.R
 import com.example.accesorymanager.databinding.FragmentInstallationsBinding
 import com.example.accessoriesManager.adapter.InstallationAdapter
@@ -25,7 +28,6 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Date
 import java.util.Locale
 
 @AndroidEntryPoint
@@ -51,8 +53,11 @@ class InstallationsFragment : Fragment() {
 
     private fun LocalDate.formatUi(): String = this.format(dateFormatter)
 
-    // ✅ Se activa cuando volvemos del formulario y queremos ir al primer item
+    // Scroll al volver del form
     private var pendingScrollToTop = false
+
+    // Summary toggle
+    private var summaryOpen = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -66,12 +71,13 @@ class InstallationsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // -------------------- Adapter --------------------
         adapter = InstallationAdapter(
-            onToggleExpand = { id ->
-                viewModel.toggleExpanded(id)
-            },
+            onToggleExpand = { id -> viewModel.toggleExpanded(id) },
             onEdit = { installation ->
-                val bundle = Bundle().apply { putString("installationId", installation.id) }
+                val bundle = Bundle().apply {
+                    putString("installationId", installation.id)
+                }
                 findNavController().navigate(
                     R.id.action_installationsFragment_to_installationFormFragment,
                     bundle
@@ -93,11 +99,24 @@ class InstallationsFragment : Fragment() {
 
         setupFiltersUi()
 
-        // Listener realtime
-        android.util.Log.d("INSTALLATIONS_FRAG", "onViewCreated -> startListening()")
+        // -------------------- Summary toggle --------------------
+        val summary = binding.includeSummary
+        summary.sectionInstallations.isVisible = false
+        summaryOpen = false
+
+        summary.cardSummary.setOnClickListener {
+            summaryOpen = !summaryOpen
+            TransitionManager.beginDelayedTransition(
+                summary.cardSummary,
+                AutoTransition()
+            )
+            summary.sectionInstallations.isVisible = summaryOpen
+        }
+
+        // -------------------- Listener realtime --------------------
         viewModel.startListening()
 
-        // ✅ Escuchar el flag que manda el formulario (scroll al primer item)
+        // Flag scroll al crear
         val navController = findNavController()
         navController.currentBackStackEntry
             ?.savedStateHandle
@@ -111,14 +130,12 @@ class InstallationsFragment : Fragment() {
                 }
             }
 
-        // ===== LISTA + EXPAND + SCROLL =====
+        // -------------------- Lista + expand + scroll --------------------
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 combine(viewModel.items, viewModel.expandedIds) { list, expanded ->
                     list to expanded
                 }.collect { (list, expanded) ->
-
-                    // ✅ OJO: aquí estabas mandando emptySet(). Debe ser "expanded".
                     adapter.submitWithExpanded(list, expanded) {
                         if (pendingScrollToTop) {
                             pendingScrollToTop = false
@@ -129,7 +146,7 @@ class InstallationsFragment : Fragment() {
             }
         }
 
-        // Errores
+        // -------------------- Errores --------------------
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.error.collect { msg ->
@@ -138,18 +155,18 @@ class InstallationsFragment : Fragment() {
             }
         }
 
-        // Summary
+        // -------------------- Summary data --------------------
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.summary.collect { s ->
-                    binding.includeSummary.tvSummaryTitle.text = s.title
-                    binding.includeSummary.tvTotalTrabajadoValue.text = money(s.totalWorked)
-                    binding.includeSummary.tvPagadoValue.text = money(s.totalPaid)
-                    binding.includeSummary.tvNoPagadoValue.text = money(s.totalUnpaid)
+                    summary.tvSummaryTitle.text = s.title
+                    summary.tvTotalTrabajadoValue.text = money(s.totalWorked)
+                    summary.tvPagadoValue.text = money(s.totalPaid)
+                    summary.tvNoPagadoValue.text = money(s.totalUnpaid)
 
-                    binding.includeSummary.tvPagadasCount.text = s.paidCount.toString()
-                    binding.includeSummary.tvIncompletasCount.text = s.partialCount.toString()
-                    binding.includeSummary.tvNoPagadasCount.text = s.unpaidCount.toString()
+                    summary.tvPagadasCount.text = s.paidCount.toString()
+                    summary.tvIncompletasCount.text = s.partialCount.toString()
+                    summary.tvNoPagadasCount.text = s.unpaidCount.toString()
                 }
             }
         }
@@ -164,28 +181,32 @@ class InstallationsFragment : Fragment() {
     // -------------------- UI Filtros --------------------
 
     private fun setupFiltersUi() {
-        // Search
         binding.etSearch.doAfterTextChanged {
             viewModel.onQueryChanged(it?.toString().orEmpty())
         }
 
-        // Spinner (Estado)
         val spinnerAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
             statusOptions
-        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        ).also {
+            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
 
         binding.spinnerStatus.adapter = spinnerAdapter
+        binding.spinnerStatus.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    viewModel.onStatusFilterChanged(statusOptions[position])
+                }
 
-        binding.spinnerStatus.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val selected = statusOptions.getOrNull(position) ?: "Todos"
-                viewModel.onStatusFilterChanged(selected)
+                override fun onNothingSelected(parent: AdapterView<*>) {}
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
 
         binding.etDateExact.setOnClickListener {
             showDatePicker("Fecha exacta") { date ->
@@ -214,41 +235,34 @@ class InstallationsFragment : Fragment() {
             }
         }
 
-        // Limpiar
         binding.btnClearDates.setOnClickListener {
             viewModel.clearDates()
             binding.etDateExact.setText("")
             binding.etDateFrom.setText("")
             binding.etDateTo.setText("")
             binding.etSearch.setText("")
-
             binding.spinnerStatus.setSelection(0)
             viewModel.onStatusFilterChanged("Todos")
         }
     }
 
-    // DatePicker (LocalDate)
     private fun showDatePicker(
         title: String,
         onSelected: (LocalDate) -> Unit
     ) {
         val today = LocalDate.now()
-
         DatePickerDialog(
             requireContext(),
-            { _, year, month, dayOfMonth ->
-                val picked = LocalDate.of(year, month + 1, dayOfMonth)
-                onSelected(picked)
+            { _, year, month, day ->
+                onSelected(LocalDate.of(year, month + 1, day))
             },
             today.year,
             today.monthValue - 1,
             today.dayOfMonth
-        ).apply {
-            setTitle(title)
-        }.show()
+        ).apply { setTitle(title) }.show()
     }
 
-    // -------------------- Delete dialog --------------------
+    // -------------------- Dialogs --------------------
 
     private fun showDeleteDialog(id: String) {
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
@@ -280,7 +294,7 @@ class InstallationsFragment : Fragment() {
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton("Sí") { _, _ ->
-                viewModel.markAllAccessoriesPaid(installationId = id, paid = targetPaid)
+                viewModel.markAllAccessoriesPaid(id, targetPaid)
             }
             .setNegativeButton("No", null)
             .show()
