@@ -10,8 +10,8 @@
 
     <!-- FONDOS -->
     <color name="background">#FFFFFF</color>       <!-- Fondo principal -->
-    <color name="surface">#F9FAFB</color>          <!-- Tarjetas / componentes -->
-    <color name="border_soft">#E5E7EB</color>      <!-- Bordes / divisores -->
+    <color name="surface">#F2F1F1</color>          <!-- Tarjetas / componentes -->
+    <color name="border_soft">#828282</color>      <!-- Bordes / divisores -->
 
     <!-- TEXTO -->
     <color name="text_primary">#1F2937</color>     <!-- Texto principal -->
@@ -30,7 +30,10 @@
     <color name="red">#C60303</color>
     <color name="summary_blue">#0D47A1</color>
 
-    <color name="inst_paid_bg">#0E7A3B</color>
-    <color name="inst_incomplete_bg">#858585</color>
-    <color name="inst_unpaid_bg">#8B1E1E</color>
+    <color name="inst_paid_bg">#1B5E20</color>
+    <color name="inst_incomplete_bg">#F9A825</color>
+    <color name="inst_unpaid_bg">#8E2424</color>
+    <color name="buttons_installation_cards">#E0E0E0</color>
+
+    <color name="card_bg">#A2A0A0</color>
 </resources>

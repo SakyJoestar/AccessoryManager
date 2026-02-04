@@ -27,7 +27,10 @@ import com.example.accessoriesManager.model.InstalledAccessory
 import com.example.accessoriesManager.model.Vehicle
 import com.example.accessoriesManager.ui.ThousandsSeparatorTextWatcher
 import com.example.accessoriesManager.ui.showSnack
+import com.example.accessoriesManager.viewmodel.AccessoryViewModel
+import com.example.accessoriesManager.viewmodel.HeadquarterViewModel
 import com.example.accessoriesManager.viewmodel.InstallationFormViewModel
+import com.example.accessoriesManager.viewmodel.VehicleViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputEditText
@@ -44,6 +47,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private val binding get() = _binding!!
 
     private val viewModel: InstallationFormViewModel by viewModels()
+    private val accessoryViewModel: AccessoryViewModel by viewModels()
+    private val headquarterViewModel: HeadquarterViewModel by viewModels()
+    private val vehicleViewModel: VehicleViewModel by viewModels()
 
     private var editId: String? = null
     private lateinit var accessoriesAdapter: InstalledAccessoryAdapter
@@ -51,9 +57,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private var isAutoToggling = false
     private var currentAccessories: List<InstalledAccessory> = emptyList()
 
-    // ✅ NEW: mantener seleccion real (no solo texto)
-    private var selectedHq: Headquarter? = null
-    private var selectedVehicle: Vehicle? = null
+    // ✅ ids opcionales (solo si selecciona del catálogo)
+    private var selectedHqId: String? = null
+    private var selectedVehicleId: String? = null
 
     private lateinit var etIncrement: TextInputEditText
     private lateinit var etTotalWorked: TextInputEditText
@@ -66,8 +72,13 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private lateinit var btnNotPaid: MaterialButton
     private lateinit var btnPartiallyPaid: MaterialButton
 
+    // ✅ Dialog se cierra SOLO en Success
+    private var createDialog: androidx.appcompat.app.AlertDialog? = null
+    private var createDialogType: CreateType? = null
+
     companion object {
         private const val ARG_ID = "installationId"
+        private const val TAG = "InstallationForm"
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -112,12 +123,18 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val tilHeadquarter = container.findViewById<TextInputLayout>(R.id.tilHeadquarter)
         val tilVehicle = container.findViewById<TextInputLayout>(R.id.tilVehicle)
 
-        // ✅ Totales
         etTotalWorked = container.findViewById(R.id.etTotalWorked)
         etPaid = container.findViewById(R.id.etPaid)
         etUnpaid = container.findViewById(R.id.etUnpaid)
-
         etComment = container.findViewById(R.id.etComment)
+
+        val btnAddHeadquarter = container.findViewById<MaterialButton>(R.id.btnAddHeadquarter)
+        val btnAddVehicle = container.findViewById<MaterialButton>(R.id.btnAddVehicle)
+        val btnAddAccessoryInline = container.findViewById<MaterialButton>(R.id.btnAddAccessoryInline)
+
+        btnAddHeadquarter.setOnClickListener { showCreateDialog(CreateType.HEADQUARTER, actHeadquarter) }
+        btnAddVehicle.setOnClickListener { showCreateDialog(CreateType.VEHICLE, actVehicle) }
+        btnAddAccessoryInline.setOnClickListener { showCreateDialog(CreateType.ACCESSORY, null) }
 
         // ✅ Solo lectura
         makeReadOnly(etTotalWorked)
@@ -133,7 +150,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         fun clearGroupErrors() {
             clearError(tilOrder); clearError(tilSerie); clearError(tilPlate)
         }
-
         etOrder.doAfterTextChanged { clearGroupErrors() }
         etSerie.doAfterTextChanged { clearGroupErrors() }
         etPlate.doAfterTextChanged { clearGroupErrors() }
@@ -164,6 +180,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         val normalText = binding.btnSave.text
 
+        // Uppercase
         etSerie.doAfterTextChanged {
             val text = it?.toString() ?: return@doAfterTextChanged
             val upper = text.uppercase()
@@ -182,9 +199,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             }
         }
 
-        etComment.doAfterTextChanged {
-            viewModel.setComment(it?.toString())
-        }
+        etComment.doAfterTextChanged { viewModel.setComment(it?.toString()) }
 
         // ---------- Condición ----------
         val conditions = listOf("Nuevo", "Usado", "Taller")
@@ -204,6 +219,20 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             }
         }
 
+        // ---------- Sede / Vehículo texto libre ----------
+        // Si escribe, lo tratamos como libre => id null
+        actHeadquarter.doAfterTextChanged {
+            val label = it?.toString()?.trim()
+            selectedHqId = null
+            viewModel.setHeadquarterLabel(label)
+        }
+
+        actVehicle.doAfterTextChanged {
+            val label = it?.toString()?.trim()
+            selectedVehicleId = null
+            viewModel.setVehicleLabel(label)
+        }
+
         // ---------- Accessories Recycler ----------
         accessoriesAdapter = InstalledAccessoryAdapter(
             options = emptyList(),
@@ -219,10 +248,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         rvAccessories.layoutManager = LinearLayoutManager(requireContext())
         rvAccessories.adapter = accessoriesAdapter
 
-        if (!isEditMode) {
-            ensureAtLeastOneAccessoryRow()
-        }
-
+        if (!isEditMode) ensureAtLeastOneAccessoryRow()
         btnAddAccessory.setOnClickListener { accessoriesAdapter.addEmpty() }
 
         // ---------- Toggle: solo para guardar state ----------
@@ -239,28 +265,27 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             viewModel.setPaymentState(state)
         }
 
-        // ✅ NEW: si borran texto, limpiar selección del VM
-        actHeadquarter.doAfterTextChanged {
-            if (it.isNullOrBlank()) {
-                selectedHq = null
-                viewModel.setHeadquarter(null)
-            }
-        }
-        actVehicle.doAfterTextChanged {
-            if (it.isNullOrBlank()) {
-                selectedVehicle = null
-                viewModel.setVehicle(null)
-            }
-        }
-
         // ---------- Save ----------
         binding.btnSave.setOnClickListener {
             tilOrder.error = null; tilSerie.error = null; tilPlate.error = null
 
-            // ✅ NEW: asegurar que el VM tenga los objetos seleccionados (no solo texto)
-            selectedHq?.let { viewModel.setHeadquarter(it) }
-            selectedVehicle?.let { viewModel.setVehicle(it) }
             viewModel.setComment(etComment.text?.toString())
+
+            val hqLabel = actHeadquarter.text?.toString()?.trim()
+            val vLabel = actVehicle.text?.toString()?.trim()
+
+            // ✅ si hay id => selection; si no => label libre
+            if (!selectedHqId.isNullOrBlank()) {
+                viewModel.setHeadquarterSelection(selectedHqId, hqLabel)
+            } else {
+                viewModel.setHeadquarterLabel(hqLabel)
+            }
+
+            if (!selectedVehicleId.isNullOrBlank()) {
+                viewModel.setVehicleSelection(selectedVehicleId, vLabel)
+            } else {
+                viewModel.setVehicleLabel(vLabel)
+            }
 
             val order = etOrder.text?.toString()?.toIntOrNull()
             val serie = etSerie.text?.toString().orEmpty()
@@ -320,11 +345,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 etIncrement.setText("0")
                                 etComment.setText("")
 
-                                // limpiar selección también
-                                selectedHq = null
-                                selectedVehicle = null
-                                viewModel.setHeadquarter(null)
-                                viewModel.setVehicle(null)
+                                selectedHqId = null
+                                selectedVehicleId = null
+                                viewModel.setHeadquarterLabel(null)
+                                viewModel.setVehicleLabel(null)
 
                                 accessoriesAdapter.submitList(listOf(InstalledAccessory()))
                                 currentAccessories = accessoriesAdapter.getCurrent()
@@ -336,8 +360,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 etOrder.requestFocus()
                             }
 
-                            // ✅ cerrar SIEMPRE (crear o editar)
+                            if (editId.isNullOrBlank()) {
+                                findNavController().previousBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
+                            }
                             findNavController().popBackStack()
+
                             return@collect
                         }
 
@@ -357,22 +384,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 "order_serie_plate" ->
                                     setGroupErrorNoText(state.msg, tilOrder, tilSerie, tilPlate)
 
-                                "order" ->
-                                    markError(tilOrder, state.msg)
-
-                                "serie" ->
-                                    markError(tilSerie, state.msg)
-
-                                "plate" ->
-                                    markError(tilPlate, state.msg)
-                                "date" ->
-                                    markError(tilDate, state.msg)
-
-                                "headquarter" ->
-                                    markError(tilHeadquarter, state.msg)
-
-                                "vehicle" ->
-                                    markError(tilVehicle, state.msg)
+                                "order" -> markError(tilOrder, state.msg)
+                                "serie" -> markError(tilSerie, state.msg)
+                                "plate" -> markError(tilPlate, state.msg)
+                                "date" -> markError(tilDate, state.msg)
+                                "headquarter" -> markError(tilHeadquarter, state.msg)
+                                "vehicle" -> markError(tilVehicle, state.msg)
 
                                 "accessories" -> {
                                     showSnack(state.msg)
@@ -409,26 +426,22 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         viewModel.setDate(ts)
                     }
 
-                    // ✅ FIX: no solo texto, también setear el objeto en el VM + variables locales
-                    installation.headquarter?.let { hq ->
-                        actHeadquarter.setText(hq.name.orEmpty(), false)
-                        selectedHq = hq
-                        viewModel.setHeadquarter(hq)
-                    }
+                    // ✅ sede / vehículo retrocompatibles (String o Map)
+                    val hqLabel = anyToHeadquarterLabel(installation.headquarter)
+                    actHeadquarter.setText(hqLabel, false)
 
-                    val inc = installation.increment ?: 0L
+                    selectedHqId = installation.headquarterId
+                    viewModel.setHeadquarterId(selectedHqId)
+                    viewModel.setHeadquarterLabel(hqLabel.ifBlank { null })
+
+                    val vehicleLabel = anyToVehicleLabel(installation.vehicle)
+                    actVehicle.setText(vehicleLabel, false)
+
+                    selectedVehicleId = installation.vehicleId
+                    viewModel.setVehicleId(selectedVehicleId)
+                    viewModel.setVehicleLabel(vehicleLabel.ifBlank { null })
+                    val inc = (installation.increment ?: 0L)
                     setTextSafely(etIncrement, formatMoneyDots(inc))
-
-                    installation.vehicle?.let { v ->
-                        val mk = v.make.orEmpty()
-                        val md = v.model.orEmpty()
-                        actVehicle.setText(
-                            if (mk.isNotBlank() && md.isNotBlank()) "$mk - $md" else md,
-                            false
-                        )
-                        selectedVehicle = v
-                        viewModel.setVehicle(v)
-                    }
 
                     val list = installation.accessories.orEmpty()
                     val safeList = if (list.isEmpty()) listOf(InstalledAccessory()) else list
@@ -441,26 +454,24 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             }
         }
 
-        // ---------- Options: sedes, vehículos, accesorios ----------
+        // ---------- Options + create events ----------
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
                 launch {
-                    viewModel.headquarters.collect { list ->
-                        val names = list.map { it.name ?: "" }
+                    headquarterViewModel.items.collect { list ->
+                        val names = list.map { it.name.orEmpty() }
                         actHeadquarter.setAdapter(
                             ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, names)
                         )
 
                         actHeadquarter.setOnItemClickListener { _, _, idx, _ ->
-                            val hq = list[idx]
+                            val hq: Headquarter = list[idx]
+                            selectedHqId = hq.id
+                            viewModel.setHeadquarterSelection(hq.id, hq.name.orEmpty())
 
-                            // ✅ FIX: guardar selección real
-                            selectedHq = hq
-                            viewModel.setHeadquarter(hq)
-
-                            val incHq = (hq.increment ?: 0).toLong()
-                            setTextSafely(etIncrement, formatMoneyDots(incHq))
+                            val inc = (hq.increment ?: 0).toLong()
+                            setTextSafely(etIncrement, formatMoneyDots(inc))
 
                             updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                             autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
@@ -472,20 +483,17 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 }
 
                 launch {
-                    viewModel.vehicles.collect { list ->
-                        Log.d("VEHICLES", "vehicles size = ${list.size}")
+                    vehicleViewModel.items.collect { list ->
                         val labels = list.map { "${it.make} - ${it.model}" }
-
                         actVehicle.setAdapter(
                             ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, labels)
                         )
 
                         actVehicle.setOnItemClickListener { _, _, idx, _ ->
-                            val v = list[idx]
-
-                            // ✅ FIX: guardar selección real
-                            selectedVehicle = v
-                            viewModel.setVehicle(v)
+                            val v: Vehicle = list[idx]
+                            selectedVehicleId = v.id
+                            val label = "${v.make} - ${v.model}"
+                            viewModel.setVehicleSelection(v.id, label)
 
                             hideKeyboardFrom(actVehicle)
                             actVehicle.clearFocus()
@@ -494,7 +502,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 }
 
                 launch {
-                    viewModel.accessories.collect { list ->
+                    accessoryViewModel.items.collect { list ->
                         val opts = list.map {
                             Accessory(
                                 id = it.id ?: "",
@@ -502,26 +510,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 price = it.price ?: 0
                             )
                         }
-
-                        val current = accessoriesAdapter.getCurrent()
-                        val safeCurrent = if (current.isEmpty()) listOf(InstalledAccessory()) else current
-
-                        accessoriesAdapter = InstalledAccessoryAdapter(opts) { updated ->
-                            currentAccessories = updated
-                            viewModel.setAccessories(updated)
-
-                            updateTotalsUI(updated, etTotalWorked, etPaid, etUnpaid)
-                            autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, updated)
-                        }
-
-                        rvAccessories.adapter = accessoriesAdapter
-                        accessoriesAdapter.submitList(safeCurrent)
-                        currentAccessories = accessoriesAdapter.getCurrent()
-
-                        ensureAtLeastOneAccessoryRow()
-
-                        updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
-                        autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+                        accessoriesAdapter.updateOptions(opts)
                     }
                 }
 
@@ -533,6 +522,64 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
                         updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                         autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+                    }
+                }
+
+                // ✅ cerrar dialog SOLO en Success
+                launch {
+                    headquarterViewModel.createEvents.collect { ev ->
+                        when (ev) {
+                            is HeadquarterViewModel.CreateEvent.Success -> {
+                                val hq = ev.headquarter
+                                selectedHqId = hq.id
+                                viewModel.setHeadquarterSelection(hq.id, hq.name.orEmpty())
+                                actHeadquarter.setText(hq.name.orEmpty(), false)
+
+                                val inc = (hq.increment ?: 0).toLong()
+                                setTextSafely(etIncrement, formatMoneyDots(inc))
+
+                                updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
+                                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+
+                                showSnack("Sede creada")
+                                if (createDialogType == CreateType.HEADQUARTER) createDialog?.dismiss()
+                            }
+
+                            is HeadquarterViewModel.CreateEvent.Error -> showSnack(ev.msg)
+                        }
+                    }
+                }
+
+                launch {
+                    vehicleViewModel.createEvents.collect { ev ->
+                        when (ev) {
+                            is VehicleViewModel.CreateEvent.Success -> {
+                                val v = ev.vehicle
+                                selectedVehicleId = v.id
+                                val label = "${v.make} - ${v.model}"
+
+                                viewModel.setVehicleSelection(v.id, label)
+                                actVehicle.setText(label, false)
+
+                                showSnack("Vehículo creado")
+                                if (createDialogType == CreateType.VEHICLE) createDialog?.dismiss()
+                            }
+
+                            is VehicleViewModel.CreateEvent.Error -> showSnack(ev.msg)
+                        }
+                    }
+                }
+
+                launch {
+                    accessoryViewModel.createEvents.collect { ev ->
+                        when (ev) {
+                            is AccessoryViewModel.CreateEvent.Success -> {
+                                showSnack("Accesorio creado")
+                                if (createDialogType == CreateType.ACCESSORY) createDialog?.dismiss()
+                            }
+
+                            is AccessoryViewModel.CreateEvent.Error -> showSnack(ev.msg)
+                        }
                     }
                 }
             }
@@ -547,7 +594,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     }
 
     private fun selectedAccessoriesOnly(list: List<InstalledAccessory>): List<InstalledAccessory> =
-        list.filter { !it.accessoryId.isNullOrBlank() }
+        list.filter {
+            val hasId = !it.accessoryId.isNullOrBlank()
+            val hasName = !it.name.isNullOrBlank()
+            (hasId || hasName) && it.price > 0L
+        }
 
     private fun totalWorked(): Long {
         val inc = getIncrementValue()
@@ -605,9 +656,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         btnPartiallyPaid: MaterialButton,
         accessories: List<InstalledAccessory>
     ) {
-        val selected = accessories.filter {
-            !it.accessoryId.isNullOrBlank() && it.accessoryId!!.trim().isNotEmpty()
-        }
+        val selected = selectedAccessoriesOnly(accessories)
 
         val inc = getIncrementValue()
         val total = selected.sumOf { it.price + inc }
@@ -616,9 +665,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         val targetId = when {
             selected.isEmpty() || total <= 0L -> btnNotPaid.id
-            paid <= 0L -> btnNotPaid.id          // ✅ 0 pagado => NO_PAGADO
-            unpaid <= 0L -> btnPaid.id           // ✅ 0 pendiente => PAGADO
-            else -> btnPartiallyPaid.id          // ✅ si hay pagado y pendiente => PARCIAL
+            paid <= 0L -> btnNotPaid.id
+            unpaid <= 0L -> btnPaid.id
+            else -> btnPartiallyPaid.id
         }
 
         if (tg.checkedButtonId == targetId) return
@@ -635,7 +684,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         }
         viewModel.setPaymentState(state)
     }
-
 
     private fun setTitles(isEdit: Boolean) {
         binding.tvFormTitle.text = if (isEdit) "Editar instalación" else "Nueva instalación"
@@ -725,5 +773,147 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         til.error = null
         til.isErrorEnabled = false
     }
-}
 
+    private enum class CreateType { ACCESSORY, HEADQUARTER, VEHICLE }
+
+    private fun showCreateDialog(type: CreateType, targetDropdown: AutoCompleteTextView?) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_two_fields, null)
+
+        val til1 = dialogView.findViewById<TextInputLayout>(R.id.tilField1)
+        val til2 = dialogView.findViewById<TextInputLayout>(R.id.tilField2)
+        val et1 = dialogView.findViewById<TextInputEditText>(R.id.etField1)
+        val et2 = dialogView.findViewById<TextInputEditText>(R.id.etField2)
+
+        when (type) {
+            CreateType.ACCESSORY -> {
+                til1.hint = "Nombre"
+                til2.hint = "Precio"
+                et2.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            }
+
+            CreateType.HEADQUARTER -> {
+                til1.hint = "Nombre"
+                til2.hint = "Incremento (opcional)"
+                et2.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            }
+
+            CreateType.VEHICLE -> {
+                til1.hint = "Marca"
+                til2.hint = "Modelo"
+                et2.inputType = android.text.InputType.TYPE_CLASS_TEXT
+            }
+        }
+
+        fun clearErrors() {
+            til1.error = null
+            til2.error = null
+            til1.isErrorEnabled = false
+            til2.isErrorEnabled = false
+        }
+
+        val title = when (type) {
+            CreateType.ACCESSORY -> "Crear accesorio"
+            CreateType.HEADQUARTER -> "Crear sede"
+            CreateType.VEHICLE -> "Crear vehículo"
+        }
+
+        createDialogType = type
+
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle(title)
+            .setView(dialogView)
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Guardar", null)
+            .create()
+
+        createDialog = dialog
+        dialog.setOnDismissListener {
+            createDialog = null
+            createDialogType = null
+        }
+
+        dialog.setOnShowListener {
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                clearErrors()
+
+                val v1 = et1.text?.toString()?.trim().orEmpty()
+                val v2 = et2.text?.toString()?.trim().orEmpty()
+
+                if (v1.isBlank()) {
+                    til1.isErrorEnabled = true
+                    til1.error = "Requerido"
+                    return@setOnClickListener
+                }
+
+                if (type != CreateType.HEADQUARTER && v2.isBlank()) {
+                    til2.isErrorEnabled = true
+                    til2.error = "Requerido"
+                    return@setOnClickListener
+                }
+
+                when (type) {
+                    CreateType.ACCESSORY -> {
+                        val price = v2.replace(".", "").toLongOrNull()
+                        if (price == null) {
+                            til2.isErrorEnabled = true
+                            til2.error = "Debe ser número"
+                            return@setOnClickListener
+                        }
+                        accessoryViewModel.createAccessory(name = v1, price = price)
+                    }
+
+                    CreateType.HEADQUARTER -> {
+                        val inc = v2.replace(".", "").toLongOrNull() ?: 0L
+                        headquarterViewModel.createHeadquarter(name = v1, increment = inc)
+                        targetDropdown?.setText(v1, false)
+                    }
+
+                    CreateType.VEHICLE -> {
+                        vehicleViewModel.createVehicle(make = v1, model = v2)
+                        targetDropdown?.setText("$v1 - $v2", false)
+                    }
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        accessoryViewModel.startListening()
+        headquarterViewModel.startListening()
+        vehicleViewModel.startListening()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        accessoryViewModel.stopListening()
+        headquarterViewModel.stopListening()
+        vehicleViewModel.stopListening()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun anyToHeadquarterLabel(h: Any?): String {
+        if (h == null) return ""
+        return when (h) {
+            is String -> h.trim()
+            is Map<*, *> -> ((h["name"] as? String).orEmpty()).trim()
+            else -> h.toString().trim()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun anyToVehicleLabel(v: Any?): String {
+        if (v == null) return ""
+        return when (v) {
+            is String -> v.trim()
+            is Map<*, *> -> {
+                val make = (v["make"] as? String).orEmpty().trim()
+                val model = (v["model"] as? String).orEmpty().trim()
+                listOf(make, model).filter { it.isNotBlank() }.joinToString(" - ").trim()
+            }
+            else -> v.toString().trim()
+        }
+    }
+}

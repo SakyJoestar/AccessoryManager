@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
+import java.text.Collator
+import java.util.Locale
 import javax.inject.Inject
 
 class AccessoryRepository @Inject constructor(
@@ -33,17 +35,16 @@ class AccessoryRepository @Inject constructor(
         return !snap.isEmpty
     }
 
-    suspend fun add(accessory: Accessory) {
+    suspend fun add(accessory: Accessory): String {
         val data = hashMapOf(
             "name" to accessory.name,
-            "price" to accessory.price, // Long
+            "price" to accessory.price,
             "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         )
 
-        accessoriesRef()
-            .add(data)
-            .await()
+        val ref = accessoriesRef().add(data).await()
+        return ref.id
     }
 
     suspend fun update(id: String, accessory: Accessory) {
@@ -63,6 +64,9 @@ class AccessoryRepository @Inject constructor(
         onChange: (List<Accessory>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
+
+        val collator = Collator.getInstance(Locale("es", "ES"))
+
         return accessoriesRef()
             .orderBy("name")
             .addSnapshotListener { snapshot, e ->
@@ -80,7 +84,11 @@ class AccessoryRepository @Inject constructor(
                     }
                     .orEmpty()
 
-                onChange(list)
+                val sorted = list.sortedWith { a, b ->
+                    collator.compare(a.name.trim(), b.name.trim())
+                }
+
+                onChange(sorted)
             }
     }
 

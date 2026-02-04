@@ -5,8 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.accessoriesManager.model.Accessory
 import com.example.accessoriesManager.repository.AccessoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +25,10 @@ class AccessoryFormViewModel @Inject constructor(
 
     private val _state = MutableStateFlow<UiState>(UiState.Idle)
     val state: StateFlow<UiState> = _state
+
+    // ✅ Evento para cerrar pantalla (one-shot)
+    private val _closeScreen = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val closeScreen: SharedFlow<Unit> = _closeScreen.asSharedFlow()
 
     sealed class UiState {
         data object Idle : UiState()
@@ -107,8 +115,14 @@ class AccessoryFormViewModel @Inject constructor(
                 _state.value = UiState.Success(
                     if (id.isNullOrBlank()) "Accesorio guardado ✅" else "Accesorio actualizado ✅"
                 )
+
+                delay(300) // 👈 demora suave para que se vea el mensaje
+                _closeScreen.tryEmit(Unit)
+
             } else {
-                _state.value = UiState.Error(result.exceptionOrNull()?.message ?: "Error guardando accesorio")
+                _state.value = UiState.Error(
+                    result.exceptionOrNull()?.message ?: "Error guardando accesorio"
+                )
             }
         }
     }

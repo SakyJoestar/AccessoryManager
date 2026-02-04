@@ -27,4 +27,5 @@
     <!-- Container -->
     <color name="edit_text">#1F2937</color>
 
+    <color name="card_bg">#2B2B2B</color> <!-- si estás en dark -->
 </resources>

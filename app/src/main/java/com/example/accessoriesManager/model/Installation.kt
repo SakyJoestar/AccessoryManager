@@ -8,15 +8,23 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 data class Installation(
     @DocumentId
     var id: String? = null,
-    var order: Int?= null,
+    var order: Int? = null,
     val serie: String? = null,
     val plate: String? = null,
     val warehouse: String? = null,
     val condition: String? = null,
     val date: Timestamp? = null,
-    val headquarter: Headquarter? = null,
+
+    // ✅ Retrocompatible: antes era Headquarter (map), ahora quieres texto
+    val headquarter: Any? = null,
+    val headquarterId: String? = null,
+
     val increment: Long? = null,
-    val vehicle: Vehicle? = null,
+
+    // ✅ Retrocompatible: antes era Vehicle (map), ahora quieres texto
+    val vehicle: Any? = null,
+    val vehicleId: String? = null,
+
     val accessories: List<InstalledAccessory>? = null,
     val state: String? = null,
     val totalWorked: Long? = null,

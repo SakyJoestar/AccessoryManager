@@ -3,9 +3,9 @@ package com.example.accessoriesManager.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.accessoriesManager.model.Accessory
-import com.example.accessoriesManager.model.Headquarter
 import com.example.accessoriesManager.model.Installation
 import com.example.accessoriesManager.model.InstalledAccessory
+import com.example.accessoriesManager.model.Headquarter
 import com.example.accessoriesManager.model.Vehicle
 import com.example.accessoriesManager.repository.AccessoryRepository
 import com.example.accessoriesManager.repository.HeadquarterRepository
@@ -44,28 +44,34 @@ class InstallationFormViewModel @Inject constructor(
     private val _form = MutableStateFlow<Installation?>(null)
     val form: StateFlow<Installation?> = _form.asStateFlow()
 
-    // Headquarters
+    // Options (para dropdowns)
     private val _headquarters = MutableStateFlow<List<Headquarter>>(emptyList())
     val headquarters: StateFlow<List<Headquarter>> = _headquarters.asStateFlow()
 
-    // Vehicles
     private var vehiclesListener: ListenerRegistration? = null
     private val _vehicles = MutableStateFlow<List<Vehicle>>(emptyList())
     val vehicles: StateFlow<List<Vehicle>> = _vehicles.asStateFlow()
 
-    // Accessories
     private val _accessories = MutableStateFlow<List<Accessory>>(emptyList())
     val accessories: StateFlow<List<Accessory>> = _accessories.asStateFlow()
 
     // -------------------- Draft / selections --------------------
     private var selectedDate: Timestamp? = null
-    private var selectedHeadquarter: Headquarter? = null
-    private var selectedVehicle: Vehicle? = null
-    private var selectedAccessories: List<InstalledAccessory> = emptyList()
-    private var paymentState: String? = "NO_PAGADO" // default
 
-    // ✅ NEW: comment draft
+    // ✅ Strings (texto libre) + id opcional
+    private var headquarterLabel: String? = null
+    private var headquarterId: String? = null
+
+    private var vehicleLabel: String? = null
+    private var vehicleId: String? = null
+
+    private var selectedAccessories: List<InstalledAccessory> = emptyList()
+
+    private var paymentState: String? = "NO_PAGADO"
     private var commentDraft: String = ""
+
+    private val _suggestedIncrement = MutableStateFlow<Int?>(null)
+    val suggestedIncrement: StateFlow<Int?> = _suggestedIncrement.asStateFlow()
 
     init {
         refreshOptions()
@@ -86,15 +92,36 @@ class InstallationFormViewModel @Inject constructor(
 
     // -------------------- Setters desde Fragment --------------------
     fun setDate(ts: Timestamp?) { selectedDate = ts }
-    fun setHeadquarter(hq: Headquarter?) { selectedHeadquarter = hq }
-    fun setVehicle(vehicle: Vehicle?) { selectedVehicle = vehicle }
+
+    /** Texto libre (usuario escribe): limpia id porque ya no es selección exacta */
+    fun setHeadquarterLabel(label: String?) {
+        headquarterLabel = label?.trim()?.takeIf { it.isNotBlank() }
+        headquarterId = null
+    }
+
+    fun setVehicleLabel(label: String?) {
+        vehicleLabel = label?.trim()?.takeIf { it.isNotBlank() }
+        vehicleId = null
+    }
+
+    /** Selección catálogo (usuario selecciona del dropdown): guarda id + label */
+    fun setHeadquarterSelection(id: String?, label: String?) {
+        headquarterId = id
+        headquarterLabel = label?.trim()?.takeIf { it.isNotBlank() }
+    }
+
+    fun setVehicleSelection(id: String?, label: String?) {
+        vehicleId = id
+        vehicleLabel = label?.trim()?.takeIf { it.isNotBlank() }
+    }
+
+    // ✅ Si tú quieres setters separados (por si tu Fragment los llama)
+    fun setHeadquarterId(id: String?) { headquarterId = id }
+    fun setVehicleId(id: String?) { vehicleId = id }
+
     fun setAccessories(list: List<InstalledAccessory>) { selectedAccessories = list }
     fun setPaymentState(state: String?) { paymentState = state }
-
-    // ✅ NEW
-    fun setComment(value: String?) {
-        commentDraft = value.orEmpty()
-    }
+    fun setComment(value: String?) { commentDraft = value.orEmpty() }
 
     // -------------------- Load (edit mode) --------------------
     fun loadById(id: String) {
@@ -104,15 +131,18 @@ class InstallationFormViewModel @Inject constructor(
                 _form.value = installation
 
                 selectedDate = installation?.date
-                selectedHeadquarter = installation?.headquarter
-                selectedVehicle = installation?.vehicle
+
+                // ✅ retrocompat: headquarter/vehicle pueden ser String o Map (Any?)
+                headquarterLabel = anyToHeadquarterLabel(installation?.headquarter).takeIf { it.isNotBlank() }
+                headquarterId = installation?.headquarterId
+
+                vehicleLabel = anyToVehicleLabel(installation?.vehicle).takeIf { it.isNotBlank() }
+                vehicleId = installation?.vehicleId
+
                 selectedAccessories = installation?.accessories.orEmpty()
                 paymentState = installation?.state ?: "NO_PAGADO"
-
-                // ✅ NEW: cargar comentario guardado
                 commentDraft = installation?.comment.orEmpty()
 
-                // ✅ para que el fragment muestre el incremento guardado en esa instalación
                 _suggestedIncrement.value = (installation?.increment ?: 0L).toInt()
 
             } catch (e: Exception) {
@@ -129,8 +159,8 @@ class InstallationFormViewModel @Inject constructor(
         plate: String,
         warehouse: String,
         condition: String?,
-        increment: Int, // lo dejamos por compatibilidad, pero la fuente real es la sede
-        paymentValueRaw: String?,
+        increment: Int, // fallback si no se puede resolver por sede
+        paymentValueRaw: String?, // lo dejo por compatibilidad
         total: Long,
         paidValue: Long,
         unPaidValue: Long
@@ -138,13 +168,11 @@ class InstallationFormViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = UiState.Idle
 
-            // ---------- Normalizar inputs ----------
             val orderStr = order?.toString().orEmpty().trim()
             val serieClean = serie.trim().uppercase()
             val plateClean = plate.trim().uppercase()
             val warehouseClean = warehouse.trim()
 
-            // ✅ NEW: normalizar comentario (opcional)
             val commentClean = commentDraft.trim()
             val commentToSave = commentClean.takeIf { it.isNotBlank() }
 
@@ -152,7 +180,6 @@ class InstallationFormViewModel @Inject constructor(
             val hasSerie = serieClean.isNotBlank()
             val hasPlate = plateClean.isNotBlank()
 
-            // ---------- 1) Al menos uno de los 3 ----------
             if (!hasOrder && !hasSerie && !hasPlate) {
                 _state.value = UiState.FieldError(
                     "order_serie_plate",
@@ -161,28 +188,33 @@ class InstallationFormViewModel @Inject constructor(
                 return@launch
             }
 
-            // ---------- 2) Obligatorios ----------
             if (selectedDate == null) {
                 _state.value = UiState.FieldError("date", "La fecha es obligatoria")
                 return@launch
             }
-            if (selectedHeadquarter == null) {
+
+            if (headquarterLabel.isNullOrBlank()) {
                 _state.value = UiState.FieldError("headquarter", "La sede es obligatoria")
                 return@launch
             }
-            if (selectedVehicle == null) {
+            if (vehicleLabel.isNullOrBlank()) {
                 _state.value = UiState.FieldError("vehicle", "El vehículo es obligatorio")
                 return@launch
             }
 
-            // ---------- 3) Accesorios ----------
-            val hasAnyAccessorySelected = selectedAccessories.any { !it.accessoryId.isNullOrBlank() }
-            if (!hasAnyAccessorySelected) {
+            val selectedReal = selectedAccessories
+                .map { it.copy(name = it.name?.trim()) }
+                .filter {
+                    val hasId = !it.accessoryId.isNullOrBlank()
+                    val hasName = !it.name.isNullOrBlank()
+                    (hasId || hasName) && it.price > 0L
+                }
+
+            if (selectedReal.isEmpty()) {
                 _state.value = UiState.FieldError("accessories", "Debes agregar al menos un accesorio")
                 return@launch
             }
 
-            // ---------- 4) Validaciones individuales ----------
             if (hasOrder && orderStr.length > 7) {
                 _state.value = UiState.FieldError("order", "Orden: máximo 7 caracteres")
                 return@launch
@@ -206,19 +238,16 @@ class InstallationFormViewModel @Inject constructor(
                 return@launch
             }
 
-            // ---------- OK: guardar ----------
             _state.value = UiState.Saving
 
             try {
                 val now = Timestamp.now()
 
-                // ✅ Incremento REAL desde la sede seleccionada (si por algo no viene, fallback al parámetro)
-                val inc = (selectedHeadquarter?.increment ?: increment).toLong()
+                val incFromRepo: Int? = headquarterId?.let { idHq ->
+                    try { headquarterRepository.getIncrement(idHq) } catch (_: Exception) { null }
+                }
+                val inc = (incFromRepo ?: increment).toLong()
 
-                // ✅ Guardar solo accesorios seleccionados (sin filas vacías)
-                val selectedReal = selectedAccessories.filter { !it.accessoryId.isNullOrBlank() }
-
-                // ✅ Totales: precio base + incremento por accesorio
                 val totalWorked = selectedReal.sumOf { it.price + inc }
                 val totalPaid = selectedReal.filter { it.isPaid }.sumOf { it.price + inc }
                 val totalUnpaid = totalWorked - totalPaid
@@ -233,16 +262,22 @@ class InstallationFormViewModel @Inject constructor(
                     warehouse = warehouseClean.ifBlank { null },
                     condition = condition?.ifBlank { null },
                     date = selectedDate,
-                    headquarter = selectedHeadquarter,
-                    vehicle = selectedVehicle,
-                    accessories = selectedReal,  // ✅ base price
-                    increment = inc,             // ✅ histórico
+
+                    // ✅ se guarda texto (String) y el id opcional
+                    headquarter = headquarterLabel,
+                    headquarterId = headquarterId,
+
+                    vehicle = vehicleLabel,
+                    vehicleId = vehicleId,
+
+                    accessories = selectedReal,
+                    increment = inc,
                     state = paymentState,
+
                     totalWorked = totalWorked,
                     totalPaid = totalPaid,
                     totalUnpaid = totalUnpaid,
 
-                    // ✅ NEW
                     comment = commentToSave,
 
                     createdAt = current?.createdAt ?: now,
@@ -263,10 +298,6 @@ class InstallationFormViewModel @Inject constructor(
         }
     }
 
-    private val _suggestedIncrement = MutableStateFlow<Int?>(null)
-    val suggestedIncrement: StateFlow<Int?> = _suggestedIncrement
-
-    // Traer el incremento del headquarter (si lo sigues usando para sugerir)
     fun loadIncrementForHeadquarter(headquarterId: String, fallback: Int) {
         viewModelScope.launch {
             val inc = try {
@@ -293,5 +324,31 @@ class InstallationFormViewModel @Inject constructor(
         super.onCleared()
         vehiclesListener?.remove()
         vehiclesListener = null
+    }
+
+    // -------------------- Retro helpers (Any? -> String) --------------------
+
+    @Suppress("UNCHECKED_CAST")
+    private fun anyToHeadquarterLabel(h: Any?): String {
+        if (h == null) return ""
+        return when (h) {
+            is String -> h.trim()
+            is Map<*, *> -> ((h["name"] as? String).orEmpty()).trim()
+            else -> h.toString().trim()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun anyToVehicleLabel(v: Any?): String {
+        if (v == null) return ""
+        return when (v) {
+            is String -> v.trim()
+            is Map<*, *> -> {
+                val make = (v["make"] as? String).orEmpty().trim()
+                val model = (v["model"] as? String).orEmpty().trim()
+                listOf(make, model).filter { it.isNotBlank() }.joinToString(" - ").trim()
+            }
+            else -> v.toString().trim()
+        }
     }
 }

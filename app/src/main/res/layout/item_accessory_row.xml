@@ -44,6 +44,8 @@
                 android:hint="Accesorio"
                 app:endIconMode="dropdown_menu"
                 android:layout_marginEnd="14dp"
+                android:layoutDirection="ltr"
+                android:textDirection="ltr"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/btnRemove">
@@ -53,7 +55,11 @@
                     style="@style/AppInputDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"/>
+                    android:inputType="text"
+                    android:textDirection="ltr"
+                    android:layoutDirection="ltr"
+                    android:gravity="start|center_vertical"
+                    android:textAlignment="viewStart"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Guideline para precio / check -->

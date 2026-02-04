@@ -1,6 +1,7 @@
 package com.example.accessoriesManager.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
@@ -24,7 +25,11 @@ class InstallationAdapter(
 
     private var expandedIds: Set<String> = emptySet()
 
-    fun submitWithExpanded(list: List<Installation>, expanded: Set<String>) {
+    fun submitWithExpanded(
+        list: List<Installation>,
+        expanded: Set<String>,
+        onCommitted: (() -> Unit)? = null
+    ) {
         val old = expandedIds
         expandedIds = expanded
 
@@ -34,6 +39,8 @@ class InstallationAdapter(
                 val pos = currentList.indexOfFirst { it.id == id }
                 if (pos != -1) notifyItemChanged(pos)
             }
+
+            onCommitted?.invoke() // ✅ aquí ya puedes scrollear seguro
         }
     }
 
@@ -84,7 +91,6 @@ class InstallationAdapter(
             "parcial" -> PayState.INCOMPLETE
 
             else -> {
-                // Fallback por totales (tu UI ya se basa en totalUnpaid)
                 val total = item.totalWorked ?: 0L
                 val unpaid = item.totalUnpaid ?: 0L
                 val paid = item.totalPaid ?: 0L
@@ -126,22 +132,23 @@ class InstallationAdapter(
 
             // Estado + color
             val ps = normalizePayState(item)
+
             tvPagadoValue.text = payLabel(ps)
-            cardInstallation.setCardBackgroundColor(
-                ContextCompat.getColor(root.context, bgColorRes(ps))
+
+            val color = ContextCompat.getColor(
+                root.context,
+                bgColorRes(ps)
             )
+
+            viewStatusBar.setBackgroundColor(color)
 
             // Textos
             tvOrdenValue.text = item.order?.toString() ?: "-"
             tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
             tvPlacaValue.text = item.plate.orEmpty().ifBlank { "-" }
 
-            val make = item.vehicle?.make?.trim()
-            val model = item.vehicle?.model?.trim()
-            tvMarcaModelo.text = listOf(make, model)
-                .filter { !it.isNullOrBlank() }
-                .joinToString(" ")
-                .ifEmpty { "-" }
+            // ✅ vehicle retrocompatible (String o Map)
+            tvMarcaModelo.text = item.vehicleLabel().ifBlank { "-" }
 
             tvFecha.text = item.date?.toDate()
                 ?.toInstant()
@@ -165,7 +172,6 @@ class InstallationAdapter(
         private val accessoriesAdapter = OpenAccessoriesAdapter()
 
         init {
-            // Evita recrear en cada bind
             binding.rvAccessories.layoutManager =
                 androidx.recyclerview.widget.LinearLayoutManager(binding.root.context)
             binding.rvAccessories.adapter = accessoriesAdapter
@@ -182,25 +188,29 @@ class InstallationAdapter(
 
             // Estado + color
             val ps = normalizePayState(item)
+
             tvPagadoValue.text = payLabel(ps)
-            cardInstallation.setCardBackgroundColor(
-                ContextCompat.getColor(root.context, bgColorRes(ps))
+
+            val color = ContextCompat.getColor(
+                root.context,
+                bgColorRes(ps)
             )
+
+            viewStatusBar.setBackgroundColor(color)
 
             // Textos
             tvOrdenValue.text = item.order?.toString() ?: "-"
             tvSerieValue.text = item.serie.orEmpty().ifBlank { "-" }
             tvPlacaValue.text = item.plate.orEmpty().ifBlank { "-" }
 
-            val make = item.vehicle?.make?.trim()
-            val model = item.vehicle?.model?.trim()
-            tvMarcaModelo.text = listOf(make, model)
-                .filter { !it.isNullOrBlank() }
-                .joinToString(" ")
-                .ifEmpty { "-" }
+            // ✅ vehicle retrocompatible
+            tvMarcaModelo.text = item.vehicleLabel().ifBlank { "-" }
 
             tvCondicionValue.text = item.condition.orEmpty().ifBlank { "-" }
-            tvSedeValue.text = item.headquarter?.name.orEmpty().ifBlank { "-" }
+
+            // ✅ headquarter retrocompatible
+            tvSedeValue.text = item.headquarterLabel().ifBlank { "-" }
+
             tvIncrementValue.text = money(item.increment ?: 0L)
             tvBodegaValue.text = item.warehouse.orEmpty().ifBlank { "-" }
 
@@ -215,12 +225,45 @@ class InstallationAdapter(
             tvTotalPagadoValue.text = money(item.totalPaid ?: 0L)
             tvTotalNoPagadoValue.text = money(item.totalUnpaid ?: 0L)
 
-            // Accesorios
+            val comment = item.comment.orEmpty().trim()
+            if (comment.isBlank()) {
+                tvComment.visibility = View.GONE
+            } else {
+                tvComment.visibility = View.VISIBLE
+                tvComment.text = "Comentario: $comment"
+            }
+
             accessoriesAdapter.submit(item.accessories)
         }
     }
 
     private fun money(value: Long): String = "$ ${numberFormatter.format(value)}"
+
+    // -------------------- Retro helpers (NO crashea con HashMap) --------------------
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Installation.vehicleLabel(): String {
+        val v = this.vehicle ?: return ""
+        return when (v) {
+            is String -> v.trim()
+            is Map<*, *> -> {
+                val make = (v["make"] as? String).orEmpty().trim()
+                val model = (v["model"] as? String).orEmpty().trim()
+                listOf(make, model).filter { it.isNotBlank() }.joinToString(" - ").trim()
+            }
+            else -> v.toString().trim()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Installation.headquarterLabel(): String {
+        val h = this.headquarter ?: return ""
+        return when (h) {
+            is String -> h.trim()
+            is Map<*, *> -> ((h["name"] as? String).orEmpty()).trim()
+            else -> h.toString().trim()
+        }
+    }
 
     companion object {
         private const val VT_CLOSED = 0
