@@ -292,13 +292,20 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             val plate = etPlate.text?.toString().orEmpty()
             val warehouse = etWarehouse.text?.toString().orEmpty()
 
-            val increment = getIncrementValue().toInt()
+            val increment = etIncrement.text?.toString().orEmpty()
+                .filter { it.isDigit() }
+                .toIntOrNull() ?: 0
 
             val total = totalWorked()
             val paidValue = totalPaid()
             val unPaidValue = totalUnpaid()
 
-            showSnack("Guardando")
+//            val rawInc = etIncrement.text?.toString()
+//            Log.d("INC_UI", "etIncrement raw='$rawInc' length=${rawInc?.length} viewId=${etIncrement.id}")
+//
+//            val increment2 = rawInc.orEmpty().filter { it.isDigit() }.toIntOrNull() ?: 0
+//            Log.d("INC_UI", "parsed increment=$increment2")
+//            showSnack("Guardando")
 
             viewModel.save(
                 id = editId,
@@ -444,7 +451,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     setTextSafely(etIncrement, formatMoneyDots(inc))
 
                     val list = installation.accessories.orEmpty()
-                    val safeList = if (list.isEmpty()) listOf(InstalledAccessory()) else list
+                    val safeList = list.ifEmpty { listOf(InstalledAccessory()) }
                     accessoriesAdapter.submitList(safeList)
                     currentAccessories = accessoriesAdapter.getCurrent()
 
@@ -470,7 +477,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             selectedHqId = hq.id
                             viewModel.setHeadquarterSelection(hq.id, hq.name.orEmpty())
 
-                            val inc = (hq.increment ?: 0).toLong()
+                            val inc = hq.increment.toLong()
                             setTextSafely(etIncrement, formatMoneyDots(inc))
 
                             updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
@@ -916,4 +923,5 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             else -> v.toString().trim()
         }
     }
+
 }

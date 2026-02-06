@@ -139,7 +139,7 @@ class HeadquarterRepository @Inject constructor(
             val snap = firestore.collection("users")
                 .document(requireUid())
                 .collection("installations")
-                .whereEqualTo("headquarter.id", headquarterId)
+                .whereEqualTo("headquarterId", headquarterId) // ✅
                 .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .limit(1)
                 .get()
@@ -149,7 +149,6 @@ class HeadquarterRepository @Inject constructor(
             (doc.getLong("increment") ?: 0L).toInt()
 
         } catch (e: Exception) {
-            // ✅ Evita crash y te deja log para depurar
             android.util.Log.e("HeadquarterRepo", "getIncrement failed", e)
             0
         }

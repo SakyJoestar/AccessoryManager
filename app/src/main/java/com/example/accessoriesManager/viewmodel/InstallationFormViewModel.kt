@@ -1,5 +1,6 @@
 package com.example.accessoriesManager.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.accessoriesManager.model.Accessory
@@ -243,10 +244,7 @@ class InstallationFormViewModel @Inject constructor(
             try {
                 val now = Timestamp.now()
 
-                val incFromRepo: Int? = headquarterId?.let { idHq ->
-                    try { headquarterRepository.getIncrement(idHq) } catch (_: Exception) { null }
-                }
-                val inc = (incFromRepo ?: increment).toLong()
+                val inc = increment.toLong()
 
                 val totalWorked = selectedReal.sumOf { it.price + inc }
                 val totalPaid = selectedReal.filter { it.isPaid }.sumOf { it.price + inc }
@@ -254,6 +252,7 @@ class InstallationFormViewModel @Inject constructor(
 
                 val current = if (!id.isNullOrBlank()) installationRepository.getById(id) else null
 
+                Log.d("INC_FINAL", "increment param=$increment  final inc=$inc")
                 val installation = Installation(
                     id = id,
                     order = order,
@@ -351,4 +350,7 @@ class InstallationFormViewModel @Inject constructor(
             else -> v.toString().trim()
         }
     }
+
+    private fun String.toLongMoney(): Long =
+        filter { it.isDigit() }.toLongOrNull() ?: 0L
 }
