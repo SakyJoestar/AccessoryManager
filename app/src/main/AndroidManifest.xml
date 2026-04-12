@@ -18,7 +18,7 @@
             android:name="com.example.accessoriesmanager.view.MainActivity"
             android:windowSoftInputMode="adjustPan"
             android:exported="true"
-            android:theme="@style/Theme.accessoriesmanager">
+            android:theme="@style/Theme.AccessoriesManager.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

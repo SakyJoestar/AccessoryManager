@@ -18,6 +18,7 @@ import com.example.accessoriesmanager.ui.QuickMenu
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.core.content.edit
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         binding = AppBarMainBinding.inflate(layoutInflater)
