@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.AccesoryManager" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.accessoriesmanager" parent="Theme.MaterialComponents.DayNight.NoActionBar">
     <!-- Colores de marca -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_dark</item>
@@ -20,20 +20,20 @@
         <item name="android:navigationBarColor">@color/surface</item>
     </style>
 
-    <style name="Theme.AccesoryManager.NoActionBar">
+    <style name="Theme.accessoriesmanager.NoActionBar">
     </style>
 
-    <style name="Theme.AccesoryManager.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+    <style name="Theme.accessoriesmanager.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
-    <style name="Theme.AccesoryManager.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    <style name="Theme.accessoriesmanager.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
     
-    <style name="Theme.AccesoryManager.TextTittle" parent="TextAppearance.AppCompat.Title">
+    <style name="Theme.accessoriesmanager.TextTittle" parent="TextAppearance.AppCompat.Title">
         <item name="android:textSize">64sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="Theme.AccesoryManager.TextSubTittle" parent="TextAppearance.AppCompat.Subhead">
+    <style name="Theme.accessoriesmanager.TextSubTittle" parent="TextAppearance.AppCompat.Subhead">
         <item name="android:textSize">24sp</item>
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:textStyle">bold</item>

@@ -1,0 +1,20 @@
+package com.example.accessoriesmanager.model
+
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentId
+import com.google.firebase.firestore.IgnoreExtraProperties
+
+@IgnoreExtraProperties
+data class Vehicle(
+    @DocumentId
+    var id: String? = null,
+    var model: String? = null,
+    var make: String? = null,
+    var createdAt: Timestamp? = null,
+    var updatedAt: Timestamp? = null
+){
+    val displayName: String
+        get() = listOf(make, model)
+            .filter { !it.isNullOrBlank() }
+            .joinToString(" - ")
+}
