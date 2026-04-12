@@ -401,7 +401,7 @@
             android:foreground="?attr/selectableItemBackground"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:layout_constraintDimensionRatio="16:9"
+            app:layout_constraintDimensionRatio="4:3"
             app:layout_constraintEnd_toEndOf="parent"
 
             app:layout_constraintHorizontal_bias="0.0"

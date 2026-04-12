@@ -8,6 +8,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -39,6 +40,15 @@ import com.google.firebase.Timestamp
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import android.Manifest
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import com.google.android.material.card.MaterialCardView
+import java.io.File
 
 @AndroidEntryPoint
 class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
@@ -71,6 +81,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private lateinit var btnPaid: MaterialButton
     private lateinit var btnNotPaid: MaterialButton
     private lateinit var btnPartiallyPaid: MaterialButton
+
+    //fotos
+    private val selectedPhotoUris = mutableListOf<Uri>()
+    private var tempCameraUri: Uri? = null
+    private lateinit var tvPhotosCounter: TextView
 
     // ✅ Dialog se cierra SOLO en Success
     private var createDialog: androidx.appcompat.app.AlertDialog? = null
@@ -110,6 +125,11 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val rvAccessories = container.findViewById<RecyclerView>(R.id.rvAccessories)
         val btnAddAccessory = container.findViewById<MaterialButton>(R.id.btnAddAccessory)
 
+        // fotos
+        val cardAddPhoto = container.findViewById<MaterialCardView>(R.id.cardAddPhoto)
+        tvPhotosCounter = container.findViewById(R.id.tvPhotosCounter)
+        val rvPhotos = container.findViewById<RecyclerView>(R.id.rvPhotos)
+
         tgPayment = container.findViewById(R.id.tgPaymentStatus)
         btnPaid = container.findViewById(R.id.btnPaid)
         btnNotPaid = container.findViewById(R.id.btnNotPaid)
@@ -132,9 +152,22 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val btnAddVehicle = container.findViewById<MaterialButton>(R.id.btnAddVehicle)
         val btnAddAccessoryInline = container.findViewById<MaterialButton>(R.id.btnAddAccessoryInline)
 
-        btnAddHeadquarter.setOnClickListener { showCreateDialog(CreateType.HEADQUARTER, actHeadquarter) }
-        btnAddVehicle.setOnClickListener { showCreateDialog(CreateType.VEHICLE, actVehicle) }
-        btnAddAccessoryInline.setOnClickListener { showCreateDialog(CreateType.ACCESSORY, null) }
+        btnAddHeadquarter.setOnClickListener{
+            showCreateDialog(CreateType.HEADQUARTER, actHeadquarter)
+        }
+
+        btnAddVehicle.setOnClickListener {
+            showCreateDialog(CreateType.VEHICLE, actVehicle)
+        }
+
+        btnAddAccessoryInline.setOnClickListener{
+            showCreateDialog(CreateType.ACCESSORY, null)
+        }
+
+        cardAddPhoto.setOnClickListener {
+            showPhotoOptions()
+        }
+
 
         // ✅ Solo lectura
         makeReadOnly(etTotalWorked)
@@ -922,6 +955,106 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             }
             else -> v.toString().trim()
         }
+    }
+
+    //fotos
+    private fun openGallery() {
+        val available = 5 - selectedPhotoUris.size
+        if (available <= 0) {
+            showSnack("Máximo 5 fotos")
+            return
+        }
+
+        pickMultipleMedia.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
+    }
+
+    private fun openCamera() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestCameraPermission.launch(Manifest.permission.CAMERA)
+            return
+        }
+
+        val photoFile = File.createTempFile(
+            "installation_photo_",
+            ".jpg",
+            requireContext().cacheDir
+        )
+
+        tempCameraUri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.provider",
+            photoFile
+        )
+
+        takePicture.launch(tempCameraUri)
+    }
+
+    private fun updatePhotosUi() {
+        tvPhotosCounter.text = "${selectedPhotoUris.size}/5"
+    }
+    private val pickMultipleMedia =
+        registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(5)) { uris ->
+            if (uris.isNullOrEmpty()) return@registerForActivityResult
+
+            val available = 5 - selectedPhotoUris.size
+            if (available <= 0) {
+                showSnack("Máximo 5 fotos")
+                return@registerForActivityResult
+            }
+
+            val toAdd = uris.take(available)
+            selectedPhotoUris.addAll(toAdd)
+            updatePhotosUi()
+        }
+
+    private val takePicture =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success) {
+                tempCameraUri?.let { uri ->
+                    if (selectedPhotoUris.size >= 5) {
+                        showSnack("Máximo 5 fotos")
+                    } else {
+                        selectedPhotoUris.add(uri)
+                        updatePhotosUi()
+                    }
+                }
+            }
+        }
+
+    private val requestCameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                openCamera()
+            } else {
+                showSnack("Se necesita permiso de cámara para tomar fotos")
+            }
+        }
+
+    private fun showPhotoOptions() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_photo_options, null)
+
+        val optionCamera = dialogView.findViewById<View>(R.id.optionCamera)
+        val optionGallery = dialogView.findViewById<View>(R.id.optionGallery)
+
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        optionCamera.setOnClickListener {
+            dialog.dismiss()
+            openCamera()
+        }
+
+        optionGallery.setOnClickListener {
+            dialog.dismiss()
+            openGallery()
+        }
+
+        dialog.show()
     }
 
 }
