@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.example.accessoriesManager.view.fragment.LoginFragment"
+        android:name="com.example.accessoriesmanager.view.fragment.LoginFragment"
         android:label="LoginFragment"
         tools:layout="@layout/fragment_login">
         <action
@@ -16,7 +16,7 @@
     </fragment>
     <fragment
         android:id="@+id/accessoriesFragment"
-        android:name="com.example.accessoriesManager.view.fragment.AccessoriesFragment"
+        android:name="com.example.accessoriesmanager.view.fragment.AccessoriesFragment"
         android:label="AccessoriesFragment"
         tools:layout="@layout/fragment_accessories">
         <action
@@ -25,7 +25,7 @@
     </fragment>
     <fragment
         android:id="@+id/headquartersFragment"
-        android:name="com.example.accessoriesManager.view.fragment.HeadquartersFragment"
+        android:name="com.example.accessoriesmanager.view.fragment.HeadquartersFragment"
         android:label="HeadquartersFragment"
         tools:layout="@layout/fragment_headquarters">
         <action
@@ -37,7 +37,7 @@
             app:destination="@id/headquarterFormFragment" />
     <fragment
         android:id="@+id/vehiclesFragment"
-        android:name="com.example.accessoriesManager.view.fragment.VehiclesFragment"
+        android:name="com.example.accessoriesmanager.view.fragment.VehiclesFragment"
         android:label="VehiclesFragment"
         tools:layout="@layout/fragment_vehicles">
         <action
@@ -46,7 +46,7 @@
     </fragment>
     <fragment
         android:id="@+id/headquarterFormFragment"
-        android:name="com.example.accessoriesManager.form.HeadquarterFormFragment"
+        android:name="com.example.accessoriesmanager.form.HeadquarterFormFragment"
         android:label="Formulario Sede"
         tools:layout="@layout/form_headquarter_fields">
 
@@ -57,17 +57,17 @@
     </fragment>
     <fragment
         android:id="@+id/vehicleFormFragment"
-        android:name="com.example.accessoriesManager.form.VehicleFormFragment"
+        android:name="com.example.accessoriesmanager.form.VehicleFormFragment"
         android:label="VehicleFormFragment"
         tools:layout="@layout/form_vehicle_fields"/>
     <fragment
         android:id="@+id/accessoryFormFragment"
-        android:name="com.example.accessoriesManager.form.AccessoryFormFragment"
+        android:name="com.example.accessoriesmanager.form.AccessoryFormFragment"
         android:label="AccessoryFormFragment"
         tools:layout="@layout/form_accessory_fields"/>
     <fragment
         android:id="@+id/installationsFragment"
-        android:name="com.example.accessoriesManager.view.fragment.InstallationsFragment"
+        android:name="com.example.accessoriesmanager.view.fragment.InstallationsFragment"
         android:label="InstallationsFragment"
         tools:layout="@layout/fragment_installations">
         <action
@@ -76,7 +76,7 @@
     </fragment>
     <fragment
         android:id="@+id/installationFormFragment"
-        android:name="com.example.accessoriesManager.form.InstallationFormFragment"
+        android:name="com.example.accessoriesmanager.form.InstallationFormFragment"
         android:label="InstallationFormFragment"
         tools:layout="@layout/form_installation_fields"/>
 </navigation>
