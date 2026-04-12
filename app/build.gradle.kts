@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.accesorymanager"
+    namespace = "com.example.accessoriesmanager"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.accesorymanager"
+        applicationId = "com.example.accessoriesmanager"
         minSdk = 34
         targetSdk = 34
         versionCode = 1

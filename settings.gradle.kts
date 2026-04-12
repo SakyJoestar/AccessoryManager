@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AccesoryManager"
+rootProject.name = "accessoriesmanager"
 include(":app")
  
