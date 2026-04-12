@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.gridlayout)
+    implementation("androidx.core:core-splashscreen:1.0.1")
 }
 
 kapt {
