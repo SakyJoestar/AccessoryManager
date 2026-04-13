@@ -401,7 +401,7 @@
             android:foreground="?attr/selectableItemBackground"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:layout_constraintDimensionRatio="4:3"
+            app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintEnd_toEndOf="parent"
 
             app:layout_constraintHorizontal_bias="0.0"
@@ -452,22 +452,54 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvPhotos"
+        <FrameLayout
+            android:id="@+id/layoutPhotosCarousel"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:layout_marginTop="12dp"
-            android:nestedScrollingEnabled="false"
-            android:clipToPadding="false"
-            android:paddingBottom="4dp"
-            android:orientation="horizontal"
             android:visibility="gone"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintTop_toBottomOf="@id/cardAddPhoto"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            tools:itemCount="3"
-            tools:listitem="@layout/item_installation_photo" />
+            app:layout_constraintDimensionRatio="1:1">
+
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/vpPhotos"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabAddMorePhotos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="16dp"
+                android:contentDescription="Agregar otra foto"
+                app:backgroundTint="@color/primary"
+                app:srcCompat="@drawable/ic_add_24"
+                app:tint="@android:color/white"
+                app:maxImageSize="24dp"
+                app:fabSize="mini" />
+
+        </FrameLayout>
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabPhotosIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            android:background="@android:color/transparent"
+            app:tabIndicator="@null"
+            app:tabIndicatorHeight="0dp"
+            app:tabInlineLabel="true"
+            app:tabMinWidth="0dp"
+            app:tabPaddingStart="6dp"
+            app:tabPaddingEnd="6dp"
+            app:tabRippleColor="@android:color/transparent"
+            app:layout_constraintTop_toBottomOf="@id/layoutPhotosCarousel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
         <!-- ========== Pago ========== -->
         <TextView
@@ -480,7 +512,7 @@
             android:layout_marginTop="6dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/rvPhotos" />
+            app:layout_constraintTop_toBottomOf="@id/tabPhotosIndicator" />
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/tgPaymentStatus"

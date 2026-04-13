@@ -71,6 +71,7 @@ dependencies {
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.gridlayout)
     implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }
 
 kapt {

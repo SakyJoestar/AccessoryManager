@@ -49,6 +49,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.google.android.material.card.MaterialCardView
 import java.io.File
+import androidx.viewpager2.widget.ViewPager2
+import com.example.accessoriesmanager.adapter.InstallationPhotosPagerAdapter
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 
 @AndroidEntryPoint
 class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
@@ -86,6 +91,14 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private val selectedPhotoUris = mutableListOf<Uri>()
     private var tempCameraUri: Uri? = null
     private lateinit var tvPhotosCounter: TextView
+
+    private lateinit var layoutPhotosCarousel: View
+    private lateinit var vpPhotos: ViewPager2
+    private lateinit var tabPhotosIndicator: TabLayout
+    private lateinit var fabAddMorePhotos: FloatingActionButton
+
+    private lateinit var photosPagerAdapter: InstallationPhotosPagerAdapter
+    private var photosTabMediator: TabLayoutMediator? = null
 
     // ✅ Dialog se cierra SOLO en Success
     private var createDialog: androidx.appcompat.app.AlertDialog? = null
@@ -126,9 +139,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val btnAddAccessory = container.findViewById<MaterialButton>(R.id.btnAddAccessory)
 
         // fotos
-        val cardAddPhoto = container.findViewById<MaterialCardView>(R.id.cardAddPhoto)
+        val cardAddPhoto = container.findViewById<View>(R.id.cardAddPhoto)
         tvPhotosCounter = container.findViewById(R.id.tvPhotosCounter)
-        val rvPhotos = container.findViewById<RecyclerView>(R.id.rvPhotos)
+        layoutPhotosCarousel = container.findViewById(R.id.layoutPhotosCarousel)
+        vpPhotos = container.findViewById(R.id.vpPhotos)
+        tabPhotosIndicator = container.findViewById(R.id.tabPhotosIndicator)
+        fabAddMorePhotos = container.findViewById(R.id.fabAddMorePhotos)
 
         tgPayment = container.findViewById(R.id.tgPaymentStatus)
         btnPaid = container.findViewById(R.id.btnPaid)
@@ -280,6 +296,29 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         rvAccessories.layoutManager = LinearLayoutManager(requireContext())
         rvAccessories.adapter = accessoriesAdapter
+
+        photosPagerAdapter = InstallationPhotosPagerAdapter(
+            items = mutableListOf(),
+            onPhotoClick = { uri ->
+                showSnack("Luego abrimos visor grande")
+            },
+            onRemoveClick = { position, uri ->
+                selectedPhotoUris.remove(uri)
+                updatePhotosUi()
+
+                if (selectedPhotoUris.isNotEmpty()) {
+                    val safePosition = position.coerceAtMost(selectedPhotoUris.lastIndex)
+                    vpPhotos.setCurrentItem(safePosition, false)
+                }
+            }
+        )
+
+        vpPhotos.adapter = photosPagerAdapter
+
+        fabAddMorePhotos.setOnClickListener {
+            showPhotoOptions()
+        }
+
 
         if (!isEditMode) ensureAtLeastOneAccessoryRow()
         btnAddAccessory.setOnClickListener { accessoriesAdapter.addEmpty() }
@@ -768,6 +807,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        photosTabMediator?.detach()
+        photosTabMediator = null
         _binding = null
     }
 
@@ -994,8 +1035,31 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     }
 
     private fun updatePhotosUi() {
-        tvPhotosCounter.text = "${selectedPhotoUris.size}/5"
+        val count = selectedPhotoUris.size
+        tvPhotosCounter.text = "$count/5"
+
+        val hasPhotos = count > 0
+
+        binding.formFieldsContainer.findViewById<View>(R.id.cardAddPhoto).visibility =
+            if (hasPhotos) View.GONE else View.VISIBLE
+
+        layoutPhotosCarousel.visibility = if (hasPhotos) View.VISIBLE else View.GONE
+        tabPhotosIndicator.visibility = if (hasPhotos) View.VISIBLE else View.GONE
+
+        fabAddMorePhotos.visibility = if (count in 1..4) View.VISIBLE else View.GONE
+
+        photosPagerAdapter.submitItems(selectedPhotoUris.toList())
+
+        photosTabMediator?.detach()
+        if (hasPhotos) {
+            photosTabMediator = TabLayoutMediator(tabPhotosIndicator, vpPhotos) { _, _ -> }
+            photosTabMediator?.attach()
+            setupPhotoDots()
+        } else {
+            photosTabMediator = null
+        }
     }
+
     private val pickMultipleMedia =
         registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(5)) { uris ->
             if (uris.isNullOrEmpty()) return@registerForActivityResult
@@ -1055,6 +1119,28 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         }
 
         dialog.show()
+    }
+
+    private fun setupPhotoDots() {
+        for (i in 0 until tabPhotosIndicator.tabCount) {
+            val tab = tabPhotosIndicator.getTabAt(i)
+            tab?.setIcon(R.drawable.dot_indicator_unselected)
+        }
+
+        val selectedTab = tabPhotosIndicator.getTabAt(vpPhotos.currentItem)
+        selectedTab?.setIcon(R.drawable.dot_indicator_selected)
+
+        tabPhotosIndicator.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                tab.setIcon(R.drawable.dot_indicator_selected)
+            }
+
+            override fun onTabUnselected(tab: TabLayout.Tab) {
+                tab.setIcon(R.drawable.dot_indicator_unselected)
+            }
+
+            override fun onTabReselected(tab: TabLayout.Tab) = Unit
+        })
     }
 
 }

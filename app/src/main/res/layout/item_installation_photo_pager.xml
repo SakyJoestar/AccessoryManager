@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/ivPhotoPager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:contentDescription="Foto de instalación"
+        android:background="@android:color/black" />
+
+    <ImageButton
+        android:id="@+id/btnRemovePhotoPager"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="12dp"
+        android:background="@drawable/bg_circle_delete_photo"
+        android:contentDescription="Eliminar foto"
+        android:padding="8dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        app:tint="@color/surface" />
+
+</FrameLayout>
