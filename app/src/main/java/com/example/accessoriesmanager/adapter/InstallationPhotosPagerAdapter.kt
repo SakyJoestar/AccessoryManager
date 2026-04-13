@@ -41,7 +41,7 @@ class InstallationPhotosPagerAdapter(
         fun bind(uri: Uri, position: Int) {
             Glide.with(itemView.context)
                 .load(uri)
-                .centerCrop()
+                .fitCenter()
                 .into(ivPhoto)
 
             ivPhoto.setOnClickListener {

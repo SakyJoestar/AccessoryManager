@@ -100,6 +100,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private lateinit var photosPagerAdapter: InstallationPhotosPagerAdapter
     private var photosTabMediator: TabLayoutMediator? = null
 
+    private var photoTabsListener: TabLayout.OnTabSelectedListener? = null
+
     // ✅ Dialog se cierra SOLO en Success
     private var createDialog: androidx.appcompat.app.AlertDialog? = null
     private var createDialogType: CreateType? = null
@@ -806,9 +808,15 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
+        photoTabsListener?.let {
+            tabPhotosIndicator.removeOnTabSelectedListener(it)
+        }
+        photoTabsListener = null
+
         photosTabMediator?.detach()
         photosTabMediator = null
+
+        super.onDestroyView()
         _binding = null
     }
 
@@ -1045,18 +1053,17 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
         layoutPhotosCarousel.visibility = if (hasPhotos) View.VISIBLE else View.GONE
         tabPhotosIndicator.visibility = if (hasPhotos) View.VISIBLE else View.GONE
-
         fabAddMorePhotos.visibility = if (count in 1..4) View.VISIBLE else View.GONE
 
         photosPagerAdapter.submitItems(selectedPhotoUris.toList())
 
         photosTabMediator?.detach()
+        photosTabMediator = null
+
         if (hasPhotos) {
             photosTabMediator = TabLayoutMediator(tabPhotosIndicator, vpPhotos) { _, _ -> }
             photosTabMediator?.attach()
             setupPhotoDots()
-        } else {
-            photosTabMediator = null
         }
     }
 
@@ -1123,14 +1130,17 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
     private fun setupPhotoDots() {
         for (i in 0 until tabPhotosIndicator.tabCount) {
-            val tab = tabPhotosIndicator.getTabAt(i)
-            tab?.setIcon(R.drawable.dot_indicator_unselected)
+            tabPhotosIndicator.getTabAt(i)?.setIcon(R.drawable.dot_indicator_unselected)
         }
 
-        val selectedTab = tabPhotosIndicator.getTabAt(vpPhotos.currentItem)
-        selectedTab?.setIcon(R.drawable.dot_indicator_selected)
+        tabPhotosIndicator.getTabAt(vpPhotos.currentItem)
+            ?.setIcon(R.drawable.dot_indicator_selected)
 
-        tabPhotosIndicator.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+        photoTabsListener?.let {
+            tabPhotosIndicator.removeOnTabSelectedListener(it)
+        }
+
+        photoTabsListener = object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 tab.setIcon(R.drawable.dot_indicator_selected)
             }
@@ -1140,7 +1150,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             }
 
             override fun onTabReselected(tab: TabLayout.Tab) = Unit
-        })
+        }
+
+        tabPhotosIndicator.addOnTabSelectedListener(photoTabsListener!!)
     }
 
 }
