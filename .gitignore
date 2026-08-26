@@ -39,3 +39,6 @@ obj/
 # Firebase & claves
 google-services.json
 .env
+
+# graphify (generated knowledge graph)
+graphify-out/
