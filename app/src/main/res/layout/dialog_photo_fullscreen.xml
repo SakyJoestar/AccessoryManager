@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/vpFullscreenPhotos"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabFullscreenIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:background="@android:color/transparent"
+        app:tabBackground="@drawable/dot_indicator_unselected"
+        app:tabGravity="center"
+        app:tabIndicatorHeight="0dp"
+        app:tabMaxWidth="16dp"
+        app:tabMinWidth="16dp"
+        app:tabPaddingEnd="4dp"
+        app:tabPaddingStart="4dp" />
+
+    <ImageButton
+        android:id="@+id/btnCloseFullscreen"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="12dp"
+        android:background="@drawable/bg_circle_photo_toolbar"
+        android:contentDescription="Cerrar"
+        android:padding="10dp"
+        android:src="@drawable/ic_close"
+        app:tint="#FFFFFF" />
+
+    <ImageButton
+        android:id="@+id/btnDeleteFullscreen"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="12dp"
+        android:background="@drawable/bg_circle_photo_toolbar"
+        android:contentDescription="Eliminar foto"
+        android:padding="10dp"
+        android:src="@drawable/ic_delete"
+        app:tint="#FFFFFF" />
+
+</FrameLayout>

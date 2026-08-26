@@ -1,18 +1,22 @@
 package com.example.accessoriesmanager.repository
 
+import android.net.Uri
 import com.example.accessoriesmanager.model.Installation
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class InstallationRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val storage: FirebaseStorage
 ) {
 
     // -------------------- helpers --------------------
@@ -29,6 +33,27 @@ class InstallationRepository @Inject constructor(
         installationsCol()
             .document(installationId)
             .collection("installedAccessories")
+
+    private fun installationPhotosRef(installationId: String) =
+        storage.reference
+            .child("users")
+            .child(uid())
+            .child("installations")
+            .child(installationId)
+            .child("photos")
+
+    /** A fresh Firestore-generated id, reserved locally (no network call) so it can be used
+     * as the Storage upload path before the installation document itself is written. */
+    fun newInstallationId(): String = installationsCol().document().id
+
+    /** Uploads each local photo [uris] under the installation's Storage folder and returns their download URLs. */
+    suspend fun uploadPhotos(installationId: String, uris: List<Uri>): List<String> {
+        return uris.map { uri ->
+            val ref = installationPhotosRef(installationId).child("${UUID.randomUUID()}.jpg")
+            ref.putFile(uri).await()
+            ref.downloadUrl.await().toString()
+        }
+    }
 
     // -------------------- normalización --------------------
 

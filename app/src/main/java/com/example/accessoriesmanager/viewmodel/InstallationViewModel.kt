@@ -3,18 +3,23 @@ package com.example.accessoriesmanager.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.accessoriesmanager.model.Installation
+import com.example.accessoriesmanager.model.isPaidState
+import com.example.accessoriesmanager.model.isPartialState
+import com.example.accessoriesmanager.model.isUnpaidState
+import com.example.accessoriesmanager.model.matchesDates
+import com.example.accessoriesmanager.model.matchesQuery
+import com.example.accessoriesmanager.model.matchesStatus
 import com.example.accessoriesmanager.repository.InstallationRepository
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -38,6 +43,18 @@ class InstallationViewModel @Inject constructor(
     private val _dateExact = MutableStateFlow<LocalDate?>(null)
     private val _dateFrom = MutableStateFlow<LocalDate?>(null)
     private val _dateTo = MutableStateFlow<LocalDate?>(null)
+
+    private data class Filters(
+        val query: String,
+        val status: String,
+        val dateExact: LocalDate?,
+        val dateFrom: LocalDate?,
+        val dateTo: LocalDate?
+    )
+
+    private val filters: Flow<Filters> = combine(
+        _query, _statusFilter, _dateExact, _dateFrom, _dateTo
+    ) { query, status, exact, from, to -> Filters(query, status, exact, from, to) }
 
     // ----- Expand / Collapse -----
     private val _expandedIds = MutableStateFlow<Set<String>>(emptySet())
@@ -84,48 +101,24 @@ class InstallationViewModel @Inject constructor(
 
         filterJob = viewModelScope.launch {
             // ---- LISTA: aplica query + status + fechas ----
-            val f1 = _all.combine(_query) { all, q -> all to q }
-            val f2 = f1.combine(_statusFilter) { (all, q), status -> Triple(all, q, status) }
-            val f3 = f2.combine(_dateExact) { t, exact -> Quad(t.first, t.second, t.third, exact) }
-            val f4 = f3.combine(_dateFrom) { qd, from -> Quint(qd.a, qd.b, qd.c, qd.d, from) }
-            val f5 = f4.combine(_dateTo) { qi, to -> Sext(qi.a, qi.b, qi.c, qi.d, qi.e, to) }
-
-            // ---- SUMMARY: solo depende de _all + fechas ----
-            val s1 = _all.combine(_dateExact) { all, exact -> all to exact }
-            val s2 = s1.combine(_dateFrom) { (all, exact), from -> Triple(all, exact, from) }
-            val s3 = s2.combine(_dateTo) { (all, exact, from), to -> Triple3(all, exact, from, to) }
-
-            // collector lista
             launch {
-                f5.collect { data ->
-                    val all = data.a
-                    val q = data.b
-                    val status = data.c
-                    val exact = data.d
-                    val from = data.e
-                    val to = data.f
-
+                combine(_all, filters) { all, f -> all to f }.collect { (all, f) ->
                     _items.value = all.asSequence()
-                        .filter { it.matchesQuery(q) }
-                        .filter { it.matchesStatus(status) }
-                        .filter { it.matchesDates(exact, from, to) }
+                        .filter { it.matchesQuery(f.query) }
+                        .filter { it.matchesStatus(f.status) }
+                        .filter { it.matchesDates(f.dateExact, f.dateFrom, f.dateTo) }
                         .toList()
                 }
             }
 
-            // collector summary
+            // ---- SUMMARY: solo depende de _all + fechas ----
             launch {
-                s3.collect { data ->
-                    val all = data.all
-                    val exact = data.exact
-                    val from = data.from
-                    val to = data.to
-
+                combine(_all, filters) { all, f -> all to f }.collect { (all, f) ->
                     val inDate = all.asSequence()
-                        .filter { it.matchesDates(exact, from, to) }
+                        .filter { it.matchesDates(f.dateExact, f.dateFrom, f.dateTo) }
                         .toList()
 
-                    val title = buildSummaryTitle(exact, from, to)
+                    val title = buildSummaryTitle(f.dateExact, f.dateFrom, f.dateTo)
 
                     val totalWorked = inDate.sumOf { it.totalWorked ?: 0L }
                     val totalPaid = inDate.sumOf { it.totalPaid ?: 0L }
@@ -263,117 +256,5 @@ class InstallationViewModel @Inject constructor(
             to != null -> "Hasta: ${to.format(fmt)}"
             else -> "Resumen"
         }
-    }
-}
-
-/* ======= Clases para transportar datos ======= */
-private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
-private data class Quint<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)
-private data class Sext<A, B, C, D, E, F>(val a: A, val b: B, val c: C, val d: D, val e: E, val f: F)
-private data class Triple3<A, B, C, D>(val all: A, val exact: B, val from: C, val to: D)
-
-/* ================= Helpers ================= */
-
-private fun Installation.matchesQuery(q: String): Boolean {
-    val query = q.trim()
-    if (query.isEmpty()) return true
-
-    val qLower = query.lowercase()
-
-    fun contains(value: String?): Boolean =
-        value?.trim()?.lowercase()?.contains(qLower) == true
-
-    // directos
-    if (order?.toString()?.contains(query, ignoreCase = true) == true) return true
-    if (contains(plate)) return true
-    if (contains(serie)) return true
-
-    // ✅ vehicle/headquarter retrocompatibles (String o Map)
-    if (contains(vehicleLabelFromAny(vehicle))) return true
-    if (contains(headquarterLabelFromAny(headquarter))) return true
-
-    // accesorios
-    val acc = accessories.orEmpty()
-    if (acc.any { contains(it.name) }) return true
-    if (acc.any { contains(it.accessoryId) }) return true
-
-    return false
-}
-
-private fun Installation.matchesStatus(statusUi: String): Boolean {
-    val s = state?.trim().orEmpty()
-
-    fun eq(vararg values: String): Boolean =
-        values.any { it.equals(s, ignoreCase = true) }
-
-    return when (statusUi.trim()) {
-        "Pagado" -> eq("PAGADO", "Pagado", "PAID", "paid")
-        "No Pagado" -> eq("NO_PAGADO", "No pagado", "NO PAGADO", "UNPAID", "unpaid")
-        "Parcial" -> eq("PARCIAL", "Parcial", "INCOMPLETO", "Incompleto", "INCOMPLETE", "incomplete")
-        else -> true
-    }
-}
-
-private fun Installation.matchesDates(
-    exact: LocalDate?,
-    from: LocalDate?,
-    to: LocalDate?
-): Boolean {
-    if (exact == null && from == null && to == null) return true
-
-    val d = date.toLocalDate() ?: return false
-
-    if (exact != null) return d.isEqual(exact)
-    if (from != null && d.isBefore(from)) return false
-    if (to != null && d.isAfter(to)) return false
-
-    return true
-}
-
-private fun Installation.isPaidState(): Boolean {
-    val s = state?.trim().orEmpty()
-    return s.equals("PAGADO", true) || s.equals("paid", true) || s.equals("Pagado", true)
-}
-
-private fun Installation.isUnpaidState(): Boolean {
-    val s = state?.trim().orEmpty()
-    return s.equals("NO_PAGADO", true) || s.equals("unpaid", true) || s.equals("No pagado", true)
-}
-
-private fun Installation.isPartialState(): Boolean {
-    val s = state?.trim().orEmpty()
-    return s.equals("PARCIAL", true) || s.equals("incompleto", true) || s.equals("incomplete", true)
-}
-
-private fun Timestamp?.toLocalDate(zone: ZoneId = ZoneId.systemDefault()): LocalDate? {
-    if (this == null) return null
-    return Instant.ofEpochSecond(seconds, nanoseconds.toLong())
-        .atZone(zone)
-        .toLocalDate()
-}
-
-/* ================= Retro label helpers ================= */
-
-@Suppress("UNCHECKED_CAST")
-private fun vehicleLabelFromAny(v: Any?): String {
-    if (v == null) return ""
-    return when (v) {
-        is String -> v.trim()
-        is Map<*, *> -> {
-            val make = (v["make"] as? String).orEmpty().trim()
-            val model = (v["model"] as? String).orEmpty().trim()
-            listOf(make, model).filter { it.isNotBlank() }.joinToString(" - ").trim()
-        }
-        else -> v.toString().trim()
-    }
-}
-
-@Suppress("UNCHECKED_CAST")
-private fun headquarterLabelFromAny(h: Any?): String {
-    if (h == null) return ""
-    return when (h) {
-        is String -> h.trim()
-        is Map<*, *> -> ((h["name"] as? String).orEmpty()).trim()
-        else -> h.toString().trim()
     }
 }

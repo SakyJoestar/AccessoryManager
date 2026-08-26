@@ -1,5 +1,6 @@
 package com.example.accessoriesmanager.viewmodel
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,9 @@ import com.example.accessoriesmanager.model.Installation
 import com.example.accessoriesmanager.model.InstalledAccessory
 import com.example.accessoriesmanager.model.Headquarter
 import com.example.accessoriesmanager.model.Vehicle
+import com.example.accessoriesmanager.model.headquarterLabelFromAny
+import com.example.accessoriesmanager.model.vehicleLabelFromAny
+import com.example.accessoriesmanager.form.InstallationTotalsCalculator
 import com.example.accessoriesmanager.repository.AccessoryRepository
 import com.example.accessoriesmanager.repository.HeadquarterRepository
 import com.example.accessoriesmanager.repository.InstallationRepository
@@ -81,13 +85,25 @@ class InstallationFormViewModel @Inject constructor(
 
     private fun refreshOptions() {
         viewModelScope.launch {
-            try { _headquarters.value = headquarterRepository.getAll() } catch (_: Exception) {}
+            try {
+                _headquarters.value = headquarterRepository.getAll()
+            } catch (e: Exception) {
+                Log.w("InstallationFormVM", "No se pudieron cargar las sedes", e)
+            }
         }
         viewModelScope.launch {
-            try { _vehicles.value = vehicleRepository.getAll() } catch (_: Exception) {}
+            try {
+                _vehicles.value = vehicleRepository.getAll()
+            } catch (e: Exception) {
+                Log.w("InstallationFormVM", "No se pudieron cargar los vehículos", e)
+            }
         }
         viewModelScope.launch {
-            try { _accessories.value = accessoryRepository.getAll() } catch (_: Exception) {}
+            try {
+                _accessories.value = accessoryRepository.getAll()
+            } catch (e: Exception) {
+                Log.w("InstallationFormVM", "No se pudieron cargar los accesorios", e)
+            }
         }
     }
 
@@ -134,10 +150,10 @@ class InstallationFormViewModel @Inject constructor(
                 selectedDate = installation?.date
 
                 // ✅ retrocompat: headquarter/vehicle pueden ser String o Map (Any?)
-                headquarterLabel = anyToHeadquarterLabel(installation?.headquarter).takeIf { it.isNotBlank() }
+                headquarterLabel = headquarterLabelFromAny(installation?.headquarter).takeIf { it.isNotBlank() }
                 headquarterId = installation?.headquarterId
 
-                vehicleLabel = anyToVehicleLabel(installation?.vehicle).takeIf { it.isNotBlank() }
+                vehicleLabel = vehicleLabelFromAny(installation?.vehicle).takeIf { it.isNotBlank() }
                 vehicleId = installation?.vehicleId
 
                 selectedAccessories = installation?.accessories.orEmpty()
@@ -161,104 +177,58 @@ class InstallationFormViewModel @Inject constructor(
         warehouse: String,
         condition: String?,
         increment: Int, // fallback si no se puede resolver por sede
-        paymentValueRaw: String?, // lo dejo por compatibilidad
-        total: Long,
-        paidValue: Long,
-        unPaidValue: Long
+        photoUris: List<Uri> = emptyList()
     ) {
         viewModelScope.launch {
             _state.value = UiState.Idle
 
-            val orderStr = order?.toString().orEmpty().trim()
-            val serieClean = serie.trim().uppercase()
-            val plateClean = plate.trim().uppercase()
-            val warehouseClean = warehouse.trim()
+            val commentToSave = commentDraft.trim().takeIf { it.isNotBlank() }
 
-            val commentClean = commentDraft.trim()
-            val commentToSave = commentClean.takeIf { it.isNotBlank() }
+            val input = InstallationFormInput(
+                order = order,
+                serie = serie,
+                plate = plate,
+                warehouse = warehouse,
+                date = selectedDate,
+                headquarterLabel = headquarterLabel,
+                vehicleLabel = vehicleLabel,
+                accessories = selectedAccessories
+            )
 
-            val hasOrder = orderStr.isNotBlank()
-            val hasSerie = serieClean.isNotBlank()
-            val hasPlate = plateClean.isNotBlank()
-
-            if (!hasOrder && !hasSerie && !hasPlate) {
-                _state.value = UiState.FieldError(
-                    "order_serie_plate",
-                    "Debes llenar al menos uno: Orden, Serie o Placa"
-                )
-                return@launch
-            }
-
-            if (selectedDate == null) {
-                _state.value = UiState.FieldError("date", "La fecha es obligatoria")
-                return@launch
-            }
-
-            if (headquarterLabel.isNullOrBlank()) {
-                _state.value = UiState.FieldError("headquarter", "La sede es obligatoria")
-                return@launch
-            }
-            if (vehicleLabel.isNullOrBlank()) {
-                _state.value = UiState.FieldError("vehicle", "El vehículo es obligatorio")
-                return@launch
-            }
-
-            val selectedReal = selectedAccessories
-                .map { it.copy(name = it.name?.trim()) }
-                .filter {
-                    val hasId = !it.accessoryId.isNullOrBlank()
-                    val hasName = !it.name.isNullOrBlank()
-                    (hasId || hasName) && it.price > 0L
+            val validated = when (val result = InstallationFormValidator.validate(input)) {
+                is InstallationFormValidation.Invalid -> {
+                    _state.value = UiState.FieldError(result.error.field, result.error.message)
+                    return@launch
                 }
-
-            if (selectedReal.isEmpty()) {
-                _state.value = UiState.FieldError("accessories", "Debes agregar al menos un accesorio")
-                return@launch
-            }
-
-            if (hasOrder && orderStr.length > 7) {
-                _state.value = UiState.FieldError("order", "Orden: máximo 7 caracteres")
-                return@launch
-            }
-
-            val serieRegex = Regex("^[A-Z0-9]{1,8}$")
-            if (hasSerie && !serieRegex.matches(serieClean)) {
-                _state.value = UiState.FieldError("serie", "Serie: solo mayúsculas y números (máx 8)")
-                return@launch
-            }
-
-            val plateRegex = Regex("^[A-Z0-9]{6}$")
-            if (hasPlate && !plateRegex.matches(plateClean)) {
-                _state.value = UiState.FieldError("plate", "Placa: debe tener 6 caracteres (A-Z y 0-9)")
-                return@launch
-            }
-
-            val warehouseRegex = Regex("^\\d{1,4}$")
-            if (warehouseClean.isNotBlank() && !warehouseRegex.matches(warehouseClean)) {
-                _state.value = UiState.FieldError("warehouse", "Bodega: solo números (máx 4)")
-                return@launch
+                is InstallationFormValidation.Valid -> result.form
             }
 
             _state.value = UiState.Saving
 
             try {
                 val now = Timestamp.now()
-
                 val inc = increment.toLong()
-
-                val totalWorked = selectedReal.sumOf { it.price + inc }
-                val totalPaid = selectedReal.filter { it.isPaid }.sumOf { it.price + inc }
-                val totalUnpaid = totalWorked - totalPaid
+                val totals = InstallationTotalsCalculator.compute(validated.accessories, inc)
 
                 val current = if (!id.isNullOrBlank()) installationRepository.getById(id) else null
 
-                Log.d("INC_FINAL", "increment param=$increment  final inc=$inc")
+                // ✅ id resuelto de antemano: para instalaciones nuevas se reserva localmente
+                // (sin red) así las fotos se suben a la carpeta correcta antes de escribir el doc.
+                val resolvedId = id?.takeIf { it.isNotBlank() } ?: installationRepository.newInstallationId()
+
+                val uploadedPhotoUrls = if (photoUris.isNotEmpty()) {
+                    installationRepository.uploadPhotos(resolvedId, photoUris)
+                } else {
+                    emptyList()
+                }
+                val allPhotos = current?.photos.orEmpty() + uploadedPhotoUrls
+
                 val installation = Installation(
-                    id = id,
+                    id = resolvedId,
                     order = order,
-                    serie = serieClean.ifBlank { null },
-                    plate = plateClean.ifBlank { null },
-                    warehouse = warehouseClean.ifBlank { null },
+                    serie = validated.serie,
+                    plate = validated.plate,
+                    warehouse = validated.warehouse,
                     condition = condition?.ifBlank { null },
                     date = selectedDate,
 
@@ -269,13 +239,14 @@ class InstallationFormViewModel @Inject constructor(
                     vehicle = vehicleLabel,
                     vehicleId = vehicleId,
 
-                    accessories = selectedReal,
+                    accessories = validated.accessories,
+                    photos = allPhotos.ifEmpty { null },
                     increment = inc,
                     state = paymentState,
 
-                    totalWorked = totalWorked,
-                    totalPaid = totalPaid,
-                    totalUnpaid = totalUnpaid,
+                    totalWorked = totals.total,
+                    totalPaid = totals.paid,
+                    totalUnpaid = totals.unpaid,
 
                     comment = commentToSave,
 
@@ -301,7 +272,8 @@ class InstallationFormViewModel @Inject constructor(
         viewModelScope.launch {
             val inc = try {
                 headquarterRepository.getIncrement(headquarterId)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.w("InstallationFormVM", "No se pudo resolver el incremento de la sede $headquarterId", e)
                 0
             }
             _suggestedIncrement.value = if (inc > 0) inc else fallback
@@ -324,33 +296,4 @@ class InstallationFormViewModel @Inject constructor(
         vehiclesListener?.remove()
         vehiclesListener = null
     }
-
-    // -------------------- Retro helpers (Any? -> String) --------------------
-
-    @Suppress("UNCHECKED_CAST")
-    private fun anyToHeadquarterLabel(h: Any?): String {
-        if (h == null) return ""
-        return when (h) {
-            is String -> h.trim()
-            is Map<*, *> -> ((h["name"] as? String).orEmpty()).trim()
-            else -> h.toString().trim()
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun anyToVehicleLabel(v: Any?): String {
-        if (v == null) return ""
-        return when (v) {
-            is String -> v.trim()
-            is Map<*, *> -> {
-                val make = (v["make"] as? String).orEmpty().trim()
-                val model = (v["model"] as? String).orEmpty().trim()
-                listOf(make, model).filter { it.isNotBlank() }.joinToString(" - ").trim()
-            }
-            else -> v.toString().trim()
-        }
-    }
-
-    private fun String.toLongMoney(): Long =
-        filter { it.isDigit() }.toLongOrNull() ?: 0L
 }
