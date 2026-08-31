@@ -1,22 +1,26 @@
 package com.example.accessoriesmanager.repository
 
 import android.net.Uri
+import com.cloudinary.android.MediaManager
+import com.cloudinary.android.callback.ErrorInfo
+import com.cloudinary.android.callback.UploadCallback
+import com.example.accessoriesmanager.BuildConfig
 import com.example.accessoriesmanager.model.Installation
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @Singleton
 class InstallationRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth,
-    private val storage: FirebaseStorage
+    private val auth: FirebaseAuth
 ) {
 
     // -------------------- helpers --------------------
@@ -34,25 +38,47 @@ class InstallationRepository @Inject constructor(
             .document(installationId)
             .collection("installedAccessories")
 
-    private fun installationPhotosRef(installationId: String) =
-        storage.reference
-            .child("users")
-            .child(uid())
-            .child("installations")
-            .child(installationId)
-            .child("photos")
+    private fun installationPhotosFolder(installationId: String) =
+        "users/${uid()}/installations/$installationId/photos"
 
     /** A fresh Firestore-generated id, reserved locally (no network call) so it can be used
      * as the Storage upload path before the installation document itself is written. */
     fun newInstallationId(): String = installationsCol().document().id
 
-    /** Uploads each local photo [uris] under the installation's Storage folder and returns their download URLs. */
-    suspend fun uploadPhotos(installationId: String, uris: List<Uri>): List<String> {
-        return uris.map { uri ->
-            val ref = installationPhotosRef(installationId).child("${UUID.randomUUID()}.jpg")
-            ref.putFile(uri).await()
-            ref.downloadUrl.await().toString()
+    private suspend fun uploadToCloudinary(uri: Uri, folder: String): String =
+        suspendCancellableCoroutine { cont ->
+            val requestId = MediaManager.get().upload(uri)
+                .unsigned(BuildConfig.CLOUDINARY_UPLOAD_PRESET)
+                .option("folder", folder)
+                .callback(object : UploadCallback {
+                    override fun onStart(requestId: String) {}
+                    override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
+                    override fun onReschedule(requestId: String, error: ErrorInfo) {
+                        cont.resumeWithException(IllegalStateException(error.description))
+                    }
+
+                    override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                        val url = resultData["secure_url"] as? String
+                        if (url != null) {
+                            cont.resume(url)
+                        } else {
+                            cont.resumeWithException(IllegalStateException("Cloudinary: respuesta sin secure_url"))
+                        }
+                    }
+
+                    override fun onError(requestId: String, error: ErrorInfo) {
+                        cont.resumeWithException(IllegalStateException(error.description))
+                    }
+                })
+                .dispatch()
+
+            cont.invokeOnCancellation { MediaManager.get().cancelRequest(requestId) }
         }
+
+    /** Uploads each local photo [uris] under the installation's Cloudinary folder and returns their secure URLs. */
+    suspend fun uploadPhotos(installationId: String, uris: List<Uri>): List<String> {
+        val folder = installationPhotosFolder(installationId)
+        return uris.map { uri -> uploadToCloudinary(uri, folder) }
     }
 
     // -------------------- normalización --------------------
