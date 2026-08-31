@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.accessoriesmanager.model.Accessory
 import com.example.accessoriesmanager.repository.AccessoryRepository
+import com.example.accessoriesmanager.ui.FormUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,30 +24,18 @@ class AccessoryFormViewModel @Inject constructor(
     private val _form = MutableStateFlow<Accessory?>(null)
     val form: StateFlow<Accessory?> = _form
 
-    private val _state = MutableStateFlow<UiState>(UiState.Idle)
-    val state: StateFlow<UiState> = _state
+    private val _state = MutableStateFlow<FormUiState>(FormUiState.Idle)
+    val state: StateFlow<FormUiState> = _state
 
     // ✅ Evento para cerrar pantalla (one-shot)
     private val _closeScreen = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val closeScreen: SharedFlow<Unit> = _closeScreen.asSharedFlow()
 
-    sealed class UiState {
-        data object Idle : UiState()
-        data object Checking : UiState()
-        data object Saving : UiState()
-
-        data class NameError(val msg: String) : UiState()
-        data class PriceError(val msg: String) : UiState()
-
-        data class Success(val msg: String) : UiState()
-        data class Error(val msg: String) : UiState()
-    }
-
     fun loadById(id: String) {
         viewModelScope.launch {
             runCatching { repository.getById(id) }
                 .onSuccess { _form.value = it }
-                .onFailure { _state.value = UiState.Error(it.message ?: "Error cargando accesorio") }
+                .onFailure { _state.value = FormUiState.Error(it.message ?: "Error cargando accesorio") }
         }
     }
 
@@ -61,21 +50,21 @@ class AccessoryFormViewModel @Inject constructor(
 
             // ✅ Validaciones básicas
             if (name.isBlank()) {
-                _state.value = UiState.NameError("El nombre es obligatorio")
+                _state.value = FormUiState.FieldError("name", "El nombre es obligatorio")
                 return@launch
             }
 
             val price = priceText.toLongOrNull()
             if (price == null) {
-                _state.value = UiState.PriceError("Precio inválido")
+                _state.value = FormUiState.FieldError("price", "Precio inválido")
                 return@launch
             }
             if (price <= 0L) {
-                _state.value = UiState.PriceError("El precio debe ser mayor a 0")
+                _state.value = FormUiState.FieldError("price", "El precio debe ser mayor a 0")
                 return@launch
             }
 
-            _state.value = UiState.Checking
+            _state.value = FormUiState.Checking
 
             // ✅ Validar duplicados por nombre
             val exists = runCatching {
@@ -85,16 +74,16 @@ class AccessoryFormViewModel @Inject constructor(
                     repository.existsByNameExcludingId(name, id)
                 }
             }.getOrElse {
-                _state.value = UiState.Error(it.message ?: "Error verificando duplicados")
+                _state.value = FormUiState.Error(it.message ?: "Error verificando duplicados")
                 return@launch
             }
 
             if (exists) {
-                _state.value = UiState.NameError("Ya existe un accesorio con ese nombre")
+                _state.value = FormUiState.FieldError("name", "Ya existe un accesorio con ese nombre")
                 return@launch
             }
 
-            _state.value = UiState.Saving
+            _state.value = FormUiState.Saving
 
             // ✅ Guardar o actualizar
             val accessory = Accessory(
@@ -112,7 +101,7 @@ class AccessoryFormViewModel @Inject constructor(
             }
 
             if (result.isSuccess) {
-                _state.value = UiState.Success(
+                _state.value = FormUiState.Success(
                     if (id.isNullOrBlank()) "Accesorio guardado ✅" else "Accesorio actualizado ✅"
                 )
 
@@ -120,7 +109,7 @@ class AccessoryFormViewModel @Inject constructor(
                 _closeScreen.tryEmit(Unit)
 
             } else {
-                _state.value = UiState.Error(
+                _state.value = FormUiState.Error(
                     result.exceptionOrNull()?.message ?: "Error guardando accesorio"
                 )
             }
@@ -128,6 +117,6 @@ class AccessoryFormViewModel @Inject constructor(
     }
 
     fun resetState() {
-        _state.value = UiState.Idle
+        _state.value = FormUiState.Idle
     }
 }

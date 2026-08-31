@@ -16,6 +16,7 @@ import com.example.accessoriesmanager.repository.AccessoryRepository
 import com.example.accessoriesmanager.repository.HeadquarterRepository
 import com.example.accessoriesmanager.repository.InstallationRepository
 import com.example.accessoriesmanager.repository.VehicleRepository
+import com.example.accessoriesmanager.ui.FormUiState
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,16 +35,8 @@ class InstallationFormViewModel @Inject constructor(
 ) : ViewModel() {
 
     // -------------------- UI STATE --------------------
-    sealed class UiState {
-        data object Idle : UiState()
-        data object Saving : UiState()
-        data class Success(val msg: String) : UiState()
-        data class Error(val msg: String) : UiState()
-        data class FieldError(val field: String, val msg: String) : UiState()
-    }
-
-    private val _state = MutableStateFlow<UiState>(UiState.Idle)
-    val state: StateFlow<UiState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<FormUiState>(FormUiState.Idle)
+    val state: StateFlow<FormUiState> = _state.asStateFlow()
 
     // -------------------- FORM DATA --------------------
     private val _form = MutableStateFlow<Installation?>(null)
@@ -163,7 +156,7 @@ class InstallationFormViewModel @Inject constructor(
                 _suggestedIncrement.value = (installation?.increment ?: 0L).toInt()
 
             } catch (e: Exception) {
-                _state.value = UiState.Error(e.message ?: "Error cargando la instalación")
+                _state.value = FormUiState.Error(e.message ?: "Error cargando la instalación")
             }
         }
     }
@@ -181,7 +174,7 @@ class InstallationFormViewModel @Inject constructor(
         existingPhotoUrls: List<String> = emptyList()
     ) {
         viewModelScope.launch {
-            _state.value = UiState.Idle
+            _state.value = FormUiState.Idle
 
             val commentToSave = commentDraft.trim().takeIf { it.isNotBlank() }
 
@@ -198,13 +191,13 @@ class InstallationFormViewModel @Inject constructor(
 
             val validated = when (val result = InstallationFormValidator.validate(input)) {
                 is InstallationFormValidation.Invalid -> {
-                    _state.value = UiState.FieldError(result.error.field, result.error.message)
+                    _state.value = FormUiState.FieldError(result.error.field, result.error.message)
                     return@launch
                 }
                 is InstallationFormValidation.Valid -> result.form
             }
 
-            _state.value = UiState.Saving
+            _state.value = FormUiState.Saving
 
             try {
                 val now = Timestamp.now()
@@ -257,14 +250,14 @@ class InstallationFormViewModel @Inject constructor(
 
                 if (id.isNullOrBlank()) {
                     installationRepository.create(installation)
-                    _state.value = UiState.Success("Instalación guardada")
+                    _state.value = FormUiState.Success("Instalación guardada")
                 } else {
                     installationRepository.update(id, installation)
-                    _state.value = UiState.Success("Instalación actualizada")
+                    _state.value = FormUiState.Success("Instalación actualizada")
                 }
 
             } catch (e: Exception) {
-                _state.value = UiState.Error(e.message ?: "Error guardando la instalación")
+                _state.value = FormUiState.Error(e.message ?: "Error guardando la instalación")
             }
         }
     }

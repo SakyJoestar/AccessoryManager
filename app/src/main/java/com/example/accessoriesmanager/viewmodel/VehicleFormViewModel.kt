@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.accessoriesmanager.model.Vehicle
 import com.example.accessoriesmanager.repository.VehicleRepository
+import com.example.accessoriesmanager.ui.FormUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,30 +24,18 @@ class VehicleFormViewModel @Inject constructor(
     private val _form = MutableStateFlow<Vehicle?>(null)
     val form: StateFlow<Vehicle?> = _form
 
-    private val _state = MutableStateFlow<UiState>(UiState.Idle)
-    val state: StateFlow<UiState> = _state
+    private val _state = MutableStateFlow<FormUiState>(FormUiState.Idle)
+    val state: StateFlow<FormUiState> = _state
 
     // ✅ Evento para cerrar pantalla (one-shot)
     private val _closeScreen = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val closeScreen: SharedFlow<Unit> = _closeScreen.asSharedFlow()
 
-    sealed class UiState {
-        data object Idle : UiState()
-        data object Checking : UiState()
-        data object Saving : UiState()
-
-        data class MakeError(val msg: String) : UiState()
-        data class ModelError(val msg: String) : UiState()
-
-        data class Success(val msg: String) : UiState()
-        data class Error(val msg: String) : UiState()
-    }
-
     fun loadById(id: String) {
         viewModelScope.launch {
             runCatching { repository.getById(id) }
                 .onSuccess { _form.value = it }
-                .onFailure { _state.value = UiState.Error(it.message ?: "Error cargando vehículo") }
+                .onFailure { _state.value = FormUiState.Error(it.message ?: "Error cargando vehículo") }
         }
     }
 
@@ -61,15 +50,15 @@ class VehicleFormViewModel @Inject constructor(
 
             // ✅ Validaciones básicas
             if (make.isBlank()) {
-                _state.value = UiState.MakeError("La marca es obligatoria")
+                _state.value = FormUiState.FieldError("make", "La marca es obligatoria")
                 return@launch
             }
             if (model.isBlank()) {
-                _state.value = UiState.ModelError("El modelo es obligatorio")
+                _state.value = FormUiState.FieldError("model", "El modelo es obligatorio")
                 return@launch
             }
 
-            _state.value = UiState.Checking
+            _state.value = FormUiState.Checking
 
             // ✅ Validar duplicados (make + model)
             val exists = runCatching {
@@ -79,16 +68,16 @@ class VehicleFormViewModel @Inject constructor(
                     repository.existsByMakeAndModelExcludingId(make, model, id)
                 }
             }.getOrElse {
-                _state.value = UiState.Error(it.message ?: "Error verificando duplicados")
+                _state.value = FormUiState.Error(it.message ?: "Error verificando duplicados")
                 return@launch
             }
 
             if (exists) {
-                _state.value = UiState.ModelError("Ya existe ese vehículo (marca + modelo)")
+                _state.value = FormUiState.FieldError("model", "Ya existe ese vehículo (marca + modelo)")
                 return@launch
             }
 
-            _state.value = UiState.Saving
+            _state.value = FormUiState.Saving
 
             // ✅ Guardar o actualizar
             val vehicle = Vehicle(
@@ -106,7 +95,7 @@ class VehicleFormViewModel @Inject constructor(
             }
 
             if (result.isSuccess) {
-                _state.value = UiState.Success(
+                _state.value = FormUiState.Success(
                     if (id.isNullOrBlank()) "Vehículo guardado ✅" else "Vehículo actualizado ✅"
                 )
 
@@ -114,7 +103,7 @@ class VehicleFormViewModel @Inject constructor(
                 _closeScreen.tryEmit(Unit)
 
             } else {
-                _state.value = UiState.Error(
+                _state.value = FormUiState.Error(
                     result.exceptionOrNull()?.message ?: "Error guardando vehículo"
                 )
             }
@@ -122,6 +111,6 @@ class VehicleFormViewModel @Inject constructor(
     }
 
     fun resetState() {
-        _state.value = UiState.Idle
+        _state.value = FormUiState.Idle
     }
 }

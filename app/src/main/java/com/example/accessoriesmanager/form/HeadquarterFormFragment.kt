@@ -12,6 +12,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.example.accessoriesmanager.R
 import com.example.accessoriesmanager.databinding.FragmentFormBaseBinding
+import com.example.accessoriesmanager.ui.FormUiState
 import com.example.accessoriesmanager.ui.ThousandsSeparatorTextWatcher
 import com.example.accessoriesmanager.ui.showSnack
 import com.example.accessoriesmanager.viewmodel.HeadquarterFormViewModel
@@ -94,35 +95,31 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     when (state) {
-                        is HeadquarterFormViewModel.UiState.Idle -> {
+                        is FormUiState.Idle -> {
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is HeadquarterFormViewModel.UiState.Checking -> {
+                        is FormUiState.Checking -> {
                             binding.btnSave.isEnabled = false
                             binding.btnSave.text = "Verificando..."
                         }
 
-                        is HeadquarterFormViewModel.UiState.Saving -> {
+                        is FormUiState.Saving -> {
                             binding.btnSave.isEnabled = false
                             binding.btnSave.text = if (isEditMode) "Actualizando..." else "Guardando..."
                         }
 
-                        is HeadquarterFormViewModel.UiState.NameError -> {
-                            etName.error = state.msg
+                        is FormUiState.FieldError -> {
+                            when (state.field) {
+                                "name" -> etName.error = state.msg
+                                "increment" -> etIncrement.error = state.msg
+                            }
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        // ✅ Igual que en Accesorios: error específico del número
-                        is HeadquarterFormViewModel.UiState.IncrementError -> {
-                            etIncrement.error = state.msg
-                            binding.btnSave.isEnabled = true
-                            binding.btnSave.text = normalText
-                        }
-
-                        is HeadquarterFormViewModel.UiState.Success -> {
+                        is FormUiState.Success -> {
                             showSnack(state.msg)
                             hideKeyboard()
 
@@ -137,7 +134,7 @@ class HeadquarterFormFragment : Fragment(R.layout.fragment_form_base) {
                             binding.btnSave.text = normalText
                         }
 
-                        is HeadquarterFormViewModel.UiState.Error -> {
+                        is FormUiState.Error -> {
                             showSnack(state.msg)
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText

@@ -12,6 +12,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.example.accessoriesmanager.R
 import com.example.accessoriesmanager.databinding.FragmentFormBaseBinding
+import com.example.accessoriesmanager.ui.FormUiState
 import com.example.accessoriesmanager.ui.showSnack
 import com.example.accessoriesmanager.viewmodel.VehicleFormViewModel
 import com.google.android.material.textfield.TextInputEditText
@@ -83,35 +84,32 @@ class VehicleFormFragment : Fragment(R.layout.fragment_form_base) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     when (state) {
-                        is VehicleFormViewModel.UiState.Idle -> {
+                        is FormUiState.Idle -> {
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is VehicleFormViewModel.UiState.Checking -> {
+                        is FormUiState.Checking -> {
                             binding.btnSave.isEnabled = false
                             binding.btnSave.text = "Verificando..."
                         }
 
-                        is VehicleFormViewModel.UiState.Saving -> {
+                        is FormUiState.Saving -> {
                             binding.btnSave.isEnabled = false
                             binding.btnSave.text =
                                 if (isEditMode) "Actualizando..." else "Guardando..."
                         }
 
-                        is VehicleFormViewModel.UiState.MakeError -> {
-                            etMake.error = state.msg
+                        is FormUiState.FieldError -> {
+                            when (state.field) {
+                                "make" -> etMake.error = state.msg
+                                "model" -> etModel.error = state.msg
+                            }
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is VehicleFormViewModel.UiState.ModelError -> {
-                            etModel.error = state.msg
-                            binding.btnSave.isEnabled = true
-                            binding.btnSave.text = normalText
-                        }
-
-                        is VehicleFormViewModel.UiState.Success -> {
+                        is FormUiState.Success -> {
                             showSnack(state.msg)
                             hideKeyboard()
 
@@ -126,7 +124,7 @@ class VehicleFormFragment : Fragment(R.layout.fragment_form_base) {
                             binding.btnSave.text = normalText
                         }
 
-                        is VehicleFormViewModel.UiState.Error -> {
+                        is FormUiState.Error -> {
                             showSnack(state.msg)
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText

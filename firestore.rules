@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Every collection this app reads/writes — accessories, headquarters,
+    // vehicles, installations, and installations/{id}/installedAccessories —
+    // lives under /users/{uid}/..., so scoping the whole subtree to its
+    // owner covers all of them. Anything outside this tree is denied by
+    // Firestore's default (no matching rule = no access).
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
