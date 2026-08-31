@@ -327,7 +327,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 warehouse = warehouse,
                 condition = actCondition.text?.toString(),
                 increment = increment,
-                photoUris = photoController.selectedPhotoUris.toList()
+                photoUris = photoController.pendingLocalUris(),
+                existingPhotoUrls = photoController.keptExistingPhotoUrls()
             )
         }
 
@@ -429,6 +430,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.form.collect { installation ->
                     installation ?: return@collect
+
+                    photoController.seedExistingPhotos(installation.photos.orEmpty())
 
                     etOrder.setText(installation.order?.toString().orEmpty())
                     etSerie.setText(installation.serie.orEmpty())

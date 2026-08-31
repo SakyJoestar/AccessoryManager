@@ -394,14 +394,13 @@
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardAddPhoto"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="140dp"
             android:layout_marginTop="8dp"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintEnd_toEndOf="parent"
 
             app:layout_constraintHorizontal_bias="0.0"
@@ -455,13 +454,12 @@
         <FrameLayout
             android:id="@+id/layoutPhotosCarousel"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="220dp"
             android:layout_marginTop="12dp"
             android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@id/cardAddPhoto"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintDimensionRatio="1:1">
+            app:layout_constraintEnd_toEndOf="parent">
 
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/vpPhotos"

@@ -35,6 +35,7 @@ class PhotoUploadController(private val fragment: Fragment) {
 
     val selectedPhotoUris = mutableListOf<Uri>()
     private var tempCameraUri: Uri? = null
+    private var hasSeededExisting = false
 
     private lateinit var cardAddPhoto: View
     private lateinit var tvPhotosCounter: TextView
@@ -133,6 +134,32 @@ class PhotoUploadController(private val fragment: Fragment) {
         selectedPhotoUris.clear()
         updatePhotosUi()
     }
+
+    /**
+     * Seeds the carousel with an existing installation's already-uploaded photo [urls] (edit mode).
+     * A no-op past the first call so re-collecting the form's StateFlow (e.g. after the fragment
+     * goes through STOPPED/STARTED while a picker activity is in front) doesn't wipe local edits.
+     */
+    fun seedExistingPhotos(urls: List<String>) {
+        if (hasSeededExisting) return
+        hasSeededExisting = true
+        if (urls.isEmpty()) return
+
+        val available = MAX_PHOTOS - selectedPhotoUris.size
+        if (available <= 0) return
+
+        selectedPhotoUris.addAll(urls.take(available).map(Uri::parse))
+        updatePhotosUi()
+    }
+
+    private fun Uri.isRemote() = scheme == "http" || scheme == "https"
+
+    /** Local (not-yet-uploaded) photo uris to send to Cloudinary on save. */
+    fun pendingLocalUris(): List<Uri> = selectedPhotoUris.filterNot { it.isRemote() }
+
+    /** Already-uploaded photo urls the user kept (i.e. didn't remove) in this editing session. */
+    fun keptExistingPhotoUrls(): List<String> =
+        selectedPhotoUris.filter { it.isRemote() }.map { it.toString() }
 
     fun showPhotoOptions() {
         val dialogView = fragment.layoutInflater.inflate(R.layout.dialog_photo_options, null)

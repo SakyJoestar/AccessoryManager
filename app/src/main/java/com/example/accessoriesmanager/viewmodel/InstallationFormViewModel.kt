@@ -177,7 +177,8 @@ class InstallationFormViewModel @Inject constructor(
         warehouse: String,
         condition: String?,
         increment: Int, // fallback si no se puede resolver por sede
-        photoUris: List<Uri> = emptyList()
+        photoUris: List<Uri> = emptyList(),
+        existingPhotoUrls: List<String> = emptyList()
     ) {
         viewModelScope.launch {
             _state.value = UiState.Idle
@@ -221,7 +222,7 @@ class InstallationFormViewModel @Inject constructor(
                 } else {
                     emptyList()
                 }
-                val allPhotos = current?.photos.orEmpty() + uploadedPhotoUrls
+                val allPhotos = existingPhotoUrls + uploadedPhotoUrls
 
                 val installation = Installation(
                     id = resolvedId,
