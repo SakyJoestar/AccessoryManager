@@ -34,11 +34,11 @@ import javax.inject.Singleton
 data class ExportResult(val fileName: String, val folder: String, val uri: Uri, val mimeType: String)
 
 private const val XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-private const val DOWNLOADS_SUBFOLDER = "AccessoriesManager"
+private const val DOWNLOADS_SUBFOLDER = "FacilityTracker"
 
 /**
  * Builds a two-sheet (Resumen / Detalle) .xlsx report of installations, filtered by [ReportFilter],
- * and saves it directly into the public Downloads/AccessoriesManager folder via MediaStore
+ * and saves it directly into the public Downloads/FacilityTracker folder via MediaStore
  * (no storage permission needed on API 29+, which this app's minSdk already requires).
  */
 @Singleton
@@ -93,7 +93,7 @@ class ExcelReportGenerator @Inject constructor(
                 ?: throw IllegalStateException("No se pudo crear el archivo en Descargas")
 
             resolver.openOutputStream(uri)?.use { out ->
-                Workbook(out, "AccessoriesManager", "1.0").use { wb ->
+                Workbook(out, "FacilityTracker", "1.0").use { wb ->
                     writeSummarySheet(wb.newWorksheet("Resumen"), filtered)
                     writeDetailSheet(wb.newWorksheet("Detalle"), filtered)
                 }

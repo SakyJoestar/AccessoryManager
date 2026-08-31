@@ -18,13 +18,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.accessoriesmanager"
+        android:theme="@style/Theme.FacilityTracker"
         >
         <activity
             android:name="com.example.accessoriesmanager.view.MainActivity"
             android:windowSoftInputMode="adjustPan"
             android:exported="true"
-            android:theme="@style/Theme.AccessoriesManager.Splash">
+            android:theme="@style/Theme.FacilityTracker.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

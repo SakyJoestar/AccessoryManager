@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base night application theme. -->
-    <style name="Theme.accessoriesmanager" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.FacilityTracker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryVariant">@color/primary_dark</item>
         <item name="colorOnPrimary">@color/on_primary</item>
