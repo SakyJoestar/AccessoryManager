@@ -9,13 +9,19 @@ import com.example.accessoriesmanager.model.isUnpaidState
 import com.example.accessoriesmanager.model.matchesDates
 import com.example.accessoriesmanager.model.matchesQuery
 import com.example.accessoriesmanager.model.matchesStatus
+import com.example.accessoriesmanager.report.ExcelReportGenerator
+import com.example.accessoriesmanager.report.ExportResult
+import com.example.accessoriesmanager.report.ReportFilter
 import com.example.accessoriesmanager.repository.InstallationRepository
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
@@ -27,7 +33,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class InstallationViewModel @Inject constructor(
-    private val repo: InstallationRepository
+    private val repo: InstallationRepository,
+    private val excelReportGenerator: ExcelReportGenerator
 ) : ViewModel() {
 
     // ----- Fuente raw desde Firestore -----
@@ -36,6 +43,10 @@ class InstallationViewModel @Inject constructor(
     // ----- Error -----
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    // ----- Exportar Excel -----
+    private val _exportResult = MutableSharedFlow<ExportResult>(extraBufferCapacity = 1)
+    val exportResult: SharedFlow<ExportResult> = _exportResult.asSharedFlow()
 
     // ----- Filtros -----
     private val _query = MutableStateFlow("")
@@ -206,6 +217,7 @@ class InstallationViewModel @Inject constructor(
         setDefaultLast7Days()
     }
 
+    fun currentDateExact(): LocalDate? = _dateExact.value
     fun currentDateFrom(): LocalDate? = _dateFrom.value
     fun currentDateTo(): LocalDate? = _dateTo.value
 
@@ -214,6 +226,23 @@ class InstallationViewModel @Inject constructor(
         _dateExact.value = null
         _dateFrom.value = today.minusDays(6)
         _dateTo.value = today
+    }
+
+    // ------------- Exportar Excel -------------
+
+    /** Snapshot crudo de Firestore, sin los filtros de la pantalla — usado para el reporte. */
+    fun allInstallations(): List<Installation> = _all.value
+
+    fun exportReport(filter: ReportFilter) {
+        viewModelScope.launch {
+            try {
+                val result = excelReportGenerator.generate(allInstallations(), filter)
+                _exportResult.emit(result)
+            } catch (e: Exception) {
+                android.util.Log.e("INSTALLATIONS_VM", "Error generando reporte", e)
+                _error.emit("No se pudo generar el reporte: ${e.message}")
+            }
+        }
     }
 
     // ------------- Mark paid/unpaid -------------

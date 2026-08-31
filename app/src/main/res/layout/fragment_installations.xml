@@ -29,20 +29,37 @@
                 android:paddingBottom="12dp">
 
                 <!-- Título -->
-                <TextView
-                    android:id="@+id/tvTitle"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Instalaciones"
-                    android:textSize="22sp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     android:layout_marginTop="10dp"
                     android:paddingBottom="12dp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    android:textAlignment="center" />
+                    android:paddingStart="16dp"
+                    android:paddingEnd="8dp">
+
+                    <TextView
+                        android:id="@+id/tvTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Instalaciones"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:textAlignment="center" />
+
+                    <ImageButton
+                        android:id="@+id/btnExportReport"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Exportar a Excel"
+                        android:src="@drawable/ic_file_export"
+                        app:tint="@color/text_primary" />
+
+                </LinearLayout>
 
                 <!-- Resumen -->
                 <include
