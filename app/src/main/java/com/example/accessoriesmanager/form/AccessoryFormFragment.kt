@@ -12,6 +12,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.example.accessoriesmanager.R
 import com.example.accessoriesmanager.databinding.FragmentFormBaseBinding
+import com.example.accessoriesmanager.ui.FormUiState
 import com.example.accessoriesmanager.ui.ThousandsSeparatorTextWatcher
 import com.example.accessoriesmanager.ui.showSnack
 import com.example.accessoriesmanager.viewmodel.AccessoryFormViewModel
@@ -94,35 +95,32 @@ class AccessoryFormFragment : Fragment(R.layout.fragment_form_base) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     when (state) {
-                        is AccessoryFormViewModel.UiState.Idle -> {
+                        is FormUiState.Idle -> {
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is AccessoryFormViewModel.UiState.Checking -> {
+                        is FormUiState.Checking -> {
                             binding.btnSave.isEnabled = false
                             binding.btnSave.text = "Verificando..."
                         }
 
-                        is AccessoryFormViewModel.UiState.Saving -> {
+                        is FormUiState.Saving -> {
                             binding.btnSave.isEnabled = false
                             binding.btnSave.text =
                                 if (isEditMode) "Actualizando..." else "Guardando..."
                         }
 
-                        is AccessoryFormViewModel.UiState.NameError -> {
-                            etName.error = state.msg
+                        is FormUiState.FieldError -> {
+                            when (state.field) {
+                                "name" -> etName.error = state.msg
+                                "price" -> etPrice.error = state.msg
+                            }
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is AccessoryFormViewModel.UiState.PriceError -> {
-                            etPrice.error = state.msg
-                            binding.btnSave.isEnabled = true
-                            binding.btnSave.text = normalText
-                        }
-
-                        is AccessoryFormViewModel.UiState.Success -> {
+                        is FormUiState.Success -> {
                             showSnack(state.msg)
                             hideKeyboard()
 
@@ -137,7 +135,7 @@ class AccessoryFormFragment : Fragment(R.layout.fragment_form_base) {
                             binding.btnSave.text = normalText
                         }
 
-                        is AccessoryFormViewModel.UiState.Error -> {
+                        is FormUiState.Error -> {
                             showSnack(state.msg)
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText

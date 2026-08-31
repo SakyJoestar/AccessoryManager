@@ -27,6 +27,7 @@ import com.example.accessoriesmanager.model.InstalledAccessory
 import com.example.accessoriesmanager.model.Vehicle
 import com.example.accessoriesmanager.model.headquarterLabelFromAny
 import com.example.accessoriesmanager.model.vehicleLabelFromAny
+import com.example.accessoriesmanager.ui.FormUiState
 import com.example.accessoriesmanager.ui.ThousandsSeparatorTextWatcher
 import com.example.accessoriesmanager.ui.showSnack
 import com.example.accessoriesmanager.viewmodel.AccessoryViewModel
@@ -337,17 +338,22 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
                     when (state) {
-                        is InstallationFormViewModel.UiState.Idle -> {
+                        is FormUiState.Idle -> {
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is InstallationFormViewModel.UiState.Saving -> {
+                        is FormUiState.Checking -> {
+                            binding.btnSave.isEnabled = false
+                            binding.btnSave.text = "Verificando..."
+                        }
+
+                        is FormUiState.Saving -> {
                             binding.btnSave.isEnabled = false
                             binding.btnSave.text = if (isEditMode) "Actualizando..." else "Guardando..."
                         }
 
-                        is InstallationFormViewModel.UiState.Success -> {
+                        is FormUiState.Success -> {
                             showSnack(state.msg)
                             hideKeyboard()
 
@@ -387,14 +393,14 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             return@collect
                         }
 
-                        is InstallationFormViewModel.UiState.Error -> {
+                        is FormUiState.Error -> {
                             Log.e("INSTALL_SAVE", "Error: ${state.msg}")
                             showSnack(state.msg)
                             binding.btnSave.isEnabled = true
                             binding.btnSave.text = normalText
                         }
 
-                        is InstallationFormViewModel.UiState.FieldError -> {
+                        is FormUiState.FieldError -> {
                             Log.e("INSTALL_SAVE", "FieldError field=${state.field} msg=${state.msg}")
                             clearError(tilOrder); clearError(tilSerie); clearError(tilPlate)
                             clearError(tilDate); clearError(tilHeadquarter); clearError(tilVehicle)
