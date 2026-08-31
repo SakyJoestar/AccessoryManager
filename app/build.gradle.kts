@@ -91,6 +91,9 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("org.dhatim:fastexcel:0.20.2")
+    implementation(libs.androidx.room.runtime)
+    kapt(libs.androidx.room.compiler)
+    implementation("com.google.code.gson:gson:2.11.0")
 }
 
 kapt {

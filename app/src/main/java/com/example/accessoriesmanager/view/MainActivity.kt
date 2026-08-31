@@ -7,6 +7,9 @@ import androidx.activity.addCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -14,11 +17,17 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.accessoriesmanager.R
 import com.example.accessoriesmanager.databinding.AppBarMainBinding
 import com.example.accessoriesmanager.databinding.ActivityMainBinding
+import com.example.accessoriesmanager.local.AppDatabase
+import com.example.accessoriesmanager.local.entity.PendingOperationEntity
+import com.example.accessoriesmanager.sync.SyncManager
+import com.example.accessoriesmanager.sync.SyncStatus
 import com.example.accessoriesmanager.ui.QuickMenu
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -27,6 +36,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var content: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var auth: FirebaseAuth
+
+    @Inject lateinit var syncManager: SyncManager
+    @Inject lateinit var appDatabase: AppDatabase
 
     private var quickMenuDialog: AlertDialog? = null
 
@@ -82,6 +94,16 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnLogout.setOnClickListener {
             showLogoutDialog()
+        }
+
+        binding.btnSyncStatus.setOnClickListener {
+            if (syncManager.status.value is SyncStatus.Error) showSyncErrorsDialog() else syncManager.syncNow()
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                syncManager.status.collect { updateSyncStatusIcon(it) }
+            }
         }
 
         updateThemeButtonIcon()
@@ -263,6 +285,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage("¿Quieres cerrar sesión?")
             .setPositiveButton("Sí") { _, _ ->
                 auth.signOut()
+                lifecycleScope.launch { appDatabase.clearAllTables() }
                 navController.navigate(R.id.loginFragment)
             }
             .setNegativeButton("No", null)
@@ -270,8 +293,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setToolbarActionsEnabled(enabled: Boolean) {
+        binding.btnSyncStatus.visibility = if (enabled) View.VISIBLE else View.GONE
         binding.btnTheme.visibility = if (enabled) View.VISIBLE else View.GONE
         binding.btnLogout.visibility = if (enabled) View.VISIBLE else View.GONE
 
     }
+
+    // ---------- SYNC STATUS ----------
+    private fun updateSyncStatusIcon(status: SyncStatus) {
+        val iconRes = when (status) {
+            is SyncStatus.Offline -> R.drawable.ic_sync_offline
+            is SyncStatus.Synced -> R.drawable.ic_sync_done
+            is SyncStatus.Syncing -> R.drawable.ic_sync_syncing
+            is SyncStatus.Error -> R.drawable.ic_sync_error
+        }
+        binding.btnSyncStatus.setImageResource(iconRes)
+    }
+
+    private fun showSyncErrorsDialog() {
+        lifecycleScope.launch {
+            val failed = syncManager.failedOperations()
+            val lines = failed.map { it.toDisplayLine() }.toTypedArray()
+
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle("Cambios pendientes por sincronizar")
+                .setItems(lines) { _, _ -> }
+                .setPositiveButton("Reintentar") { _, _ -> syncManager.syncNow() }
+                .setNegativeButton("Cerrar", null)
+                .show()
+        }
+    }
+
+    private fun PendingOperationEntity.toDisplayLine(): String =
+        "$entityType · $operationType\n${lastError ?: "Sin detalles"}"
 }

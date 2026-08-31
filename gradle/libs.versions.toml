@@ -3,8 +3,8 @@ agp = "8.7.3"
 coreKtxVersion = "1.10.0"
 credentials = "1.3.0"
 firebaseBom = "33.9.0"
-hiltAndroid = "2.51.1"
-hiltAndroidCompiler = "2.51.1"
+hiltAndroid = "2.58"
+hiltAndroidCompiler = "2.58"
 kotlin = "1.9.24"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -21,8 +21,8 @@ firebaseFirestoreKtx = "25.1.2"
 firebaseAuthKtx = "23.2.0"
 androidGradlePlugin = "8.7.3"
 playServicesAuth = "21.3.0"
-roomCommon = "2.6.1"
-roomKtx = "2.6.1"
+roomCommon = "2.8.4"
+roomKtx = "2.8.4"
 gridlayout = "1.1.0"
 cloudinaryAndroid = "2.5.0"
 
@@ -49,6 +49,8 @@ firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx",
 firebase-storage-ktx = { module = "com.google.firebase:firebase-storage-ktx" }
 androidx-room-common = { group = "androidx.room", name = "room-common", version.ref = "roomCommon" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "roomCommon" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCommon" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 androidx-gridlayout = { module = "androidx.gridlayout:gridlayout",  version.ref = "gridlayout"}
 cloudinary-android = { module = "com.cloudinary:cloudinary-android", version.ref = "cloudinaryAndroid" }

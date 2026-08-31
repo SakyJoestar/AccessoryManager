@@ -165,6 +165,22 @@ class InstallationsFragment : Fragment() {
             }
         }
 
+        // -------------------- Filtro bloqueado offline --------------------
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.offlineFilterBlocked.collect {
+                    androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Sin conexión")
+                        .setMessage(
+                            "No se pueden buscar instalaciones más antiguas que las últimas 10 " +
+                                "guardadas localmente. Conéctate a internet para ver el historial completo."
+                        )
+                        .setPositiveButton("Entendido", null)
+                        .show()
+                }
+            }
+        }
+
         // -------------------- Reporte exportado --------------------
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
