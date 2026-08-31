@@ -79,6 +79,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private val photoController = PhotoUploadController(this)
 
     private lateinit var createController: InstallationCreateController
+    private lateinit var headquarterDropdown: CatalogDropdownController<Headquarter>
+    private lateinit var vehicleDropdown: CatalogDropdownController<Vehicle>
 
     companion object {
         private const val ARG_ID = "installationId"
@@ -167,6 +169,32 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 val label = "${v.make} - ${v.model}"
                 viewModel.setVehicleSelection(v.id, label)
                 actVehicle.setText(label, false)
+            }
+        )
+
+        headquarterDropdown = CatalogDropdownController(
+            fragment = this,
+            dropdown = actHeadquarter,
+            labelOf = { it.name.orEmpty() },
+            onSelected = { hq ->
+                selectedHqId = hq.id
+                viewModel.setHeadquarterSelection(hq.id, hq.name.orEmpty())
+
+                val inc = hq.increment.toLong()
+                setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
+
+                updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
+                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+            }
+        )
+
+        vehicleDropdown = CatalogDropdownController(
+            fragment = this,
+            dropdown = actVehicle,
+            labelOf = { "${it.make} - ${it.model}" },
+            onSelected = { v ->
+                selectedVehicleId = v.id
+                viewModel.setVehicleSelection(v.id, "${v.make} - ${v.model}")
             }
         )
 
@@ -508,49 +536,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
                 createController.observeCreateEvents(this)
-
-                launch {
-                    headquarterViewModel.items.collect { list ->
-                        val names = list.map { it.name.orEmpty() }
-                        actHeadquarter.setAdapter(
-                            ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, names)
-                        )
-
-                        actHeadquarter.setOnItemClickListener { _, _, idx, _ ->
-                            val hq: Headquarter = list[idx]
-                            selectedHqId = hq.id
-                            viewModel.setHeadquarterSelection(hq.id, hq.name.orEmpty())
-
-                            val inc = hq.increment.toLong()
-                            setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
-
-                            updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
-                            autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
-
-                            hideKeyboardFrom(actHeadquarter)
-                            actHeadquarter.clearFocus()
-                        }
-                    }
-                }
-
-                launch {
-                    vehicleViewModel.items.collect { list ->
-                        val labels = list.map { "${it.make} - ${it.model}" }
-                        actVehicle.setAdapter(
-                            ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, labels)
-                        )
-
-                        actVehicle.setOnItemClickListener { _, _, idx, _ ->
-                            val v: Vehicle = list[idx]
-                            selectedVehicleId = v.id
-                            val label = "${v.make} - ${v.model}"
-                            viewModel.setVehicleSelection(v.id, label)
-
-                            hideKeyboardFrom(actVehicle)
-                            actVehicle.clearFocus()
-                        }
-                    }
-                }
+                headquarterDropdown.observe(this, headquarterViewModel.items)
+                vehicleDropdown.observe(this, vehicleViewModel.items)
 
                 launch {
                     accessoryViewModel.items.collect { list ->
