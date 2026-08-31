@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.accessoriesmanager.connectivity.ConnectivityObserver
 import com.example.accessoriesmanager.model.Accessory
 import com.example.accessoriesmanager.model.Installation
 import com.example.accessoriesmanager.model.InstalledAccessory
@@ -31,7 +32,8 @@ class InstallationFormViewModel @Inject constructor(
     private val installationRepository: InstallationRepository,
     private val headquarterRepository: HeadquarterRepository,
     private val vehicleRepository: VehicleRepository,
-    private val accessoryRepository: AccessoryRepository
+    private val accessoryRepository: AccessoryRepository,
+    private val connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
     // -------------------- UI STATE --------------------
@@ -195,6 +197,13 @@ class InstallationFormViewModel @Inject constructor(
                     return@launch
                 }
                 is InstallationFormValidation.Valid -> result.form
+            }
+
+            if (photoUris.isNotEmpty() && !connectivityObserver.isOnline.value) {
+                _state.value = FormUiState.Error(
+                    "No se pueden subir fotos sin conexión — inténtalo cuando tengas internet"
+                )
+                return@launch
             }
 
             _state.value = FormUiState.Saving

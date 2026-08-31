@@ -64,6 +64,12 @@ class VehiclesFragment : Fragment() {
                 adapter.submitList(list)
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            viewModel.error.collect { msg ->
+                msg?.let { showSnack(it) }
+            }
+        }
     }
 
     override fun onDestroyView() {

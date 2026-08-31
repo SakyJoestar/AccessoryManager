@@ -54,4 +54,5 @@
     <string name="sedes">Sedes</string>
     <string name="agregar_accesorio">Agregar accesorio</string>
     <string name="total_instalaci_n">Total Trabajado</string>
+    <string name="sync_status">Estado de sincronización</string>
 </resources>

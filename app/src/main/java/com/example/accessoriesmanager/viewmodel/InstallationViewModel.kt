@@ -2,6 +2,7 @@ package com.example.accessoriesmanager.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.accessoriesmanager.connectivity.ConnectivityObserver
 import com.example.accessoriesmanager.model.Installation
 import com.example.accessoriesmanager.model.isPaidState
 import com.example.accessoriesmanager.model.isPartialState
@@ -34,7 +35,8 @@ import javax.inject.Inject
 @HiltViewModel
 class InstallationViewModel @Inject constructor(
     private val repo: InstallationRepository,
-    private val excelReportGenerator: ExcelReportGenerator
+    private val excelReportGenerator: ExcelReportGenerator,
+    private val connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
     // ----- Fuente raw desde Firestore -----
@@ -47,6 +49,17 @@ class InstallationViewModel @Inject constructor(
     // ----- Exportar Excel -----
     private val _exportResult = MutableSharedFlow<ExportResult>(extraBufferCapacity = 1)
     val exportResult: SharedFlow<ExportResult> = _exportResult.asSharedFlow()
+
+    // ----- Offline: filtro puede no alcanzar más allá de lo cacheado -----
+    private val _offlineFilterBlocked = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val offlineFilterBlocked: SharedFlow<Unit> = _offlineFilterBlocked.asSharedFlow()
+
+    /** Sin conexión, el caché local solo tiene como máximo las últimas 10 instalaciones. */
+    private fun warnIfFilteringBeyondCache() {
+        if (!connectivityObserver.isOnline.value && _all.value.size >= 10) {
+            _offlineFilterBlocked.tryEmit(Unit)
+        }
+    }
 
     // ----- Filtros -----
     private val _query = MutableStateFlow("")
@@ -197,20 +210,28 @@ class InstallationViewModel @Inject constructor(
 
     // ------------- Filtros desde UI -------------
 
-    fun onQueryChanged(q: String) { _query.value = q }
+    fun onQueryChanged(q: String) {
+        _query.value = q
+        if (q.isNotBlank()) warnIfFilteringBeyondCache()
+    }
 
-    fun onStatusFilterChanged(value: String) { _statusFilter.value = value }
+    fun onStatusFilterChanged(value: String) {
+        _statusFilter.value = value
+        if (value != "Todos") warnIfFilteringBeyondCache()
+    }
 
     fun setDateExact(d: LocalDate?) {
         _dateExact.value = d
         _dateFrom.value = null
         _dateTo.value = null
+        warnIfFilteringBeyondCache()
     }
 
     fun setDateRange(from: LocalDate?, to: LocalDate?) {
         _dateFrom.value = from
         _dateTo.value = to
         _dateExact.value = null
+        warnIfFilteringBeyondCache()
     }
 
     fun clearDates() {
@@ -235,6 +256,10 @@ class InstallationViewModel @Inject constructor(
 
     fun exportReport(filter: ReportFilter) {
         viewModelScope.launch {
+            if (!connectivityObserver.isOnline.value) {
+                _error.emit("No se puede exportar sin conexión: el reporte podría estar incompleto")
+                return@launch
+            }
             try {
                 val result = excelReportGenerator.generate(allInstallations(), filter)
                 _exportResult.emit(result)
