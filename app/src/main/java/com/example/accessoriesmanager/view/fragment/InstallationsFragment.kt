@@ -1,12 +1,16 @@
 package com.example.accessoriesmanager.view.fragment
 
 import android.app.DatePickerDialog
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.RadioGroup
+import android.widget.Spinner
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -20,8 +24,12 @@ import android.transition.TransitionManager
 import com.example.accessoriesmanager.R
 import com.example.accessoriesmanager.databinding.FragmentInstallationsBinding
 import com.example.accessoriesmanager.adapter.InstallationAdapter
+import com.example.accessoriesmanager.report.ExportResult
+import com.example.accessoriesmanager.report.ReportFilter
+import com.example.accessoriesmanager.report.ReportRange
 import com.example.accessoriesmanager.ui.showSnack
 import com.example.accessoriesmanager.viewmodel.InstallationViewModel
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -99,6 +107,8 @@ class InstallationsFragment : Fragment() {
 
         setupFiltersUi()
 
+        binding.btnExportReport.setOnClickListener { showExportDialog() }
+
         // -------------------- Summary toggle --------------------
         val summary = binding.includeSummary
         summary.sectionInstallations.isVisible = false
@@ -151,6 +161,21 @@ class InstallationsFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.error.collect { msg ->
                     msg?.let { showSnack(it) }
+                }
+            }
+        }
+
+        // -------------------- Reporte exportado --------------------
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.exportResult.collect { result ->
+                    Snackbar.make(
+                        binding.root,
+                        "Guardado en ${result.folder}/${result.fileName}",
+                        Snackbar.LENGTH_LONG
+                    ).setAction("Compartir") {
+                        shareExcelFile(result.uri, result.mimeType)
+                    }.show()
                 }
             }
         }
@@ -260,6 +285,77 @@ class InstallationsFragment : Fragment() {
             today.monthValue - 1,
             today.dayOfMonth
         ).apply { setTitle(title) }.show()
+    }
+
+    // -------------------- Exportar Excel --------------------
+
+    private val monthNames = listOf(
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    )
+
+    private fun showExportDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_export_report, null)
+        val rgRange = view.findViewById<RadioGroup>(R.id.rgExportRange)
+        val containerMonth = view.findViewById<View>(R.id.containerExportMonth)
+        val spinnerMonth = view.findViewById<Spinner>(R.id.spinnerExportMonth)
+        val spinnerYear = view.findViewById<Spinner>(R.id.spinnerExportYear)
+        val spinnerStatus = view.findViewById<Spinner>(R.id.spinnerExportStatus)
+
+        val today = LocalDate.now()
+
+        spinnerMonth.adapter = ArrayAdapter(
+            requireContext(), android.R.layout.simple_spinner_item, monthNames
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        spinnerMonth.setSelection(today.monthValue - 1)
+
+        val years = (today.year downTo today.year - 4).toList()
+        spinnerYear.adapter = ArrayAdapter(
+            requireContext(), android.R.layout.simple_spinner_item, years
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+
+        spinnerStatus.adapter = ArrayAdapter(
+            requireContext(), android.R.layout.simple_spinner_item, statusOptions
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        spinnerStatus.setSelection(statusOptions.indexOf(binding.spinnerStatus.selectedItem as? String).coerceAtLeast(0))
+
+        rgRange.setOnCheckedChangeListener { _, checkedId ->
+            containerMonth.isVisible = checkedId == R.id.rbExportMonth
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Exportar a Excel")
+            .setView(view)
+            .setPositiveButton("Generar") { _, _ ->
+                val range = when (rgRange.checkedRadioButtonId) {
+                    R.id.rbExportAll -> ReportRange.All
+                    R.id.rbExportMonth -> {
+                        val year = spinnerYear.selectedItem as Int
+                        val month = spinnerMonth.selectedItemPosition + 1
+                        ReportRange.Month(year, month)
+                    }
+                    else -> {
+                        val exact = viewModel.currentDateExact()
+                        val from = exact ?: viewModel.currentDateFrom()
+                        val to = exact ?: viewModel.currentDateTo()
+                        if (from != null && to != null) ReportRange.Range(from, to) else ReportRange.All
+                    }
+                }
+                val status = spinnerStatus.selectedItem as String
+                viewModel.exportReport(ReportFilter(range, status))
+                showSnack("Generando reporte…")
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun shareExcelFile(uri: Uri, mimeType: String) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(intent, "Compartir reporte"))
     }
 
     // -------------------- Dialogs --------------------

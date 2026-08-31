@@ -90,6 +90,7 @@ dependencies {
     implementation(libs.androidx.gridlayout)
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("org.dhatim:fastexcel:0.20.2")
 }
 
 kapt {
