@@ -18,10 +18,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 @Singleton
-class InstallationRepository @Inject constructor(
+class FirebaseInstallationRepository @Inject constructor(
     firestore: FirebaseFirestore,
     auth: FirebaseAuth
-) : BaseRepository(firestore, auth) {
+) : BaseRepository(firestore, auth), InstallationRepository {
 
     // -------------------- helpers --------------------
 
@@ -37,7 +37,7 @@ class InstallationRepository @Inject constructor(
 
     /** A fresh Firestore-generated id, reserved locally (no network call) so it can be used
      * as the Storage upload path before the installation document itself is written. */
-    fun newInstallationId(): String = installationsCol().document().id
+    override fun newInstallationId(): String = installationsCol().document().id
 
     private suspend fun uploadToCloudinary(uri: Uri, folder: String): String =
         suspendCancellableCoroutine { cont ->
@@ -70,7 +70,7 @@ class InstallationRepository @Inject constructor(
         }
 
     /** Uploads each local photo [uris] under the installation's Cloudinary folder and returns their secure URLs. */
-    suspend fun uploadPhotos(installationId: String, uris: List<Uri>): List<String> {
+    override suspend fun uploadPhotos(installationId: String, uris: List<Uri>): List<String> {
         val folder = installationPhotosFolder(installationId)
         return uris.map { uri -> uploadToCloudinary(uri, folder) }
     }
@@ -97,12 +97,12 @@ class InstallationRepository @Inject constructor(
 
     // -------------------- CRUD --------------------
 
-    suspend fun getById(id: String): Installation? {
+    override suspend fun getById(id: String): Installation? {
         val snap = installationsCol().document(id).get().await()
         return snap.toObject(Installation::class.java)?.copy(id = snap.id)
     }
 
-    suspend fun create(installation: Installation): String {
+    override suspend fun create(installation: Installation): String {
         val now = Timestamp.now()
 
         val docRef = if (installation.id.isNullOrBlank()) {
@@ -121,7 +121,7 @@ class InstallationRepository @Inject constructor(
         return docRef.id
     }
 
-    suspend fun update(id: String, installation: Installation) {
+    override suspend fun update(id: String, installation: Installation) {
         val now = Timestamp.now()
 
         val inc = installation.increment ?: 0L
@@ -154,13 +154,13 @@ class InstallationRepository @Inject constructor(
         installationsCol().document(id).set(data).await()
     }
 
-    suspend fun delete(id: String) {
+    override suspend fun delete(id: String) {
         installationsCol().document(id).delete().await()
     }
 
     // -------------------- LISTEN --------------------
 
-    fun listenAll(
+    override fun listenAll(
         onChange: (List<Installation>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
@@ -187,7 +187,7 @@ class InstallationRepository @Inject constructor(
     /**
      * Marca TODOS los accesorios de una instalación como pagados / no pagados
      */
-    suspend fun markAllAccessoriesPaidAndUpdateInstallation(
+    override suspend fun markAllAccessoriesPaidAndUpdateInstallation(
         installationId: String,
         paid: Boolean
     ) {

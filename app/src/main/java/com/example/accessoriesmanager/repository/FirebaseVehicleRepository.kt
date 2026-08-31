@@ -10,16 +10,16 @@ import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
 
-class VehicleRepository @Inject constructor(
+class FirebaseVehicleRepository @Inject constructor(
     firestore: FirebaseFirestore,
     auth: FirebaseAuth
-) : BaseRepository(firestore, auth) {
+) : BaseRepository(firestore, auth), VehicleRepository {
 
     // 📍 Ruta: /users/{uid}/vehicles
     private fun vehiclesRef() = userCollection("vehicles")
 
     // ✅ Validar si ya existe un vehículo por (make + model)
-    suspend fun existsByMakeAndModel(make: String, model: String): Boolean {
+    override suspend fun existsByMakeAndModel(make: String, model: String): Boolean {
         val snap = vehiclesRef()
             .whereEqualTo("make", make)
             .whereEqualTo("model", model)
@@ -31,7 +31,7 @@ class VehicleRepository @Inject constructor(
     }
 
     // ✅ Crear vehículo
-    suspend fun add(vehicle: Vehicle): String {
+    override suspend fun add(vehicle: Vehicle): String {
         val data = hashMapOf(
             "make" to vehicle.make,
             "model" to vehicle.model,
@@ -44,7 +44,7 @@ class VehicleRepository @Inject constructor(
     }
 
     // ✅ Actualizar vehículo
-    suspend fun update(id: String, vehicle: Vehicle) {
+    override suspend fun update(id: String, vehicle: Vehicle) {
         val updates = hashMapOf(
             "make" to vehicle.make,
             "model" to vehicle.model,
@@ -57,7 +57,7 @@ class VehicleRepository @Inject constructor(
             .await()
     }
 
-    fun listenVehicles(
+    override fun listenVehicles(
         onChange: (List<Vehicle>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
@@ -87,7 +87,7 @@ class VehicleRepository @Inject constructor(
     }
 
     // ✅ Eliminar
-    suspend fun deleteVehicle(id: String) {
+    override suspend fun deleteVehicle(id: String) {
         vehiclesRef()
             .document(id)
             .delete()
@@ -95,7 +95,7 @@ class VehicleRepository @Inject constructor(
     }
 
     // ✅ Obtener por ID
-    suspend fun getById(id: String): Vehicle? {
+    override suspend fun getById(id: String): Vehicle? {
         val doc = vehiclesRef()
             .document(id)
             .get()
@@ -107,7 +107,7 @@ class VehicleRepository @Inject constructor(
     }
 
     // ✅ Validar duplicado excluyendo ID (para edición)
-    suspend fun existsByMakeAndModelExcludingId(
+    override suspend fun existsByMakeAndModelExcludingId(
         make: String,
         model: String,
         excludeId: String
@@ -122,7 +122,7 @@ class VehicleRepository @Inject constructor(
         return snap.documents.any { it.id != excludeId }
     }
 
-    suspend fun getAll(): List<Vehicle> {
+    override suspend fun getAll(): List<Vehicle> {
         val snap = vehiclesRef()
             .orderBy("make")
             .orderBy("model")

@@ -10,15 +10,15 @@ import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
 
-class HeadquarterRepository @Inject constructor(
+class FirebaseHeadquarterRepository @Inject constructor(
     firestore: FirebaseFirestore,
     auth: FirebaseAuth
-) : BaseRepository(firestore, auth) {
+) : BaseRepository(firestore, auth), HeadquarterRepository {
 
     // ✅ Ruta por usuario: /users/{uid}/headquarters
     private fun headquartersRef() = userCollection("headquarters")
 
-    suspend fun existsByName(name: String): Boolean {
+    override suspend fun existsByName(name: String): Boolean {
         val snap = headquartersRef()
             .whereEqualTo("name", name)
             .limit(1)
@@ -28,7 +28,7 @@ class HeadquarterRepository @Inject constructor(
         return !snap.isEmpty
     }
 
-    suspend fun add(headquarter: Headquarter): String {
+    override suspend fun add(headquarter: Headquarter): String {
         val data = hashMapOf(
             "name" to headquarter.name,
             "increment" to headquarter.increment,
@@ -40,7 +40,7 @@ class HeadquarterRepository @Inject constructor(
         return ref.id
     }
 
-    suspend fun update(id: String, headquarter: Headquarter) {
+    override suspend fun update(id: String, headquarter: Headquarter) {
         val updates = hashMapOf(
             "name" to headquarter.name,
             "increment" to headquarter.increment,
@@ -53,7 +53,7 @@ class HeadquarterRepository @Inject constructor(
             .await()
     }
 
-    fun listenHeadquarters(
+    override fun listenHeadquarters(
         onChange: (List<Headquarter>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
@@ -85,14 +85,14 @@ class HeadquarterRepository @Inject constructor(
             }
     }
 
-    suspend fun deleteHeadquarter(id: String) {
+    override suspend fun deleteHeadquarter(id: String) {
         headquartersRef()
             .document(id)
             .delete()
             .await()
     }
 
-    suspend fun getById(id: String): Headquarter? {
+    override suspend fun getById(id: String): Headquarter? {
         val doc = headquartersRef()
             .document(id)
             .get()
@@ -103,7 +103,7 @@ class HeadquarterRepository @Inject constructor(
         }
     }
 
-    suspend fun existsByNameExcludingId(name: String, excludeId: String): Boolean {
+    override suspend fun existsByNameExcludingId(name: String, excludeId: String): Boolean {
         val snap = headquartersRef()
             .whereEqualTo("name", name)
             .limit(5)
@@ -113,7 +113,7 @@ class HeadquarterRepository @Inject constructor(
         return snap.documents.any { it.id != excludeId }
     }
 
-    suspend fun getAll(): List<Headquarter> {
+    override suspend fun getAll(): List<Headquarter> {
         val snap = headquartersRef()
             .orderBy("name")
             .get()
@@ -126,7 +126,7 @@ class HeadquarterRepository @Inject constructor(
         }
     }
 
-    suspend fun getIncrement(headquarterId: String): Int {
+    override suspend fun getIncrement(headquarterId: String): Int {
         return try {
             val snap = userCollection("installations")
                 .whereEqualTo("headquarterId", headquarterId) // ✅

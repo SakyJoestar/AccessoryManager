@@ -10,15 +10,15 @@ import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
 
-class AccessoryRepository @Inject constructor(
+class FirebaseAccessoryRepository @Inject constructor(
     firestore: FirebaseFirestore,
     auth: FirebaseAuth
-) : BaseRepository(firestore, auth) {
+) : BaseRepository(firestore, auth), AccessoryRepository {
 
     // ✅ Ruta por usuario: /users/{uid}/accessories
     private fun accessoriesRef() = userCollection("accessories")
 
-    suspend fun existsByName(name: String): Boolean {
+    override suspend fun existsByName(name: String): Boolean {
         val snap = accessoriesRef()
             .whereEqualTo("name", name)
             .limit(1)
@@ -28,7 +28,7 @@ class AccessoryRepository @Inject constructor(
         return !snap.isEmpty
     }
 
-    suspend fun add(accessory: Accessory): String {
+    override suspend fun add(accessory: Accessory): String {
         val data = hashMapOf(
             "name" to accessory.name,
             "price" to accessory.price,
@@ -40,7 +40,7 @@ class AccessoryRepository @Inject constructor(
         return ref.id
     }
 
-    suspend fun update(id: String, accessory: Accessory) {
+    override suspend fun update(id: String, accessory: Accessory) {
         val updates = hashMapOf(
             "name" to accessory.name,
             "price" to accessory.price, // Long
@@ -53,7 +53,7 @@ class AccessoryRepository @Inject constructor(
             .await()
     }
 
-    fun listenAccessories(
+    override fun listenAccessories(
         onChange: (List<Accessory>) -> Unit,
         onError: (Exception) -> Unit
     ): ListenerRegistration {
@@ -85,14 +85,14 @@ class AccessoryRepository @Inject constructor(
             }
     }
 
-    suspend fun deleteAccessory(id: String) {
+    override suspend fun deleteAccessory(id: String) {
         accessoriesRef()
             .document(id)
             .delete()
             .await()
     }
 
-    suspend fun getById(id: String): Accessory? {
+    override suspend fun getById(id: String): Accessory? {
         val doc = accessoriesRef()
             .document(id)
             .get()
@@ -103,7 +103,7 @@ class AccessoryRepository @Inject constructor(
         }
     }
 
-    suspend fun existsByNameExcludingId(name: String, excludeId: String): Boolean {
+    override suspend fun existsByNameExcludingId(name: String, excludeId: String): Boolean {
         val snap = accessoriesRef()
             .whereEqualTo("name", name)
             .limit(5)
@@ -113,7 +113,7 @@ class AccessoryRepository @Inject constructor(
         return snap.documents.any { it.id != excludeId }
     }
 
-    suspend fun getAll(): List<Accessory> {
+    override suspend fun getAll(): List<Accessory> {
         val snap = accessoriesRef()
             .orderBy("name")
             .get()

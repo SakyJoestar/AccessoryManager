@@ -57,7 +57,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private var editId: String? = null
     private lateinit var accessoriesAdapter: InstalledAccessoryAdapter
 
-    private var isAutoToggling = false
     private var currentAccessories: List<InstalledAccessory> = emptyList()
 
     // ✅ ids opcionales (solo si selecciona del catálogo)
@@ -81,6 +80,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private lateinit var createController: InstallationCreateController
     private lateinit var headquarterDropdown: CatalogDropdownController<Headquarter>
     private lateinit var vehicleDropdown: CatalogDropdownController<Vehicle>
+    private lateinit var totalsController: InstallationTotalsController
 
     companion object {
         private const val ARG_ID = "installationId"
@@ -144,6 +144,18 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         etUnpaid = container.findViewById(R.id.etUnpaid)
         etComment = container.findViewById(R.id.etComment)
 
+        totalsController = InstallationTotalsController(
+            viewModel = viewModel,
+            etIncrement = etIncrement,
+            etTotalWorked = etTotalWorked,
+            etPaid = etPaid,
+            etUnpaid = etUnpaid,
+            tgPayment = tgPayment,
+            btnPaid = btnPaid,
+            btnNotPaid = btnNotPaid,
+            btnPartiallyPaid = btnPartiallyPaid,
+        )
+
         val btnAddHeadquarter = container.findViewById<MaterialButton>(R.id.btnAddHeadquarter)
         val btnAddVehicle = container.findViewById<MaterialButton>(R.id.btnAddVehicle)
         val btnAddAccessoryInline = container.findViewById<MaterialButton>(R.id.btnAddAccessoryInline)
@@ -161,8 +173,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 val inc = (hq.increment ?: 0).toLong()
                 setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
 
-                updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
-                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+                totalsController.update(currentAccessories)
             },
             onVehicleCreated = { v ->
                 selectedVehicleId = v.id
@@ -183,8 +194,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 val inc = hq.increment.toLong()
                 setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
 
-                updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
-                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+                totalsController.update(currentAccessories)
             }
         )
 
@@ -233,8 +243,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         etIncrement.addTextChangedListener(ThousandsSeparatorTextWatcher(etIncrement))
 
         etIncrement.doAfterTextChanged {
-            updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
-            autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+            totalsController.update(currentAccessories)
         }
 
         // ---------- Edit mode ----------
@@ -314,8 +323,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 currentAccessories = list
                 viewModel.setAccessories(list)
 
-                updateTotalsUI(list, etTotalWorked, etPaid, etUnpaid)
-                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, list)
+                totalsController.update(list)
             }
         )
 
@@ -328,7 +336,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         // ---------- Toggle: solo para guardar state ----------
         tgPayment.addOnButtonCheckedListener { _, _, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
-            if (isAutoToggling) return@addOnButtonCheckedListener
+            if (totalsController.isAutoToggling) return@addOnButtonCheckedListener
 
             val state = when (tgPayment.checkedButtonId) {
                 btnPaid.id -> "PAGADO"
@@ -428,7 +436,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                                 photoController.clear()
 
-                                updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
+                                totalsController.updateTotalsUI(currentAccessories)
 
                                 setDateText(etDate, Calendar.getInstance())
                                 viewModel.setDate(fromCalendarToTimestamp(Calendar.getInstance()))
@@ -525,8 +533,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     accessoriesAdapter.submitList(safeList)
                     currentAccessories = accessoriesAdapter.getCurrent()
 
-                    updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
-                    autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+                    totalsController.update(currentAccessories)
                 }
             }
         }
@@ -558,29 +565,12 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         if (inc <= 0) return@collect
 
                         setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc.toLong()))
-                        updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
-                        autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+                        totalsController.update(currentAccessories)
                     }
                 }
 
             }
         }
-    }
-
-    // -------------------- Totales con incremento --------------------
-
-    private fun updateTotalsUI(
-        accessories: List<InstalledAccessory>,
-        etTotal: TextInputEditText,
-        etPaid: TextInputEditText,
-        etUnpaid: TextInputEditText,
-    ) {
-        val increment = InstallationTotalsCalculator.parseIncrement(etIncrement.text?.toString().orEmpty())
-        val totals = InstallationTotalsCalculator.compute(accessories, increment)
-
-        setTextSafely(etTotal, InstallationTotalsCalculator.formatMoneyDots(totals.total))
-        setTextSafely(etPaid, InstallationTotalsCalculator.formatMoneyDots(totals.paid))
-        setTextSafely(etUnpaid, InstallationTotalsCalculator.formatMoneyDots(totals.unpaid))
     }
 
     // -------------------- UI helpers --------------------
@@ -598,39 +588,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
             accessoriesAdapter.submitList(listOf(InstalledAccessory()))
             currentAccessories = accessoriesAdapter.getCurrent()
         }
-    }
-
-    private fun autoSetPaymentToggle(
-        tg: MaterialButtonToggleGroup,
-        btnPaid: MaterialButton,
-        btnNotPaid: MaterialButton,
-        btnPartiallyPaid: MaterialButton,
-        accessories: List<InstalledAccessory>
-    ) {
-        val increment = InstallationTotalsCalculator.parseIncrement(etIncrement.text?.toString().orEmpty())
-        val totals = InstallationTotalsCalculator.compute(accessories, increment)
-        val hasBillableAccessories = InstallationTotalsCalculator.billableAccessories(accessories).isNotEmpty()
-
-        val targetId = when {
-            !hasBillableAccessories || totals.total <= 0L -> btnNotPaid.id
-            totals.paid <= 0L -> btnNotPaid.id
-            totals.unpaid <= 0L -> btnPaid.id
-            else -> btnPartiallyPaid.id
-        }
-
-        if (tg.checkedButtonId == targetId) return
-
-        isAutoToggling = true
-        tg.check(targetId)
-        isAutoToggling = false
-
-        val state = when (targetId) {
-            btnPaid.id -> "PAGADO"
-            btnNotPaid.id -> "NO_PAGADO"
-            btnPartiallyPaid.id -> "PARCIAL"
-            else -> null
-        }
-        viewModel.setPaymentState(state)
     }
 
     private fun setTitles(isEdit: Boolean) {
