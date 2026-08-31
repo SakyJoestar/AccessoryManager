@@ -42,3 +42,7 @@ google-services.json
 
 # graphify (generated knowledge graph)
 graphify-out/
+
+# Claude Code settings with machine-specific hook paths
+.claude/settings.json
+CLAUDE.md
