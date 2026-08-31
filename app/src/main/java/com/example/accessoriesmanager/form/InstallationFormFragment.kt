@@ -25,6 +25,8 @@ import com.example.accessoriesmanager.model.Accessory
 import com.example.accessoriesmanager.model.Headquarter
 import com.example.accessoriesmanager.model.InstalledAccessory
 import com.example.accessoriesmanager.model.Vehicle
+import com.example.accessoriesmanager.model.headquarterLabelFromAny
+import com.example.accessoriesmanager.model.vehicleLabelFromAny
 import com.example.accessoriesmanager.ui.ThousandsSeparatorTextWatcher
 import com.example.accessoriesmanager.ui.showSnack
 import com.example.accessoriesmanager.viewmodel.AccessoryViewModel
@@ -72,6 +74,9 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private lateinit var btnNotPaid: MaterialButton
     private lateinit var btnPartiallyPaid: MaterialButton
 
+    //fotos
+    private val photoController = PhotoUploadController(this)
+
     // ✅ Dialog se cierra SOLO en Success
     private var createDialog: androidx.appcompat.app.AlertDialog? = null
     private var createDialogType: CreateType? = null
@@ -110,6 +115,16 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val rvAccessories = container.findViewById<RecyclerView>(R.id.rvAccessories)
         val btnAddAccessory = container.findViewById<MaterialButton>(R.id.btnAddAccessory)
 
+        // fotos
+        photoController.bindViews(
+            cardAddPhoto = container.findViewById(R.id.cardAddPhoto),
+            tvPhotosCounter = container.findViewById(R.id.tvPhotosCounter),
+            layoutPhotosCarousel = container.findViewById(R.id.layoutPhotosCarousel),
+            vpPhotos = container.findViewById(R.id.vpPhotos),
+            tabPhotosIndicator = container.findViewById(R.id.tabPhotosIndicator),
+            fabAddMorePhotos = container.findViewById(R.id.fabAddMorePhotos),
+        )
+
         tgPayment = container.findViewById(R.id.tgPaymentStatus)
         btnPaid = container.findViewById(R.id.btnPaid)
         btnNotPaid = container.findViewById(R.id.btnNotPaid)
@@ -132,9 +147,17 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val btnAddVehicle = container.findViewById<MaterialButton>(R.id.btnAddVehicle)
         val btnAddAccessoryInline = container.findViewById<MaterialButton>(R.id.btnAddAccessoryInline)
 
-        btnAddHeadquarter.setOnClickListener { showCreateDialog(CreateType.HEADQUARTER, actHeadquarter) }
-        btnAddVehicle.setOnClickListener { showCreateDialog(CreateType.VEHICLE, actVehicle) }
-        btnAddAccessoryInline.setOnClickListener { showCreateDialog(CreateType.ACCESSORY, null) }
+        btnAddHeadquarter.setOnClickListener{
+            showCreateDialog(CreateType.HEADQUARTER, actHeadquarter)
+        }
+
+        btnAddVehicle.setOnClickListener {
+            showCreateDialog(CreateType.VEHICLE, actVehicle)
+        }
+
+        btnAddAccessoryInline.setOnClickListener{
+            showCreateDialog(CreateType.ACCESSORY, null)
+        }
 
         // ✅ Solo lectura
         makeReadOnly(etTotalWorked)
@@ -296,17 +319,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 .filter { it.isDigit() }
                 .toIntOrNull() ?: 0
 
-            val total = totalWorked()
-            val paidValue = totalPaid()
-            val unPaidValue = totalUnpaid()
-
-//            val rawInc = etIncrement.text?.toString()
-//            Log.d("INC_UI", "etIncrement raw='$rawInc' length=${rawInc?.length} viewId=${etIncrement.id}")
-//
-//            val increment2 = rawInc.orEmpty().filter { it.isDigit() }.toIntOrNull() ?: 0
-//            Log.d("INC_UI", "parsed increment=$increment2")
-//            showSnack("Guardando")
-
             viewModel.save(
                 id = editId,
                 order = order,
@@ -315,10 +327,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 warehouse = warehouse,
                 condition = actCondition.text?.toString(),
                 increment = increment,
-                paymentValueRaw = paidValue.toString(),
-                total = total,
-                paidValue = paidValue,
-                unPaidValue = unPaidValue
+                photoUris = photoController.pendingLocalUris(),
+                existingPhotoUrls = photoController.keptExistingPhotoUrls()
             )
         }
 
@@ -359,6 +369,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
                                 accessoriesAdapter.submitList(listOf(InstalledAccessory()))
                                 currentAccessories = accessoriesAdapter.getCurrent()
+
+                                photoController.clear()
 
                                 updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
 
@@ -419,6 +431,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                 viewModel.form.collect { installation ->
                     installation ?: return@collect
 
+                    photoController.seedExistingPhotos(installation.photos.orEmpty())
+
                     etOrder.setText(installation.order?.toString().orEmpty())
                     etSerie.setText(installation.serie.orEmpty())
                     etPlate.setText(installation.plate.orEmpty())
@@ -434,21 +448,21 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     }
 
                     // ✅ sede / vehículo retrocompatibles (String o Map)
-                    val hqLabel = anyToHeadquarterLabel(installation.headquarter)
+                    val hqLabel = headquarterLabelFromAny(installation.headquarter)
                     actHeadquarter.setText(hqLabel, false)
 
                     selectedHqId = installation.headquarterId
                     viewModel.setHeadquarterId(selectedHqId)
                     viewModel.setHeadquarterLabel(hqLabel.ifBlank { null })
 
-                    val vehicleLabel = anyToVehicleLabel(installation.vehicle)
+                    val vehicleLabel = vehicleLabelFromAny(installation.vehicle)
                     actVehicle.setText(vehicleLabel, false)
 
                     selectedVehicleId = installation.vehicleId
                     viewModel.setVehicleId(selectedVehicleId)
                     viewModel.setVehicleLabel(vehicleLabel.ifBlank { null })
                     val inc = (installation.increment ?: 0L)
-                    setTextSafely(etIncrement, formatMoneyDots(inc))
+                    setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
 
                     val list = installation.accessories.orEmpty()
                     val safeList = list.ifEmpty { listOf(InstalledAccessory()) }
@@ -478,7 +492,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                             viewModel.setHeadquarterSelection(hq.id, hq.name.orEmpty())
 
                             val inc = hq.increment.toLong()
-                            setTextSafely(etIncrement, formatMoneyDots(inc))
+                            setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
 
                             updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                             autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
@@ -526,7 +540,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                         inc ?: return@collect
                         if (inc <= 0) return@collect
 
-                        setTextSafely(etIncrement, formatMoneyDots(inc.toLong()))
+                        setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc.toLong()))
                         updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                         autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
                     }
@@ -543,7 +557,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                                 actHeadquarter.setText(hq.name.orEmpty(), false)
 
                                 val inc = (hq.increment ?: 0).toLong()
-                                setTextSafely(etIncrement, formatMoneyDots(inc))
+                                setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
 
                                 updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
                                 autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
@@ -595,48 +609,18 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
 
     // -------------------- Totales con incremento --------------------
 
-    private fun getIncrementValue(): Long {
-        val raw = etIncrement.text?.toString()?.replace(".", "")?.trim().orEmpty()
-        return raw.toLongOrNull() ?: 0L
-    }
-
-    private fun selectedAccessoriesOnly(list: List<InstalledAccessory>): List<InstalledAccessory> =
-        list.filter {
-            val hasId = !it.accessoryId.isNullOrBlank()
-            val hasName = !it.name.isNullOrBlank()
-            (hasId || hasName) && it.price > 0L
-        }
-
-    private fun totalWorked(): Long {
-        val inc = getIncrementValue()
-        val list = selectedAccessoriesOnly(currentAccessories)
-        return list.sumOf { it.price + inc }
-    }
-
-    private fun totalPaid(): Long {
-        val inc = getIncrementValue()
-        val list = selectedAccessoriesOnly(currentAccessories)
-        return list.filter { it.isPaid }.sumOf { it.price + inc }
-    }
-
-    private fun totalUnpaid(): Long = totalWorked() - totalPaid()
-
     private fun updateTotalsUI(
         accessories: List<InstalledAccessory>,
         etTotal: TextInputEditText,
         etPaid: TextInputEditText,
         etUnpaid: TextInputEditText,
     ) {
-        val inc = getIncrementValue()
-        val selected = selectedAccessoriesOnly(accessories)
+        val increment = InstallationTotalsCalculator.parseIncrement(etIncrement.text?.toString().orEmpty())
+        val totals = InstallationTotalsCalculator.compute(accessories, increment)
 
-        val total = selected.sumOf { it.price + inc }
-        val paid = selected.filter { it.isPaid }.sumOf { it.price + inc }
-        val unpaid = total - paid
-
-        setTextSafely(etTotal, formatMoneyDots(total))
-        setTextSafely(etPaid, formatMoneyDots(paid))
-        setTextSafely(etUnpaid, formatMoneyDots(unpaid))
+        setTextSafely(etTotal, InstallationTotalsCalculator.formatMoneyDots(totals.total))
+        setTextSafely(etPaid, InstallationTotalsCalculator.formatMoneyDots(totals.paid))
+        setTextSafely(etUnpaid, InstallationTotalsCalculator.formatMoneyDots(totals.unpaid))
     }
 
     // -------------------- UI helpers --------------------
@@ -663,17 +647,14 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         btnPartiallyPaid: MaterialButton,
         accessories: List<InstalledAccessory>
     ) {
-        val selected = selectedAccessoriesOnly(accessories)
-
-        val inc = getIncrementValue()
-        val total = selected.sumOf { it.price + inc }
-        val paid = selected.filter { it.isPaid }.sumOf { it.price + inc }
-        val unpaid = total - paid
+        val increment = InstallationTotalsCalculator.parseIncrement(etIncrement.text?.toString().orEmpty())
+        val totals = InstallationTotalsCalculator.compute(accessories, increment)
+        val hasBillableAccessories = InstallationTotalsCalculator.billableAccessories(accessories).isNotEmpty()
 
         val targetId = when {
-            selected.isEmpty() || total <= 0L -> btnNotPaid.id
-            paid <= 0L -> btnNotPaid.id
-            unpaid <= 0L -> btnPaid.id
+            !hasBillableAccessories || totals.total <= 0L -> btnNotPaid.id
+            totals.paid <= 0L -> btnNotPaid.id
+            totals.unpaid <= 0L -> btnPaid.id
             else -> btnPartiallyPaid.id
         }
 
@@ -734,23 +715,10 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     }
 
     override fun onDestroyView() {
+        photoController.unbindViews()
+
         super.onDestroyView()
         _binding = null
-    }
-
-    private fun formatMoneyDots(value: Long): String {
-        val s = value.toString()
-        val sb = StringBuilder()
-        var count = 0
-        for (i in s.length - 1 downTo 0) {
-            sb.append(s[i])
-            count++
-            if (count == 3 && i != 0) {
-                sb.append('.')
-                count = 0
-            }
-        }
-        return sb.reverse().toString()
     }
 
     private fun setTextSafely(et: TextInputEditText, value: String) {
@@ -898,30 +866,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         accessoryViewModel.stopListening()
         headquarterViewModel.stopListening()
         vehicleViewModel.stopListening()
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun anyToHeadquarterLabel(h: Any?): String {
-        if (h == null) return ""
-        return when (h) {
-            is String -> h.trim()
-            is Map<*, *> -> ((h["name"] as? String).orEmpty()).trim()
-            else -> h.toString().trim()
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun anyToVehicleLabel(v: Any?): String {
-        if (v == null) return ""
-        return when (v) {
-            is String -> v.trim()
-            is Map<*, *> -> {
-                val make = (v["make"] as? String).orEmpty().trim()
-                val model = (v["model"] as? String).orEmpty().trim()
-                listOf(make, model).filter { it.isNotBlank() }.joinToString(" - ").trim()
-            }
-            else -> v.toString().trim()
-        }
     }
 
 }

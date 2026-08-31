@@ -26,6 +26,7 @@ data class Installation(
     val vehicleId: String? = null,
 
     val accessories: List<InstalledAccessory>? = null,
+    val photos: List<String>? = null,
     val state: String? = null,
     val totalWorked: Long? = null,
     val totalPaid: Long? = null,
