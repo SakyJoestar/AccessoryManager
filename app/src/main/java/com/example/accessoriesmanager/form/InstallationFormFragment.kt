@@ -78,9 +78,7 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     //fotos
     private val photoController = PhotoUploadController(this)
 
-    // ✅ Dialog se cierra SOLO en Success
-    private var createDialog: androidx.appcompat.app.AlertDialog? = null
-    private var createDialogType: CreateType? = null
+    private lateinit var createController: InstallationCreateController
 
     companion object {
         private const val ARG_ID = "installationId"
@@ -148,16 +146,40 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         val btnAddVehicle = container.findViewById<MaterialButton>(R.id.btnAddVehicle)
         val btnAddAccessoryInline = container.findViewById<MaterialButton>(R.id.btnAddAccessoryInline)
 
+        createController = InstallationCreateController(
+            fragment = this,
+            accessoryViewModel = accessoryViewModel,
+            headquarterViewModel = headquarterViewModel,
+            vehicleViewModel = vehicleViewModel,
+            onHeadquarterCreated = { hq ->
+                selectedHqId = hq.id
+                viewModel.setHeadquarterSelection(hq.id, hq.name.orEmpty())
+                actHeadquarter.setText(hq.name.orEmpty(), false)
+
+                val inc = (hq.increment ?: 0).toLong()
+                setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
+
+                updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
+                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
+            },
+            onVehicleCreated = { v ->
+                selectedVehicleId = v.id
+                val label = "${v.make} - ${v.model}"
+                viewModel.setVehicleSelection(v.id, label)
+                actVehicle.setText(label, false)
+            }
+        )
+
         btnAddHeadquarter.setOnClickListener{
-            showCreateDialog(CreateType.HEADQUARTER, actHeadquarter)
+            createController.showCreateDialog(InstallationCreateController.CreateType.HEADQUARTER, actHeadquarter)
         }
 
         btnAddVehicle.setOnClickListener {
-            showCreateDialog(CreateType.VEHICLE, actVehicle)
+            createController.showCreateDialog(InstallationCreateController.CreateType.VEHICLE, actVehicle)
         }
 
         btnAddAccessoryInline.setOnClickListener{
-            showCreateDialog(CreateType.ACCESSORY, null)
+            createController.showCreateDialog(InstallationCreateController.CreateType.ACCESSORY, null)
         }
 
         // ✅ Solo lectura
@@ -485,6 +507,8 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
+                createController.observeCreateEvents(this)
+
                 launch {
                     headquarterViewModel.items.collect { list ->
                         val names = list.map { it.name.orEmpty() }
@@ -552,63 +576,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
                     }
                 }
 
-                // ✅ cerrar dialog SOLO en Success
-                launch {
-                    headquarterViewModel.createEvents.collect { ev ->
-                        when (ev) {
-                            is HeadquarterViewModel.CreateEvent.Success -> {
-                                val hq = ev.headquarter
-                                selectedHqId = hq.id
-                                viewModel.setHeadquarterSelection(hq.id, hq.name.orEmpty())
-                                actHeadquarter.setText(hq.name.orEmpty(), false)
-
-                                val inc = (hq.increment ?: 0).toLong()
-                                setTextSafely(etIncrement, InstallationTotalsCalculator.formatMoneyDots(inc))
-
-                                updateTotalsUI(currentAccessories, etTotalWorked, etPaid, etUnpaid)
-                                autoSetPaymentToggle(tgPayment, btnPaid, btnNotPaid, btnPartiallyPaid, currentAccessories)
-
-                                showSnack("Sede creada")
-                                if (createDialogType == CreateType.HEADQUARTER) createDialog?.dismiss()
-                            }
-
-                            is HeadquarterViewModel.CreateEvent.Error -> showSnack(ev.msg)
-                        }
-                    }
-                }
-
-                launch {
-                    vehicleViewModel.createEvents.collect { ev ->
-                        when (ev) {
-                            is VehicleViewModel.CreateEvent.Success -> {
-                                val v = ev.vehicle
-                                selectedVehicleId = v.id
-                                val label = "${v.make} - ${v.model}"
-
-                                viewModel.setVehicleSelection(v.id, label)
-                                actVehicle.setText(label, false)
-
-                                showSnack("Vehículo creado")
-                                if (createDialogType == CreateType.VEHICLE) createDialog?.dismiss()
-                            }
-
-                            is VehicleViewModel.CreateEvent.Error -> showSnack(ev.msg)
-                        }
-                    }
-                }
-
-                launch {
-                    accessoryViewModel.createEvents.collect { ev ->
-                        when (ev) {
-                            is AccessoryViewModel.CreateEvent.Success -> {
-                                showSnack("Accesorio creado")
-                                if (createDialogType == CreateType.ACCESSORY) createDialog?.dismiss()
-                            }
-
-                            is AccessoryViewModel.CreateEvent.Error -> showSnack(ev.msg)
-                        }
-                    }
-                }
             }
         }
     }
@@ -753,111 +720,6 @@ class InstallationFormFragment : Fragment(R.layout.fragment_form_base) {
     private fun clearError(til: TextInputLayout) {
         til.error = null
         til.isErrorEnabled = false
-    }
-
-    private enum class CreateType { ACCESSORY, HEADQUARTER, VEHICLE }
-
-    private fun showCreateDialog(type: CreateType, targetDropdown: AutoCompleteTextView?) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_two_fields, null)
-
-        val til1 = dialogView.findViewById<TextInputLayout>(R.id.tilField1)
-        val til2 = dialogView.findViewById<TextInputLayout>(R.id.tilField2)
-        val et1 = dialogView.findViewById<TextInputEditText>(R.id.etField1)
-        val et2 = dialogView.findViewById<TextInputEditText>(R.id.etField2)
-
-        when (type) {
-            CreateType.ACCESSORY -> {
-                til1.hint = "Nombre"
-                til2.hint = "Precio"
-                et2.inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            }
-
-            CreateType.HEADQUARTER -> {
-                til1.hint = "Nombre"
-                til2.hint = "Incremento (opcional)"
-                et2.inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            }
-
-            CreateType.VEHICLE -> {
-                til1.hint = "Marca"
-                til2.hint = "Modelo"
-                et2.inputType = android.text.InputType.TYPE_CLASS_TEXT
-            }
-        }
-
-        fun clearErrors() {
-            til1.error = null
-            til2.error = null
-            til1.isErrorEnabled = false
-            til2.isErrorEnabled = false
-        }
-
-        val title = when (type) {
-            CreateType.ACCESSORY -> "Crear accesorio"
-            CreateType.HEADQUARTER -> "Crear sede"
-            CreateType.VEHICLE -> "Crear vehículo"
-        }
-
-        createDialogType = type
-
-        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-            .setTitle(title)
-            .setView(dialogView)
-            .setNegativeButton("Cancelar", null)
-            .setPositiveButton("Guardar", null)
-            .create()
-
-        createDialog = dialog
-        dialog.setOnDismissListener {
-            createDialog = null
-            createDialogType = null
-        }
-
-        dialog.setOnShowListener {
-            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                clearErrors()
-
-                val v1 = et1.text?.toString()?.trim().orEmpty()
-                val v2 = et2.text?.toString()?.trim().orEmpty()
-
-                if (v1.isBlank()) {
-                    til1.isErrorEnabled = true
-                    til1.error = "Requerido"
-                    return@setOnClickListener
-                }
-
-                if (type != CreateType.HEADQUARTER && v2.isBlank()) {
-                    til2.isErrorEnabled = true
-                    til2.error = "Requerido"
-                    return@setOnClickListener
-                }
-
-                when (type) {
-                    CreateType.ACCESSORY -> {
-                        val price = v2.replace(".", "").toLongOrNull()
-                        if (price == null) {
-                            til2.isErrorEnabled = true
-                            til2.error = "Debe ser número"
-                            return@setOnClickListener
-                        }
-                        accessoryViewModel.createAccessory(name = v1, price = price)
-                    }
-
-                    CreateType.HEADQUARTER -> {
-                        val inc = v2.replace(".", "").toLongOrNull() ?: 0L
-                        headquarterViewModel.createHeadquarter(name = v1, increment = inc)
-                        targetDropdown?.setText(v1, false)
-                    }
-
-                    CreateType.VEHICLE -> {
-                        vehicleViewModel.createVehicle(make = v1, model = v2)
-                        targetDropdown?.setText("$v1 - $v2", false)
-                    }
-                }
-            }
-        }
-
-        dialog.show()
     }
 
     override fun onStart() {
