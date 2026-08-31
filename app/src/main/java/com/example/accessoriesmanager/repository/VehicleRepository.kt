@@ -11,20 +11,12 @@ import java.util.Locale
 import javax.inject.Inject
 
 class VehicleRepository @Inject constructor(
-    private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
-) {
-
-    // 🔐 UID obligatorio
-    private fun requireUid(): String =
-        auth.currentUser?.uid
-            ?: throw IllegalStateException("No hay usuario autenticado")
+    firestore: FirebaseFirestore,
+    auth: FirebaseAuth
+) : BaseRepository(firestore, auth) {
 
     // 📍 Ruta: /users/{uid}/vehicles
-    private fun vehiclesRef() =
-        firestore.collection("users")
-            .document(requireUid())
-            .collection("vehicles")
+    private fun vehiclesRef() = userCollection("vehicles")
 
     // ✅ Validar si ya existe un vehículo por (make + model)
     suspend fun existsByMakeAndModel(make: String, model: String): Boolean {

@@ -19,19 +19,13 @@ import kotlin.coroutines.resumeWithException
 
 @Singleton
 class InstallationRepository @Inject constructor(
-    private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
-) {
+    firestore: FirebaseFirestore,
+    auth: FirebaseAuth
+) : BaseRepository(firestore, auth) {
 
     // -------------------- helpers --------------------
 
-    private fun uid(): String =
-        auth.currentUser?.uid ?: throw IllegalStateException("Usuario no autenticado")
-
-    private fun installationsCol() =
-        firestore.collection("users")
-            .document(uid())
-            .collection("installations")
+    private fun installationsCol() = userCollection("installations")
 
     private fun installedAccessoriesCol(installationId: String) =
         installationsCol()
@@ -39,7 +33,7 @@ class InstallationRepository @Inject constructor(
             .collection("installedAccessories")
 
     private fun installationPhotosFolder(installationId: String) =
-        "users/${uid()}/installations/$installationId/photos"
+        "users/${requireUid()}/installations/$installationId/photos"
 
     /** A fresh Firestore-generated id, reserved locally (no network call) so it can be used
      * as the Storage upload path before the installation document itself is written. */

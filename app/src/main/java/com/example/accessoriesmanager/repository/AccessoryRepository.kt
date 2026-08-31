@@ -11,19 +11,12 @@ import java.util.Locale
 import javax.inject.Inject
 
 class AccessoryRepository @Inject constructor(
-    private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
-) {
+    firestore: FirebaseFirestore,
+    auth: FirebaseAuth
+) : BaseRepository(firestore, auth) {
 
     // ✅ Ruta por usuario: /users/{uid}/accessories
-    private fun accessoriesRef() =
-        firestore.collection("users")
-            .document(requireUid())
-            .collection("accessories")
-
-    private fun requireUid(): String =
-        auth.currentUser?.uid
-            ?: throw IllegalStateException("No hay usuario autenticado")
+    private fun accessoriesRef() = userCollection("accessories")
 
     suspend fun existsByName(name: String): Boolean {
         val snap = accessoriesRef()

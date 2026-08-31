@@ -11,19 +11,12 @@ import java.util.Locale
 import javax.inject.Inject
 
 class HeadquarterRepository @Inject constructor(
-    private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
-) {
+    firestore: FirebaseFirestore,
+    auth: FirebaseAuth
+) : BaseRepository(firestore, auth) {
 
     // ✅ Ruta por usuario: /users/{uid}/headquarters
-    private fun headquartersRef() =
-        firestore.collection("users")
-            .document(requireUid())
-            .collection("headquarters")
-
-    private fun requireUid(): String =
-        auth.currentUser?.uid
-            ?: throw IllegalStateException("No hay usuario autenticado")
+    private fun headquartersRef() = userCollection("headquarters")
 
     suspend fun existsByName(name: String): Boolean {
         val snap = headquartersRef()
@@ -135,9 +128,7 @@ class HeadquarterRepository @Inject constructor(
 
     suspend fun getIncrement(headquarterId: String): Int {
         return try {
-            val snap = firestore.collection("users")
-                .document(requireUid())
-                .collection("installations")
+            val snap = userCollection("installations")
                 .whereEqualTo("headquarterId", headquarterId) // ✅
                 .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .limit(1)
